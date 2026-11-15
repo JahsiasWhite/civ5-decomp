@@ -95,6 +95,7 @@ jobs:
           tail -n 40 build/match.txt
           # DIFFs are normal; a run that never got to the summary (compile/link failure) is not
           grep -q "fingerprint mode\]" build/match.txt || { echo "::error::match run failed"; exit 1; }
+          echo "::notice title=Match results::$(tail -n 1 build/match.txt | sed 's/^\[[^]]*\] *//')"
 
       - name: Report
         run: |
