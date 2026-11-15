@@ -47,6 +47,11 @@ RULES = """\
   Calls to functions that use custom register conventions (marked below) only
   match when the callee is decompiled too; if that's the only difference, stop
   and say so.
+- Fake matches: if the bytes only match through a trick the original source
+  surely didn't use (`volatile` to pin instruction order, an array standing in
+  for a vtable or class, `#pragma`, inline asm), first try `c5d-cflags`
+  variants. If you still need the trick, add `// c5d-review: <what and why>`
+  near the top of the file and mention it in your summary.
 - Do not edit `tools/`, `config.json`, `config.local.json` or other people's functions. Don't commit.
 - Finish with a 1-3 line summary: final status, and what blocked you if not MATCH.
 """

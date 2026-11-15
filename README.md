@@ -234,6 +234,20 @@ the first 40 lines of a source file to change its flags:
 // c5d-cflags: +/Od                       (add flags)
 ```
 
+### Fake matches (`c5d-review`)
+
+A **fake match** has identical bytes, but its source uses a trick the original surely
+didn't: `volatile` to pin instruction order, an array standing in for a vtable, a
+`#pragma`, inline asm. They're normal early on and don't block progress. Mark them in the
+first 40 lines of the file so they can be found and fixed once more of the class or file
+is known:
+
+```cpp
+// c5d-review: fields are volatile only to keep the stores in order
+```
+
+`c5d status` counts them in PROGRESS.md; `git grep c5d-review` lists them.
+
 ## Trial: 20 functions, 20 parallel agents (2026-11-15)
 
 Each fresh agent saw only its `TASK.md` bundle. Functions were taken from the queue at

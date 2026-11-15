@@ -6,6 +6,5 @@
 
 int KindQueryObject::GetKindFlags()
 {
-    int kind = GetKind();
-    return (kind + 0xB8 + (m_ac == 0) != 0) ? 0 : 0x60;
+    return (GetKind() + (m_ac == 0) + 0xB8 != 0) ? 0 : 0x60;
 }

@@ -712,6 +712,20 @@ def remote_report(r, a, model=None, tokens_in=None, tokens_out=None, tokens_cach
     return status
 
 
+def review_files():
+    """Source files marked `// c5d-review: <reason>` in their first 40 lines:
+    {path: reason}. A marker means the bytes match but the source uses a trick
+    the original surely didn't (a fake match) and should be revisited."""
+    out = {}
+    for src in sorted((ROOT / "src").rglob("*.cpp")):
+        with open(src, encoding="utf-8", errors="replace") as f:
+            for _, line in zip(range(40), f):
+                if "c5d-review:" in line:
+                    out[src.relative_to(ROOT).as_posix()] = line.split("c5d-review:", 1)[1].strip()
+                    break
+    return out
+
+
 def cmd_status(_args):
     """Write PROGRESS.md from scope, status and attempts."""
     import csv
@@ -732,6 +746,10 @@ def cmd_status(_args):
         f"- **Bytes:** {mb:,} / {tb:,} ({100 * mb / tb:.3f}%)",
         f"- **Attempted, not matched:** {by_status.get('DIFF', 0) + by_status.get('MATCH?', 0)}",
     ]
+    review = review_files()
+    if review:
+        lines.append(f"- **Flagged for review (fake matches):** {len(review)} "
+                     "(`// c5d-review:` in the source; see README)")
     if att:
         ok = sum(1 for x in att if x["status"] == "MATCH")
         lines.append(f"- **Agent attempts logged locally:** {len(att)}, {ok} matched "
