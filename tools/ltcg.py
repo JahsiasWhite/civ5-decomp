@@ -155,7 +155,9 @@ def compare(name, orig_img, orig_va, orig_size, test_img, lmap, syms, obj_refs=N
             imp = imports_t[value]
             return imp, orig_iat_by_name.get(imp)
         n, delta = lmap.lookup(value)
-        unreliable = n is None or (delta and lmap.obj_of.get(n) == "stubs.obj")
+        # LTCG maps omit file statics, so a non-exact hit may be the wrong
+        # neighbour; prefer the compiler's own name for this reference.
+        unreliable = n is None or delta != 0
         if unreliable and off is not None and off in obj_refs:
             hint, addend = obj_refs[off]
             if hint in syms:

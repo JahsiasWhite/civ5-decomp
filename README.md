@@ -41,16 +41,34 @@ starting point for the exe <-> DLL interface classes.
 - **Inline helpers live in headers:** `FSBAHasAllocatorForSize` contains an
   inlined copy of the lookup that `0x81c360` performs out of line. Under `/Ob1`, that
   means an `inline` header helper (`FindAllocatorForSize`) used by both.
-- **Open problem: LTCG register choice.** In the allocator cluster, our link passes
-  `this` in ECX where the original uses EDI. LTCG picks these registers by looking at all
-  callers, so functions that share callees must be decompiled together (here that
-  needs `GetSmallObjectAllocator`, `FSBADeallocate` and the `0x81be80`/`0x81c2f0` pools).
+- **`FMalloc` is inlined everywhere:** the engine's allocation path
+  (`GetSmallObjectAllocator`, then `GetAllocatorForSize`, then `Allocate`, falling back to `malloc`) is an
+  inline helper. `GetSmallObjectAllocator` has 329 call sites, `GetAllocatorForSize` 187
+  and `Allocate` 200. Reconstructed in `include/FMemory.h`.
+- **`new` has no EH cleanup:** the exe's `new T` sites have no unwind frame. A class
+  `operator new` or std placement new adds one under `/EHsc`; a tagged placement
+  new with no matching delete (`FNEW(T)` in `FMemory.h`) reproduces the original shape.
+- **No PGO:** no hot/cold function splitting found (0 functions with ranges more than 64 KB apart).
+- **Open problem: LTCG register choice in the allocator cluster.** Our link passes
+  `this` to `GetAllocatorForSize`/`Allocate` in ECX/ESI, where the original uses EDI
+  at every one of its ~190 call sites. This is the only remaining difference in 6 functions
+  (`FSBAAllocate`, `FSBAHasAllocatorForSize`, the two helpers, and two `FMalloc`
+  callers). What we tried:
+  - adding real callers: no change
+  - giving the pool callee (`0x81be80`) a real body: no change
+  - other `/O` flags: no change
+
+  The leading theory is that the choice depends on the whole set of call sites
+  (hundreds of inlined `FMalloc` expansions), so it should resolve as more callers
+  are decompiled. Next experiments: decompile `GetSmallObjectAllocator` (the first
+  caller in the same file), and try reordering functions or files within the link.
 
 ## Progress
 
 | Date | Functions | Matched | Notes |
 |---|---|---|---|
 | 2026-11-14 | 19 | 15 | 9 of 13 in the second batch matched on the first attempt. All 4 misses are in the allocator cluster (LTCG register choice). |
+| 2026-11-14 | 21 | 15 | Added `FMalloc`/`FNEW` and 2 callers. EH shape fixed; the cluster is still blocked only on the EDI register choice. |
 
 Matched: `FSBADisable`, `FSBAIsDisabled`, `FSBAGetMaxAllocatorSize`,
 `FSBAPreventCreation`, `FSBAIsSmallBlock`, `FSmallObjectAllocator::IsSmallBlock`,

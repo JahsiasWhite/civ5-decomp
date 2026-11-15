@@ -16,6 +16,10 @@
 0x0081c360 ?GetAllocatorForSize@FSmallObjectAllocator@@QAEPAVFSmallBlockAllocator@@I@Z
 0x0081be80 ?Allocate@FSmallBlockAllocator@@QAEPAXXZ
 0x06196fa4 _s_bAllocationFailed
+0x007cccf0 ?Unk_007cccf0@@YAPAXXZ
+0x005c63f0 ?Unk_005c63f0@@YAXXZ
+0x007e6480 ??0Unk_007e6480@@QAE@XZ
+0x06196944 _s_pUnk_06196944
 0x00813870 _FSBAAllocate
 0x00813990 _FSBAHasAllocatorForSize
 0x006f8d70 _GetSmallObjectAllocatorInitParams

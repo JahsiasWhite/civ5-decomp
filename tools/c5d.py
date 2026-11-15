@@ -269,9 +269,17 @@ def cmd_match(args):
         ctx = LinkCtx(args.flag or ())
         try:
             dll, mapf = ltcg.build(ctx, sources, keep)
+            lmap = ltcg.LinkMap(mapf)
+            # Targets nothing in src/ calls yet get dropped by /OPT:REF. Re-link
+            # forcing just those; called functions keep their LTCG conventions.
+            orphans = sorted(n for n in defined
+                             if n in syms and n not in lmap.by_name and n not in keep)
+            if orphans:
+                dll, mapf = ltcg.build(ctx, sources, keep + orphans)
+                lmap = ltcg.LinkMap(mapf)
         except RuntimeError as e:
             sys.exit(str(e))
-        test_img, lmap = PEImage(dll), ltcg.LinkMap(mapf)
+        test_img = PEImage(dll)
 
     for src, obj in per_file:
         try:
