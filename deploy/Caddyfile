@@ -1,9 +1,14 @@
 # Caddy reverse proxy for the coordination server.
-# Install to /etc/caddy/Caddyfile, replace c5d.example.org with your domain
-# (DNS A/AAAA record pointing at the VPS), then: systemctl reload caddy
+# Install to /etc/caddy/Caddyfile (DNS A/AAAA records for civ5decomp.com and
+# www.civ5decomp.com must point at the server), then: systemctl reload caddy
 # Caddy gets and renews the HTTPS certificate automatically.
 
-c5d.example.org {
+# www -> bare domain (remove this block if you didn't add a www DNS record)
+www.civ5decomp.com {
+	redir https://civ5decomp.com{uri} permanent
+}
+
+civ5decomp.com {
 	encode zstd gzip
 
 	# The app limits normal bodies to 16 KB itself; admin verify pushes are up to 8 MB.
