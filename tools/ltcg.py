@@ -60,7 +60,7 @@ def build(ctx, sources, include_syms):
     objs = []
     for src in sources:
         obj = out / (src.stem + ".obj")
-        cmd = [str(ctx.cl), *ctx.cflags, "/GL", f"/Fo{obj}", str(src)]
+        cmd = [str(ctx.cl), *ctx.flags_for(src), "/GL", f"/Fo{obj}", str(src)]
         r = subprocess.run(cmd, capture_output=True, text=True, env=ctx.env)
         if r.returncode:
             raise RuntimeError(f"compile failed: {src}\n{r.stdout}{r.stderr}")
@@ -145,6 +145,36 @@ def compare(name, orig_img, orig_va, orig_size, test_img, lmap, syms, obj_refs=N
     # the linker may pad with int3; keep at least up to the original size
     orig = orig_img.read(orig_va, orig_size)
 
+    # Switch jump tables: the compiler places them right after the code, but
+    # the original's extent (from Ghidra) stops at the code end. If our extra
+    # bytes are tables pointing back into the function, compare the tables
+    # separately (as offsets from the function start) and trim them off.
+    table_note = None
+    if len(ours) > len(orig):
+        relocs_t = test_img.base_relocs()
+        start = len(orig)
+        while start < len(ours) and ours[start] in (0xCC, 0x90, 0x8D) and (our_va + start) not in relocs_t:
+            start += 1
+        start = (start + 3) & ~3 if (our_va + ((start + 3) & ~3)) in relocs_t else start
+        if our_va + start in relocs_t:
+            tail = ours[start:]
+            try:
+                orig_tail = orig_img.read(orig_va + start, len(tail))
+            except ValueError:
+                orig_tail = b""
+            ok, k = True, 0
+            while k + 4 <= len(tail) and (our_va + start + k) in relocs_t:
+                t_ours = int.from_bytes(tail[k:k + 4], "little") - our_va
+                t_orig = int.from_bytes(orig_tail[k:k + 4], "little") - orig_va if len(orig_tail) >= k + 4 else None
+                if t_ours != t_orig:
+                    ok = False
+                k += 4
+            if k < len(tail) and tail[k:] != orig_tail[k:len(tail)]:   # byte index table
+                ok = False
+            table_note = ("ok" if ok else "BAD", start, "switch tables",
+                          f"{len(tail)} bytes after code " + ("identical" if ok else "differ"))
+            ours = ours[:len(orig)]
+
     imports_t, imports_o = test_img.imports(), orig_img.imports()
     orig_iat_by_name = {v: k for k, v in imports_o.items()}
     test_relocs = test_img.base_relocs()
@@ -154,6 +184,9 @@ def compare(name, orig_img, orig_va, orig_size, test_img, lmap, syms, obj_refs=N
         if value in imports_t:
             imp = imports_t[value]
             return imp, orig_iat_by_name.get(imp)
+        if our_va <= value < our_va + max(our_len, len(ours)):
+            # inside this function (e.g. its own switch table): same offset
+            return f"{name}+0x{value - our_va:x}", orig_va + (value - our_va)
         n, delta = lmap.lookup(value)
         # LTCG maps omit file statics, so a non-exact hit may be the wrong
         # neighbour; prefer the compiler's own name for this reference.
@@ -169,7 +202,7 @@ def compare(name, orig_img, orig_va, orig_size, test_img, lmap, syms, obj_refs=N
             return (n if not delta else f"{n}+0x{delta:x}"), syms[n] + delta
         return (n if not delta else f"{n}+0x{delta:x}"), None
 
-    masked, notes = set(), []
+    masked, notes = set(), ([table_note] if table_note else [])
 
     # absolute references (base relocations)
     for off in range(len(ours) - 3):

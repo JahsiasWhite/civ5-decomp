@@ -1,0 +1,2 @@
+0x0046b110 ?IsLateWeekDayUTC@@YA_NXZ
+0x00cbfc60 ?g_iLateWeekCheckCount@@3HA

@@ -1,0 +1,4 @@
+0x006ce440 ?TrackedHeapAlloc@@YAPAXPAX0II@Z
+0x00c94b1c ?g_hTrackedAllocHeap@@3PAXA
+0x02dd2080 ?g_uTrackedAllocPeakBytes@@3KA
+0x02dd2084 ?g_uTrackedAllocCurBytes@@3KA

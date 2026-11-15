@@ -33,12 +33,16 @@ RULES = """\
   Only functions marked `inline` get inlined. Use `extern "C"` only for
   functions the exe exports by plain name.
 - Register every function and global you define **or reference** with its
-  address in `symbols.txt` (`0x<address> <decorated name>`). To get decorated
-  names, run `python tools/c5d.py match --obj {src}`; it lists
+  address in **`{symfile}`** (create it; one `0x<address> <decorated name>` per
+  line). Don't edit `symbols.txt` or other symbol files; other workers are
+  running in parallel. A name already listed elsewhere for the same address is
+  fine to repeat. To get decorated names, run
+  `python tools/c5d.py --worker {worker} match --obj {src}`; it lists
   "not in symbols.txt" names.
 - Allocation: use `FMalloc`/`FNEW` from `include/FMemory.h` where the code shows
   the small-object allocator pattern.
-- Check with: `python tools/c5d.py match --addr {addr} -v`
+- Check with: `python tools/c5d.py --worker {worker} match --addr {addr} -v`
+  (always pass `--worker {worker}`; it isolates your build from other workers)
   (LTCG mode). `MATCH` = done. `DIFF` shows a side-by-side; iterate.
   Calls to functions that use custom register conventions (marked below) only
   match when the callee is decompiled too; if that's the only difference, stop
@@ -76,7 +80,8 @@ def ghidra_c(build, addr):
     return "(not dumped; run `python tools/c5d.py dump 0x%08x`)" % addr
 
 
-def write_bundle(ctx, row, queue_by_addr, names, symbols_by_addr, imports, last_diff=None):
+def write_bundle(ctx, row, queue_by_addr, names, symbols_by_addr, imports, last_diff=None,
+                 worker="w1"):
     addr, size = int(row["entry"], 16), int(row["size"])
     d = ctx.build / "tasks" / f"{addr:08x}"
     d.mkdir(parents=True, exist_ok=True)
@@ -108,7 +113,8 @@ def write_bundle(ctx, row, queue_by_addr, names, symbols_by_addr, imports, last_
         f"- Callers: {row['callers']}; callees in scope: {row['callees']}; "
         f"cluster size {row['cluster_size']}",
         "",
-        RULES.format(src=src, addr=f"0x{addr:08x}"),
+        RULES.format(src=src, addr=f"0x{addr:08x}", worker=worker,
+                     symfile=f"symbols/auto/f_{addr:08x}.txt"),
         "## Disassembly (reference only)",
         "```", asm, "```",
         "",
@@ -141,10 +147,13 @@ def attempts_by_addr(build):
     return out
 
 
-def check(ctx, addr):
+def check(ctx, addr, worker=None):
     """Run the matcher for one function; returns (status, output)."""
-    r = subprocess.run([sys.executable, str(ctx.root / "tools" / "c5d.py"), "match",
-                        "--addr", f"0x{addr:08x}", "-v"], capture_output=True, text=True, cwd=ctx.root)
+    cmd = [sys.executable, str(ctx.root / "tools" / "c5d.py")]
+    if worker:
+        cmd += ["--worker", worker]
+    cmd += ["match", "--addr", f"0x{addr:08x}", "-v"]
+    r = subprocess.run(cmd, capture_output=True, text=True, cwd=ctx.root)
     out = r.stdout + r.stderr
     status = "NONE"
     for line in out.splitlines():

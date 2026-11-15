@@ -1,0 +1,2 @@
+0x006aab90 ?Construct@VtblTripleObject@@QAEPAU1@XZ
+0x00a41714 ?g_vtable_00a41714@@3QBQAXB

@@ -98,14 +98,68 @@ def cmd_dump(args):
 # ---------------------------------------------------------------- match
 
 def load_symbols():
-    """symbols.txt -> {name: address}."""
+    """symbols.txt + symbols/**/*.txt -> {name: address}.
+
+    Workers each write their own symbols/auto/f_<addr>.txt so parallel tasks
+    never edit the same file."""
     syms = {}
-    for line in (ROOT / "symbols.txt").read_text().splitlines():
-        line = line.split("#", 1)[0].strip()
-        if line:
-            addr, name = line.split(None, 1)
-            syms[name.strip()] = int(addr, 16)
+    files = [ROOT / "symbols.txt"] + sorted((ROOT / "symbols").rglob("*.txt"))
+    for f in files:
+        if not f.exists():
+            continue
+        for line in f.read_text().splitlines():
+            line = line.split("#", 1)[0].strip()
+            if line:
+                addr, name = line.split(None, 1)
+                syms[name.strip()] = int(addr, 16)
     return syms
+
+
+# ---------------------------------------------------------------- workers
+
+WORKER = None            # set by --worker; isolates build output per worker
+CLAIMS = BUILD / "claims"
+
+
+def work_dir():
+    return BUILD / "work" / WORKER if WORKER else BUILD
+
+
+def claims():
+    """{address: worker} for functions currently being worked on."""
+    out = {}
+    if CLAIMS.exists():
+        for f in CLAIMS.glob("*.txt"):
+            out[int(f.stem, 16)] = f.read_text().strip()
+    return out
+
+
+def claim(addr, worker):
+    CLAIMS.mkdir(parents=True, exist_ok=True)
+    (CLAIMS / f"{addr:08x}.txt").write_text(worker)
+
+
+def release(addr):
+    p = CLAIMS / f"{addr:08x}.txt"
+    if p.exists():
+        p.unlink()
+
+
+def default_sources():
+    """All of src/, minus agent files other workers are still editing (a
+    half-written file must not break everyone else's LTCG link)."""
+    held = claims()
+    out = []
+    for p in sorted((ROOT / "src").rglob("*.cpp")):
+        if p.parent.name == "auto" and p.stem.startswith("f_"):
+            try:
+                owner = held.get(int(p.stem[2:], 16))
+            except ValueError:
+                owner = None
+            if owner and owner != WORKER:
+                continue
+        out.append(p)
+    return out
 
 
 def msvc_env():
@@ -118,12 +172,31 @@ def msvc_env():
     return env
 
 
+def flags_for(src, base):
+    """Apply per-file overrides: a line `// c5d-cflags: -/arch:SSE2 +/Od` in the
+    first 40 lines removes (-) or adds (+) flags. The exe was built with
+    different settings per source file (e.g. some without /arch:SSE2)."""
+    flags = list(base)
+    try:
+        head = Path(src).read_text(errors="replace").splitlines()[:40]
+    except OSError:
+        return flags
+    for line in head:
+        if "c5d-cflags:" in line:
+            for tok in line.split("c5d-cflags:", 1)[1].split():
+                if tok.startswith("-") and tok[1:] in flags:
+                    flags.remove(tok[1:])
+                elif tok.startswith("+"):
+                    flags.append(tok[1:])
+    return flags
+
+
 def compile_cpp(src, extra_flags=()):
     """Compile one .cpp to build/obj/<name>.obj; return the obj path."""
-    out_dir = BUILD / "obj"
+    out_dir = work_dir() / "obj"
     out_dir.mkdir(parents=True, exist_ok=True)
     obj = out_dir / (src.stem + ".obj")
-    cmd = [str(MSVC_CL), *CFG["cflags"], *extra_flags, f"/Fo{obj}", str(src)]
+    cmd = [str(MSVC_CL), *flags_for(src, CFG["cflags"]), *extra_flags, f"/Fo{obj}", str(src)]
     r = subprocess.run(cmd, capture_output=True, text=True, env=msvc_env())
     if r.returncode != 0:
         print(r.stdout + r.stderr)
@@ -249,7 +322,7 @@ def cmd_match(args):
     load_func_sizes()
     syms = load_symbols()
     image = PEImage(GAME_EXE)
-    sources = [Path(s) for s in args.sources] or sorted((ROOT / "src").rglob("*.cpp"))
+    sources = [Path(s) for s in args.sources] or default_sources()
     totals = {"MATCH": 0, "MATCH?": 0, "DIFF": 0, "ERROR": 0}
     results = {}
 
@@ -416,14 +489,17 @@ def task_context():
         symbols_by_addr={va: n for n, va in load_symbols().items()})
 
 
-def pick_tasks(ctx, n, tries, min_size=5):
+def pick_tasks(ctx, n, tries, min_size=5, max_size=None):
     import tasks
     tried = tasks.attempts_by_addr(BUILD)
     status = load_status()
+    held = claims()
     out = []
     for r in ctx.rows:
         a = int(r["entry"], 16)
         if status.get(a) == "MATCH" or int(r["pending_callees"]) or int(r["size"]) < min_size:
+            continue
+        if (max_size and int(r["size"]) > max_size) or a in held:
             continue
         if len(tried.get(a, [])) >= tries:
             continue
@@ -444,17 +520,23 @@ def cmd_task(args):
     import tasks
     ctx = task_context()
     if args.action == "next":
-        rows = pick_tasks(ctx, args.n, args.tries, args.min_size)
+        rows = pick_tasks(ctx, args.n, args.tries, args.min_size, args.max_size)
         prefetch_dumps([int(r["entry"], 16) for r in rows])
-        for r in rows:
-            path, src = tasks.write_bundle(ctx, r, ctx.by_addr, ctx.names, ctx.symbols_by_addr, ctx.imports)
-            print(f"{r['entry']}  {r['size']:>5}b  {r['conv']:<8} -> {path.relative_to(ROOT)}")
-    else:                                   # check
+        for i, r in enumerate(rows):
+            a = int(r["entry"], 16)
+            worker = f"{args.worker_prefix}{i + 1}" if args.worker_prefix else (WORKER or "w1")
+            claim(a, worker)
+            path, src = tasks.write_bundle(ctx, r, ctx.by_addr, ctx.names, ctx.symbols_by_addr,
+                                           ctx.imports, worker=worker)
+            print(f"{r['entry']}  {r['size']:>5}b  {r['conv']:<8} {worker:<5} -> {path.relative_to(ROOT)}")
+    elif args.action == "check":
         a = int(args.addr, 16)
-        status, out = tasks.check(ctx, a)
+        status, out = tasks.check(ctx, a, claims().get(a))
         tasks.log_attempt(BUILD, {"addr": f"0x{a:08x}", "status": status, "agent": "manual",
                                   "time": __import__("time").time()})
         print(out if args.verbose else status)
+    else:                                   # release
+        release(int(args.addr, 16))
     return 0
 
 
@@ -471,10 +553,11 @@ def cmd_agent(args):
     summary = []
     for r in rows:
         a = int(r["entry"], 16)
+        claim(a, WORKER or "w1")
         diff = None
         for t in range(args.tries):
             path, _src = tasks.write_bundle(ctx, r, ctx.by_addr, ctx.names, ctx.symbols_by_addr,
-                                            ctx.imports, last_diff=diff)
+                                            ctx.imports, last_diff=diff, worker=WORKER or "w1")
             t0 = time.time()
             try:
                 p = subprocess.run(agent_cmd, input=path.read_text(encoding="utf-8"), text=True,
@@ -482,7 +565,7 @@ def cmd_agent(args):
                 (path.parent / f"agent_{t}.log").write_text(p.stdout + p.stderr, encoding="utf-8")
             except subprocess.TimeoutExpired:
                 pass
-            status, diff = tasks.check(ctx, a)
+            status, diff = tasks.check(ctx, a, WORKER or "w1")
             tasks.log_attempt(BUILD, {"addr": r["entry"], "try": t, "status": status,
                                       "agent": agent_cmd[0], "seconds": round(time.time() - t0),
                                       "size": int(r["size"]), "time": time.time()})
@@ -544,11 +627,16 @@ class LinkCtx:
         self.cflags = [f for f in CFG["cflags"] if f != "/c"] + ["/c", *extra_flags]
         self.env = msvc_env()
         self.libpaths = [vc / "lib", vc.parent / "WinSDK" / "Lib"]
-        self.build = BUILD
+        self.build = work_dir()
+
+    def flags_for(self, src):
+        return flags_for(src, self.cflags)
 
 
 def main():
     p = argparse.ArgumentParser(prog="c5d")
+    p.add_argument("--worker", default=None,
+                   help="worker id: isolated build dir (build/work/<id>) so workers can run in parallel")
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("env", help="check the toolchain").set_defaults(fn=cmd_env)
     a = sub.add_parser("analyze", help="Ghidra headless analysis + function export")
@@ -574,11 +662,14 @@ def main():
     q.add_argument("--top", type=int, default=20)
     q.set_defaults(fn=cmd_queue)
     t = sub.add_parser("task", help="task bundles: `next` writes them, `check <addr>` verifies one")
-    t.add_argument("action", choices=["next", "check"])
+    t.add_argument("action", choices=["next", "check", "release"])
     t.add_argument("addr", nargs="?")
     t.add_argument("--n", type=int, default=5)
     t.add_argument("--tries", type=int, default=3)
     t.add_argument("--min-size", type=int, default=5)
+    t.add_argument("--max-size", type=int, default=None)
+    t.add_argument("--worker-prefix", default=None,
+                   help="claim each task for its own worker id (<prefix>1, <prefix>2, ...)")
     t.add_argument("-v", "--verbose", action="store_true")
     t.set_defaults(fn=cmd_task)
     ag = sub.add_parser("agent", help="run config.json agent_cmd over the next N tasks")
@@ -589,6 +680,8 @@ def main():
     ag.set_defaults(fn=cmd_agent)
     sub.add_parser("status", help="write PROGRESS.md").set_defaults(fn=cmd_status)
     args = p.parse_args()
+    global WORKER
+    WORKER = args.worker
     sys.exit(args.fn(args))
 
 

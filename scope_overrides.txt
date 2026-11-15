@@ -2,3 +2,8 @@
 # Use for library code the automatic rules miss (e.g. a statically linked
 # third-party library once identified). Categories other than "game" are
 # out of scope.
+
+# NVIDIA NVAPI static library: 387 generated wrappers, each resolving its entry
+# point by hashed id through nvapi_QueryInterface (pointer at 0x02de1ea8).
+# Built unoptimised. Found in the 2026-11-15 trial.
+0x008a88c0 0x008bb02a nvapi

@@ -1,0 +1,2 @@
+0x004f8e20 ?ReleaseAllSlots@SlotReleaser_004f8e20@@QAEXXZ
+0x02dd204c ?g_defaultSlotResource_02dd204c@@3PAXA

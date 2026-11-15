@@ -3,7 +3,7 @@
   "target_exe": "CivilizationV_DX11.exe",
   "ghidra_dir": "C:/Users/<you>/Desktop/ghidra_10.3.2_PUBLIC",
   "msvc_bin": "C:/Users/<you>/AppData/Local/Programs/Common/Microsoft/Visual C++ for Python/9.0/VC/bin",
-  "cflags": ["/nologo", "/c", "/O2", "/Ob1", "/Gy", "/MD", "/EHsc", "/GR", "/Zc:wchar_t"],
+  "cflags": ["/nologo", "/c", "/O2", "/Ob1", "/Gy", "/MD", "/EHsc", "/GR", "/Zc:wchar_t", "/arch:SSE2", "/fp:fast"],
   "ghidra_project_dir": "ghidra_proj",
   "ghidra_project_name": "civ5",
   "agent_cmd": []

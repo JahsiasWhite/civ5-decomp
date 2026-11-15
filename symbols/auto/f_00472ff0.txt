@@ -1,0 +1,2 @@
+0x00472ff0 ?PushFourNameStringsToLua@@YAXPAUlua_State@@PBUFourNameBlock@@@Z
+0x00923a1e _lua_pushlstring

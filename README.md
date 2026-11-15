@@ -56,11 +56,63 @@ git -C third_party/Community-Patch-DLL sparse-checkout set CvGameCoreDLLUtil
 Automated work goes in `src/auto/f_<address>.cpp`. Move it into a proper area
 folder once the class it belongs to is known.
 
+## Parallel workers
+
+Each worker passes `--worker <id>`, which gives it its own build folder
+(`build/work/<id>/`). `c5d task next --worker-prefix w` claims each task for its
+own worker (`build/claims/`). A worker writes only `src/auto/f_<addr>.cpp` and
+`symbols/auto/f_<addr>.txt`. `symbols.txt` plus every `symbols/**/*.txt` file are
+merged, so workers never edit the same file. LTCG links leave out files claimed
+by *other* workers, so a half-written file can't break anyone else's build.
+`c5d task release <addr>` drops a claim. Twenty workers ran at once in the trial without
+interfering.
+
+### Per-file compiler flags
+
+Firaxis's build used **different settings per source file**. Most code is
+`/arch:SSE2 /fp:fast` (the default in `config.json`), but some files (for example some Lua
+bindings) use x87 floating point, and the NVAPI library is unoptimised. Add a line in
+the first 40 lines of a source file to change its flags:
+
+```cpp
+// c5d-cflags: -/arch:SSE2 -/fp:fast      (remove flags)
+// c5d-cflags: +/Od                       (add flags)
+```
+
+## Trial: 20 functions, 20 parallel agents (2026-11-15)
+
+Each fresh agent saw only its `TASK.md` bundle. Functions were taken from the queue at
+20, 61 and about 202 bytes.
+
+| | Result |
+|---|---|
+| Tasks | 20 (6 small, 8 medium, 6 large) |
+| Matched | **18 of 20**. Of the 17 that turned out to be in scope, **16 MATCH and 1 DIFF (94%)**. The other 3 were NVAPI library code (2 matched); NVAPI is now out of scope and those files are dropped. |
+| Open DIFFs | `0x46b110`: the original has `add [mem],1` where we get `inc [mem]`; cause unknown. NVAPI `0x8ae260`: unoptimised stack-slot order. |
+| Time per task | 29 s to 285 s, median about 90 s |
+| Tokens per task | 55k to 87k, about 63k on average (about 1.3M for the trial) |
+| Iterations | 1 to 12 matcher runs; most matched in 1 or 2 |
+
+Before the fixes below, 5 of those matches were DIFFs caused by the harness, not
+by the agents' C++.
+
+What the trial found and fixed:
+- **`/arch:SSE2 /fp:fast`** is the project default (found independently by two agents).
+- **Mixed per-file flags** (an x87 Lua binding), now supported with `c5d-cflags`.
+- **Switch jump tables:** the compiler appends them after the code. The matcher now
+  checks them separately, as offsets from the function start, and resolves
+  references inside a function relative to that function.
+- **NVIDIA NVAPI** is statically linked: 387 wrappers at `0x8a88c0–0x8bb02a`, now
+  out of scope.
+- **Review flag:** one constructor (`0x6aab90`) was matched by writing the vtable
+  pointer through a declared array instead of a real virtual class. The bytes match, but
+  the source should be made idiomatic once its class is known.
+
 ## Findings so far
 
-- **Scope:** Ghidra finds 20,152 functions. **19,562 (4.60 MB) are game code
-  and in scope.** Out of scope: 231 compiler EH funclets, 211 import stubs,
-  84 thunks, 43 CRT objects and 21 other library functions. The CRT (`msvcr90`), C++
+- **Scope:** Ghidra finds 20,152 functions. **19,175 (4.53 MB) are game code
+  and in scope.** Out of scope: 387 NVAPI wrappers, 231 compiler EH funclets, 211
+  import stubs, 84 thunks, 43 CRT objects and 21 other library functions. The CRT (`msvcr90`), C++
   library (`msvcp90`), Lua, Miles, zlib, Steam and the game database and
   localisation code are all separate DLLs. ATL string templates are header code,
   so they stay in scope.
@@ -77,7 +129,8 @@ folder once the class it belongs to is known.
   limited to functions marked `inline` (`/Ob1`). Evidence: `FSmallObjectAllocator::IsSmallBlock`
   (`this` in EDI, `p` in EAX, `ret 4`) matches only when linked with `/LTCG`,
   and only with `/Ob1`. With `/Ob2` the linker inlines it into its single caller.
-- **Compiler/flags:** `cl 15.00.30729.01 /O2 /Ob1 /Gy /MD /EHsc /GR` (see `config.json`).
+- **Compiler/flags:** `cl 15.00.30729.01 /O2 /Ob1 /Gy /MD /EHsc /GR /arch:SSE2 /fp:fast`
+  (see `config.json`), with per-file exceptions (see "Per-file compiler flags").
 - **Inline helpers live in headers:** `FSBAHasAllocatorForSize` contains an
   inlined copy of the lookup that `0x81c360` performs out of line. Under `/Ob1`, that
   means an `inline` header helper (`FindAllocatorForSize`) used by both.
