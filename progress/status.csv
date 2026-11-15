@@ -97,4 +97,12 @@ address,symbol,status,bytes,source,since
 0x008eb1d0,?GetCurrentIfAny@Holder008eb1d0@@QAEPAXXZ,MATCH,30,src/auto/f_008eb1d0.cpp,2026-11-15
 0x008eb960,?FillUInt32Range@@YAXPAI0PBI@Z,MATCH,30,src/auto/f_008eb960.cpp,2026-11-15
 0x008ff070,?AlwaysTrue_008ff070@@YG_NH@Z,MATCH,5,src/auto/f_008ff070.cpp,2026-11-15
+0x0091f9c0,?GetGlobal_00ca18c0@@YAPAHXZ,MATCH,6,src/auto/f_0091f9c0.cpp,2026-11-15
 0x00928d60,?CtlObject_HandleMessage@@YAIPAUCtlObject@@HII@Z,MATCH,203,src/auto/f_00928d60.cpp,2026-11-15
+0x00929d20,?GetGlobal_00ca19b0@@YAPAHXZ,MATCH,6,src/auto/f_00929d20.cpp,2026-11-15
+0x0092bd50,?GetConstant_0092bd50@@YAHXZ,MATCH,6,src/auto/f_0092bd50.cpp,2026-11-15
+0x0092fb30,?GetGlobal_00ca2658@@YAPAHXZ,MATCH,6,src/auto/f_0092fb30.cpp,2026-11-15
+0x00932de0,?GetGlobal_00ca26d0@@YAPAHXZ,MATCH,6,src/auto/f_00932de0.cpp,2026-11-15
+0x00934550,?GetGlobal_00ca27b0@@YAPAHXZ,MATCH,6,src/auto/f_00934550.cpp,2026-11-15
+0x0093aff0,?GetGlobal_00ca37a0@@YAPAHXZ,MATCH,6,src/auto/f_0093aff0.cpp,2026-11-15
+0x0093be40,?GetConst_00b468b0@@YAPBHXZ,MATCH,6,src/auto/f_0093be40.cpp,2026-11-15
