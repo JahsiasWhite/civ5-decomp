@@ -230,7 +230,9 @@ def make_handler(cfg, db):
                 if path == "/api/report":
                     try:
                         db.report(u["id"], parse_addr(body.get("addr")), str(body.get("status", "")),
-                                  str(body.get("detail", "")))
+                                  str(body.get("detail", "")), str(body.get("model", "")),
+                                  body.get("tokens_in", 0), body.get("tokens_out", 0),
+                                  body.get("tokens_cached", 0), body.get("tries", 0))
                     except PermissionError as e:
                         raise ApiError(403, str(e))
                     except ValueError as e:
@@ -301,12 +303,29 @@ def make_handler(cfg, db):
     return Handler
 
 
+class Server(ThreadingHTTPServer):
+    # http.server sets SO_REUSEADDR, which on Windows lets a second process bind the
+    # same port silently (and could let another local process hijack it). Use
+    # exclusive binding there; elsewhere SO_REUSEADDR only affects TIME_WAIT.
+    allow_reuse_address = os.name != "nt"
+    daemon_threads = True
+
+    def server_bind(self):
+        import socket
+        if os.name == "nt" and hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
+
 def main():
     cfg = Config()
     db_path = Path(env("C5D_DB", HERE / "data" / "c5d.sqlite"))
     db_path.parent.mkdir(parents=True, exist_ok=True)
     db = DB(db_path)
-    srv = ThreadingHTTPServer((cfg.host, cfg.port), make_handler(cfg, db))
+    try:
+        srv = Server((cfg.host, cfg.port), make_handler(cfg, db))
+    except OSError as e:
+        raise SystemExit(f"cannot bind {cfg.host}:{cfg.port}: {e} (is another server already running?)")
     print(f"c5d server on http://{cfg.host}:{cfg.port}  (db: {db_path})"
           + ("  [DEV AUTH ON]" if cfg.dev_auth else ""))
     try:

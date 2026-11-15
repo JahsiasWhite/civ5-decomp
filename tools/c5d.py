@@ -662,7 +662,10 @@ def cmd_remote(args):
         if status not in ("MATCH", "DIFF"):
             print(out)
             sys.exit(f"local check gave {status}; not reporting (fix the build first)")
-        r.call("POST", "/api/report", {"addr": f"0x{a:08x}", "status": status})
+        model = args.model or remote.load_local().get("model", "")
+        r.call("POST", "/api/report", {"addr": f"0x{a:08x}", "status": status, "model": model,
+                                       "tokens_in": args.tokens_in, "tokens_out": args.tokens_out,
+                                       "tokens_cached": args.tokens_cached, "tries": args.tries})
         release(a)
         print(f"0x{a:08x}: reported {status}" + ("; it counts once the nightly verify confirms it"
                                                  if status == "MATCH" else ""))
@@ -754,6 +757,12 @@ def main():
     rm.add_argument("--worker-prefix", default="w")
     rm.add_argument("--min-size", type=int, default=0)
     rm.add_argument("--max-size", type=int, default=None)
+    rm.add_argument("--model", default=None,
+                    help="model/tool that wrote it (default: \"model\" in config.local.json)")
+    rm.add_argument("--tokens-in", type=int, default=0)
+    rm.add_argument("--tokens-out", type=int, default=0)
+    rm.add_argument("--tokens-cached", type=int, default=0)
+    rm.add_argument("--tries", type=int, default=0, help="matcher iterations used")
     rm.set_defaults(fn=cmd_remote)
     args = p.parse_args()
     global WORKER

@@ -7,9 +7,10 @@
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<header class="site"><div class="wrap">
-  <a class="brand" href="/">civ5<b>decomp</b></a>
-  <nav class="site"><a href="/">Progress</a><a href="/how" aria-current="page">Contribute</a><a href="/legal">Terms</a><a href="/account">Account</a></nav>
+<header class="topbar"><div class="wrap">
+  <a class="brand" href="/"><span class="mark" aria-hidden="true"></span>civ5<b>decomp</b></a>
+  <nav class="sections" aria-label="Report sections"><a href="/#stat">Stat</a><a href="/#board">Board</a><a href="/#trend">Trend</a><a href="/#squad">Squad</a><a href="/#map">Map</a><a href="/#cost">Cost</a><a href="/#log">Log</a></nav>
+  <nav class="pages" aria-label="Pages"><a href="/how" aria-current="page">How</a><a href="/legal">Legal</a><a href="/account">Account</a></nav>
 </div></header>
 
 <main class="wrap prose">
@@ -41,7 +42,12 @@ python tools/c5d.py queue</pre></li>
 <pre>python tools/c5d.py remote claim --n 3          # reserves 3 functions (4 h lease)
 # each one gets build/tasks/&lt;addr&gt;/TASK.md with everything you need
 python tools/c5d.py --worker w1 match --addr 0x00540240 -v
-python tools/c5d.py remote report 0x00540240    # re-checks locally, then reports</pre>
+python tools/c5d.py remote report 0x00540240 --model claude-opus-5-5 \
+    --tokens-in 41000 --tokens-out 2600 --tokens-cached 12000 --tries 2
+                                                 # re-checks locally, then reports</pre>
+  <p>Say which model or tool wrote the function (set a default with <code>"model"</code> in
+  <code>config.local.json</code>) and, if you have them, the tokens it used. That's what feeds the
+  Squad and Cost sections of the report.</p>
   <p>To let an agent do the work, point it at a <code>TASK.md</code> (or set
   <code>agent_cmd</code> in <code>config.json</code> and run <code>c5d agent</code>). Workers run in parallel
   safely: each uses its own <code>--worker</code> build folder.</p>

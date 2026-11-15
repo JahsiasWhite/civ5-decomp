@@ -63,7 +63,53 @@ CREATE TABLE IF NOT EXISTS daily (
     matched     INTEGER NOT NULL,
     matched_bytes INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS runs (                 -- maintainer verify ("nightly") runs
+    id          INTEGER PRIMARY KEY,
+    ts          REAL NOT NULL,
+    kept        INTEGER NOT NULL,                 -- newly confirmed functions
+    kept_bytes  INTEGER NOT NULL,
+    rejected    INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS spend (                -- hand-entered cost ledger
+    id          INTEGER PRIMARY KEY,
+    day         TEXT NOT NULL,
+    source      TEXT NOT NULL,
+    dollars     REAL NOT NULL,
+    note        TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS milestones (
+    id          INTEGER PRIMARY KEY,
+    day         TEXT NOT NULL,
+    text        TEXT NOT NULL
+);
 """
+
+# columns added after the first release: (table, column, declaration)
+MIGRATIONS = [
+    ("functions", "model", "TEXT NOT NULL DEFAULT ''"),          # model/tool credited with the match
+    ("functions", "matched_day", "TEXT"),                        # YYYY-MM-DD (UTC) first verified
+    ("functions", "tried", "INTEGER NOT NULL DEFAULT 0"),        # ever attempted
+    ("events", "model", "TEXT NOT NULL DEFAULT ''"),
+    ("events", "tokens_in", "INTEGER NOT NULL DEFAULT 0"),
+    ("events", "tokens_out", "INTEGER NOT NULL DEFAULT 0"),
+    ("events", "tokens_cached", "INTEGER NOT NULL DEFAULT 0"),
+    ("events", "tries", "INTEGER NOT NULL DEFAULT 0"),
+]
+
+SIZE_TIERS = [(0, 64, "< 64 B"), (64, 256, "64–255 B"), (256, 1024, "256 B–1 KB"),
+              (1024, 4096, "1–4 KB"), (4096, 10 ** 9, "≥ 4 KB")]
+
+
+def utc_day(ts=None):
+    return time.strftime("%Y-%m-%d", time.gmtime(ts if ts is not None else time.time()))
+
+
+def clean_model(m):
+    m = "".join(c for c in str(m or "") if c.isalnum() or c in "-._:/ ").strip()[:48]
+    return m or "unspecified"
 
 CLAIM_SECONDS = 4 * 3600          # a claim lapses if not reported within 4 h
 MAX_ACTIVE_CLAIMS = 25            # per user
@@ -82,6 +128,10 @@ class DB:
         self.conn.execute("PRAGMA journal_mode=WAL")
         self.conn.execute("PRAGMA foreign_keys=ON")
         self.conn.executescript(SCHEMA)
+        for table, col, decl in MIGRATIONS:
+            have = {r["name"] for r in self.q(f"PRAGMA table_info({table})")}
+            if col not in have:
+                self.conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")
 
     # ------------------------------------------------------------ helpers
     def q(self, sql, args=()):
@@ -107,9 +157,13 @@ class DB:
                     db.lock.release()
         return _Tx()
 
-    def log(self, kind, user_id=None, addr=None, status="", detail=""):
-        self.conn.execute("INSERT INTO events(ts,user_id,addr,kind,status,detail) VALUES (?,?,?,?,?,?)",
-                          (time.time(), user_id, addr, kind, status, detail))
+    def log(self, kind, user_id=None, addr=None, status="", detail="", model="",
+            tokens_in=0, tokens_out=0, tokens_cached=0, tries=0, ts=None):
+        self.conn.execute(
+            "INSERT INTO events(ts,user_id,addr,kind,status,detail,model,tokens_in,tokens_out,"
+            "tokens_cached,tries) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            (ts or time.time(), user_id, addr, kind, status, detail, model,
+             tokens_in, tokens_out, tokens_cached, tries))
 
     # ------------------------------------------------------------ users
     def upsert_user(self, login, display=None):
@@ -195,11 +249,15 @@ class DB:
             "JOIN functions f ON f.addr=c.addr WHERE c.user_id=? ORDER BY c.claimed", (user_id,))]
 
     # ------------------------------------------------------------ results
-    def report(self, user_id, addr, status, detail=""):
-        """Contributor reports a local result. MATCH becomes 'reported' until verified."""
+    def report(self, user_id, addr, status, detail="", model="", tokens_in=0, tokens_out=0,
+               tokens_cached=0, tries=0):
+        """Contributor reports a local result. MATCH becomes 'reported' until verified.
+        model/tokens describe what produced it (for the per-model and cost panels)."""
         status = status.upper()
         if status not in ("MATCH", "DIFF"):
             raise ValueError("status must be MATCH or DIFF")
+        nums = [max(0, min(int(x or 0), 10 ** 10)) for x in (tokens_in, tokens_out, tokens_cached, tries)]
+        model = clean_model(model)
         with self.tx():
             claim = self.one("SELECT user_id FROM claims WHERE addr=?", (addr,))
             if not claim or claim["user_id"] != user_id:
@@ -207,35 +265,54 @@ class DB:
             f = self.one("SELECT status FROM functions WHERE addr=?", (addr,))
             if f["status"] != "matched":
                 new = "reported" if status == "MATCH" else "diff"
-                self.conn.execute("UPDATE functions SET status=?, by_user=?, updated=? WHERE addr=?",
-                                  (new, user_id if new == "reported" else None, time.time(), addr))
+                self.conn.execute(
+                    "UPDATE functions SET status=?, by_user=?, model=?, tried=1, updated=? WHERE addr=?",
+                    (new, user_id if new == "reported" else None, model if new == "reported" else "",
+                     time.time(), addr))
             self.conn.execute("DELETE FROM claims WHERE addr=?", (addr,))
-            self.log("report", user_id, addr, status, detail[:500])
+            self.log("report", user_id, addr, status, detail[:500], model, *nums)
 
-    def apply_verified(self, statuses):
+    def apply_verified(self, statuses, default_model="maintainer"):
         """Maintainer verify: {addr: 'MATCH'|'DIFF'|...} from a full local match run."""
-        changed = 0
+        changed = kept = kept_bytes = rejected = 0
+        today = utc_day()
         with self.tx():
             for addr, st in statuses.items():
-                f = self.one("SELECT status, by_user FROM functions WHERE addr=?", (addr,))
+                f = self.one("SELECT status, by_user, model, size FROM functions WHERE addr=?", (addr,))
                 if not f:
                     continue
                 new = "matched" if st == "MATCH" else ("diff" if st in ("DIFF", "MATCH?") else f["status"])
                 if new == "matched" and f["status"] != "matched":
-                    self.conn.execute("UPDATE functions SET status='matched', updated=? WHERE addr=?",
-                                      (time.time(), addr))
-                    self.log("verify", f["by_user"], addr, "MATCH")
+                    self.conn.execute(
+                        "UPDATE functions SET status='matched', tried=1, matched_day=?, model=?, updated=? "
+                        "WHERE addr=?", (today, f["model"] or default_model, time.time(), addr))
+                    self.log("verify", f["by_user"], addr, "MATCH", model=f["model"] or default_model)
                     changed += 1
-                elif new == "diff" and f["status"] == "reported":
-                    self.conn.execute("UPDATE functions SET status='diff', updated=? WHERE addr=?",
+                    kept += 1
+                    kept_bytes += f["size"]
+                elif new == "diff" and f["status"] in ("reported", "todo"):
+                    self.conn.execute("UPDATE functions SET status='diff', tried=1, updated=? WHERE addr=?",
                                       (time.time(), addr))
-                    self.log("verify", f["by_user"], addr, "DIFF", "reported match failed verification")
+                    if f["status"] == "reported":
+                        self.log("verify", f["by_user"], addr, "DIFF", "reported match failed verification")
+                        rejected += 1
                     changed += 1
-            day = time.strftime("%Y-%m-%d")
             m = self.one("SELECT COUNT(*) c, COALESCE(SUM(size),0) b FROM functions WHERE status='matched'")
             self.conn.execute("INSERT OR REPLACE INTO daily(day,matched,matched_bytes) VALUES (?,?,?)",
-                              (day, m["c"], m["b"]))
+                              (today, m["c"], m["b"]))
+            self.conn.execute("INSERT INTO runs(ts,kept,kept_bytes,rejected) VALUES (?,?,?,?)",
+                              (time.time(), kept, kept_bytes, rejected))
         return changed
+
+    # ------------------------------------------------------------ ledger
+    def add_spend(self, day, source, dollars, note=""):
+        with self.tx():
+            self.conn.execute("INSERT INTO spend(day,source,dollars,note) VALUES (?,?,?,?)",
+                              (day, clean_model(source), float(dollars), note[:200]))
+
+    def add_milestone(self, day, text):
+        with self.tx():
+            self.conn.execute("INSERT INTO milestones(day,text) VALUES (?,?)", (day, text[:300]))
 
     # ------------------------------------------------------------ import
     def import_functions(self, rows):
@@ -252,32 +329,97 @@ class DB:
 
     # ------------------------------------------------------------ stats
     def stats(self):
+        """Everything the dashboard shows. Days are UTC."""
+        now = time.time()
+        today = utc_day(now)
         tot = self.one("SELECT COUNT(*) c, COALESCE(SUM(size),0) b FROM functions")
         by = {r["status"]: (r["c"], r["b"]) for r in self.q(
             "SELECT status, COUNT(*) c, COALESCE(SUM(size),0) b FROM functions GROUP BY status")}
+        matched, matched_b = by.get("matched", (0, 0))
         claimed = self.one("SELECT COUNT(*) c FROM claims")["c"]
-        buckets = []
-        for lo, hi, label in [(0, 64, "< 64 B"), (64, 256, "64–255 B"), (256, 1024, "256 B–1 KB"),
-                              (1024, 4096, "1–4 KB"), (4096, 10 ** 9, "≥ 4 KB")]:
-            r = self.one("SELECT COUNT(*) c, SUM(status='matched') m FROM functions WHERE size>=? AND size<?",
-                         (lo, hi))
-            buckets.append({"label": label, "total": r["c"], "matched": r["m"] or 0})
+        tdy = self.one("SELECT COUNT(*) c, COALESCE(SUM(size),0) b FROM functions "
+                       "WHERE status='matched' AND matched_day=?", (today,))
+        tok = self.one("SELECT COALESCE(SUM(tokens_in),0) i, COALESCE(SUM(tokens_out),0) o, "
+                       "COALESCE(SUM(tokens_cached),0) c FROM events WHERE kind='report'")
+        models_on_board = self.one("SELECT COUNT(DISTINCT model) c FROM functions "
+                                   "WHERE status='matched' AND model<>''")["c"]
+
+        # ---- map: what is left, per size tier
+        tiers = []
+        for lo, hi, label in SIZE_TIERS:
+            r = self.one(
+                "SELECT COUNT(*) total, SUM(status='matched') matched, "
+                "SUM(status IN ('todo','diff','reported') AND tried=0) untried, "
+                "SUM(status IN ('diff','reported') OR (status='todo' AND tried=1)) open, "
+                "COALESCE(SUM(size),0) bytes, COALESCE(SUM(CASE WHEN status='matched' THEN size END),0) mbytes "
+                "FROM functions WHERE size>=? AND size<?", (lo, hi))
+            tiers.append({"label": label, "total": r["total"], "matched": r["matched"] or 0,
+                          "untried": r["untried"] or 0, "open": r["open"] or 0,
+                          "bytes": r["bytes"], "matched_bytes": r["mbytes"]})
+
+        # ---- leaderboard (verified matches only)
         board = [dict(r) for r in self.q(
             "SELECT CASE WHEN u.display='' THEN 'anonymous' ELSE u.display END who, "
-            "COUNT(*) functions, SUM(f.size) bytes FROM functions f JOIN users u ON u.id=f.by_user "
-            "WHERE f.status='matched' GROUP BY u.id ORDER BY bytes DESC LIMIT 25")]
-        recent = [dict(r) for r in self.q(
-            "SELECT e.ts, e.addr, e.status, f.name, f.size, "
-            "CASE WHEN u.display='' OR u.display IS NULL THEN 'anonymous' ELSE u.display END who "
-            "FROM events e JOIN functions f ON f.addr=e.addr LEFT JOIN users u ON u.id=e.user_id "
-            "WHERE e.kind='verify' AND e.status='MATCH' ORDER BY e.ts DESC LIMIT 20")]
-        trend = [dict(r) for r in self.q("SELECT day, matched, matched_bytes FROM daily ORDER BY day")]
+            "COUNT(*) functions, SUM(f.size) bytes, "
+            "(SELECT COUNT(*) FROM events e WHERE e.user_id=u.id AND e.kind='report') submissions, "
+            "(SELECT MIN(e.ts) FROM events e WHERE e.user_id=u.id) since "
+            "FROM functions f JOIN users u ON u.id=f.by_user WHERE f.status='matched' "
+            "GROUP BY u.id ORDER BY bytes DESC LIMIT 50")]
+
+        # ---- trend: cumulative by first-matched day, and new bytes per day per model
+        per_day = self.q("SELECT matched_day d, COUNT(*) c, SUM(size) b FROM functions "
+                         "WHERE status='matched' AND matched_day IS NOT NULL GROUP BY d ORDER BY d")
+        cum_f = cum_b = 0
+        trend = []
+        for r in per_day:
+            cum_f += r["c"]
+            cum_b += r["b"]
+            trend.append({"day": r["d"], "functions": cum_f, "bytes": cum_b, "new_bytes": r["b"]})
+        by_model_day = [dict(r) for r in self.q(
+            "SELECT matched_day day, model, SUM(size) bytes FROM functions "
+            "WHERE status='matched' AND matched_day IS NOT NULL GROUP BY day, model ORDER BY day")]
+
+        # ---- squad: matches by the model that wrote them
+        def squad(where="", args=()):
+            rows = self.q("SELECT CASE WHEN model='' THEN 'unspecified' ELSE model END model, COUNT(*) functions, "
+                          "SUM(size) bytes FROM functions WHERE status='matched' " + where +
+                          " GROUP BY 1 ORDER BY bytes DESC", args)
+            total = sum(r["bytes"] for r in rows) or 1
+            return [{**dict(r), "share": r["bytes"] / total} for r in rows]
+        day_ago = utc_day(now - 86400)
+        squad_all = squad()
+        squad_24h = squad("AND matched_day>=?", (day_ago,))
+        tries = [dict(r) for r in self.q(
+            "SELECT CASE WHEN model='' THEN 'unspecified' ELSE model END model, COUNT(*) reports, "
+            "SUM(status='MATCH') matches, SUM(tries) tries FROM events WHERE kind='report' "
+            "GROUP BY 1 ORDER BY reports DESC")]
+        runs = [{"day": utc_day(r["ts"]), "kept": r["kept"], "kept_bytes": r["kept_bytes"],
+                 "rejected": r["rejected"]} for r in self.q(
+            "SELECT * FROM runs ORDER BY ts DESC LIMIT 14")]
+
+        # ---- cost
+        ledger = [dict(r) for r in self.q(
+            "SELECT CASE WHEN model='' THEN 'unspecified' ELSE model END source, SUM(tokens_in) input, "
+            "SUM(tokens_out) output, SUM(tokens_cached) cached FROM events WHERE kind='report' "
+            "GROUP BY 1 HAVING SUM(tokens_in)+SUM(tokens_out)+SUM(tokens_cached)>0 ORDER BY 2 DESC")]
+        spend = [dict(r) for r in self.q("SELECT day, source, dollars, note FROM spend ORDER BY day DESC")]
+
         return {
+            "updated": now,
             "functions": tot["c"], "bytes": tot["b"],
-            "matched": by.get("matched", (0, 0))[0], "matched_bytes": by.get("matched", (0, 0))[1],
+            "matched": matched, "matched_bytes": matched_b,
+            "todo": tot["c"] - matched, "todo_bytes": tot["b"] - matched_b,
+            "matched_today": tdy["c"], "matched_today_bytes": tdy["b"],
             "reported": by.get("reported", (0, 0))[0], "diff": by.get("diff", (0, 0))[0],
-            "claimed": claimed, "ready": self.one(
-                "SELECT COUNT(*) c FROM functions WHERE ready=1 AND status IN ('todo','diff')")["c"],
-            "buckets": buckets, "leaderboard": board, "recent": recent, "trend": trend,
+            "claimed": claimed,
+            "ready": self.one("SELECT COUNT(*) c FROM functions WHERE ready=1 AND status IN ('todo','diff')")["c"],
             "contributors": self.one("SELECT COUNT(*) c FROM users WHERE accepted_terms IS NOT NULL")["c"],
+            "models_on_board": models_on_board,
+            "tokens": {"input": tok["i"], "output": tok["o"], "cached": tok["c"]},
+            "tiers": tiers, "leaderboard": board,
+            "trend": trend, "trend_by_model": by_model_day,
+            "squad": {"all": squad_all, "day": squad_24h, "tries": tries, "runs": runs},
+            "cost": {"ledger": ledger, "spend": spend,
+                     "total_dollars": sum(s["dollars"] for s in spend)},
+            "log": [dict(r) for r in self.q("SELECT day, text FROM milestones ORDER BY day DESC, id DESC")],
         }

@@ -58,8 +58,29 @@ def cmd_token(db, args):
 
 def cmd_stats(db, _args):
     s = db.stats()
-    s.pop("recent")
+    for k in ("tiers", "trend_by_model", "leaderboard"):
+        s.pop(k)
     print(json.dumps(s, indent=2))
+
+
+def cmd_spend(db, args):
+    db.add_spend(args.day, args.source, args.dollars, args.note)
+    print("added")
+
+
+def cmd_milestone(db, args):
+    db.add_milestone(args.day, args.text)
+    print("added")
+
+
+def cmd_credit(db, args):
+    """Back-fill which model/tool wrote already-matched functions (and when)."""
+    addrs = [int(a, 16) for a in args.addr]
+    with db.tx():
+        for a in addrs:
+            db.conn.execute("UPDATE functions SET model=?, matched_day=COALESCE(?, matched_day) "
+                            "WHERE addr=? AND status='matched'", (args.model, args.day, a))
+    print(f"credited {len(addrs)} function(s) to {args.model}")
 
 
 def main():
@@ -77,6 +98,21 @@ def main():
     t.add_argument("--display", default=None)
     t.set_defaults(fn=cmd_token)
     sub.add_parser("stats").set_defaults(fn=cmd_stats)
+    sp = sub.add_parser("spend", help="add a cost ledger entry")
+    sp.add_argument("day")
+    sp.add_argument("source")
+    sp.add_argument("dollars", type=float)
+    sp.add_argument("--note", default="")
+    sp.set_defaults(fn=cmd_spend)
+    ms = sub.add_parser("milestone", help="add a milestone to the log")
+    ms.add_argument("day")
+    ms.add_argument("text")
+    ms.set_defaults(fn=cmd_milestone)
+    cr = sub.add_parser("credit", help="set the model credited for matched functions")
+    cr.add_argument("model")
+    cr.add_argument("addr", nargs="+")
+    cr.add_argument("--day", default=None, help="matched day YYYY-MM-DD")
+    cr.set_defaults(fn=cmd_credit)
     args = p.parse_args()
     args.fn(open_db(), args)
 

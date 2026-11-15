@@ -28,7 +28,7 @@ def srv(tmp_path, monkeypatch):
          "cluster": 0x401000 + i * 0x10, "ready": 1 if i < 8 else 0, "queue_pos": i}
         for i in range(10)])
     cfg = appmod.Config()
-    httpd = ThreadingHTTPServer(("127.0.0.1", 0), appmod.make_handler(cfg, db))
+    httpd = appmod.Server(("127.0.0.1", 0), appmod.make_handler(cfg, db))
     t = threading.Thread(target=httpd.serve_forever, daemon=True)
     t.start()
     yield f"http://127.0.0.1:{httpd.server_address[1]}", db
@@ -142,17 +142,33 @@ def test_report_verify_flow(srv):
     req(base, "POST", "/api/claim", {"n": 2}, token=a)
     # only the claim holder can report
     assert req(base, "POST", "/api/report", {"addr": "0x00401000", "status": "MATCH"}, token=b)[0] == 403
-    assert req(base, "POST", "/api/report", {"addr": "0x00401000", "status": "MATCH"}, token=a)[0] == 200
-    assert req(base, "POST", "/api/report", {"addr": "0x00401010", "status": "MATCH"}, token=a)[0] == 200
+    assert req(base, "POST", "/api/report", {"addr": "0x00401000", "status": "MATCH", "model": "model-a",
+                                             "tokens_in": 1000, "tokens_out": 200, "tokens_cached": 5000,
+                                             "tries": 2}, token=a)[0] == 200
+    assert req(base, "POST", "/api/report", {"addr": "0x00401010", "status": "MATCH", "model": "model-b",
+                                             "tokens_in": 10}, token=a)[0] == 200
     s = req(base, "GET", "/api/stats")[1]
     assert s["reported"] == 2 and s["matched"] == 0 and s["claimed"] == 0
+    assert s["tokens"] == {"input": 1010, "output": 200, "cached": 5000}
     # maintainer verify: one confirmed, one fails
     db.apply_verified({0x401000: "MATCH", 0x401010: "DIFF"})
     s = req(base, "GET", "/api/stats")[1]
     assert s["matched"] == 1 and s["reported"] == 0 and s["diff"] == 1
-    assert s["leaderboard"][0]["who"] == "alice" and s["leaderboard"][0]["functions"] == 1
-    assert s["recent"][0]["addr"] == 0x401000
-    assert len(s["trend"]) == 1
+    assert s["matched_today"] == 1 and s["models_on_board"] == 1
+    lb = s["leaderboard"][0]
+    assert lb["who"] == "alice" and lb["functions"] == 1 and lb["submissions"] == 2
+    assert s["squad"]["all"][0]["model"] == "model-a" and s["squad"]["all"][0]["share"] == 1
+    assert {t["model"]: t["matches"] for t in s["squad"]["tries"]} == {"model-a": 1, "model-b": 1}
+    assert s["squad"]["runs"][0]["kept"] == 1 and s["squad"]["runs"][0]["rejected"] == 1
+    assert len(s["trend"]) == 1 and s["trend"][0]["functions"] == 1
+    assert s["trend_by_model"][0]["model"] == "model-a"
+    tier = s["tiers"][0]
+    assert tier["matched"] == 1 and tier["open"] == 1 and tier["untried"] == 8
+    assert {r["source"] for r in s["cost"]["ledger"]} == {"model-a", "model-b"}
+    db.add_spend("2026-11-15", "model-a", 12.5, "test")
+    db.add_milestone("2026-11-15", "first verified match")
+    s = req(base, "GET", "/api/stats")[1]
+    assert s["cost"]["total_dollars"] == 12.5 and s["log"][0]["text"] == "first verified match"
     # matched functions can't be claimed again; failed ones go back in the pool
     assert req(base, "POST", "/api/claim", {"addr": "0x00401000"}, token=b)[0] == 409
     assert req(base, "POST", "/api/claim", {"addr": "0x00401010"}, token=b)[0] == 200
@@ -205,6 +221,14 @@ def test_dev_login_session_cookie(srv):
     assert code == 200 and me["login"] == "dev:carol"
     # tampered cookie is rejected
     assert req(base, "GET", "/api/me", cookie=cookie[:-1] + ("0" if cookie[-1] != "0" else "1"))[0] == 401
+
+
+def test_port_cannot_be_bound_twice(srv):
+    base, _ = srv
+    import app as appmod
+    port = int(base.rsplit(":", 1)[1])
+    with pytest.raises(OSError):
+        appmod.Server(("127.0.0.1", port), appmod.make_handler(appmod.Config(), None))
 
 
 def test_dev_auth_refused_on_public_bind(monkeypatch):
