@@ -34,10 +34,15 @@ address,symbol,status,bytes,source,since
 0x00734b70,?TreeMin_00734b70@@YAPAUTreeNode_00734b70@@PAU1@@Z,MATCH,30,src/auto/f_00734b70.cpp,2026-11-15
 0x0075fd30,?FillDwordRange@@YAXPAI0ABI@Z,MATCH,30,src/auto/f_0075fd30.cpp,2026-11-15
 0x00780eb0,??_9VCallSlot54@@$BFE@AE,MATCH,5,src/auto/f_00780eb0.cpp,2026-11-15
+0x00788490,?FormatBuffer256@@YAXPADPBDZZ,MATCH,30,src/auto/f_00788490.cpp,2026-11-15
 0x0078f0b0,?DoTurn@CvEngineUtilityImpl@@QAEXXZ,MATCH,1,src/auto/f_0078f0b0.cpp,2026-11-15
 0x007901d0,??0ZeroedRecord_007901d0@@QAE@XZ,MATCH,20,src/auto/f_007901d0.cpp,2026-11-15
+0x0079fd50,?IsSubObjectState9_0079fd50@@YA_NXZ,MATCH,30,src/auto/f_0079fd50.cpp,2026-11-15
 0x007c3940,?NoOp_007c3940@@YAXXZ,MATCH,1,src/auto/f_007c3940.cpp,2026-11-15
+0x007ca8c0,?SetTriple40@@YAXPAUTriple40Holder@@HHH@Z,MATCH,30,src/auto/f_007ca8c0.cpp,2026-11-15
 0x007cccf0,?Unk_007cccf0@@YAPAXXZ,DIFF,67,src/fsba/FMallocCallers.cpp,2026-11-14
+0x007d29a0,?Reset@BoundCallbackReset@@QAEXH@Z,MATCH,30,src/auto/f_007d29a0.cpp,2026-11-15
+0x007d32d0,?ProcessHeapAllocCallback@@YAPAXPAXK@Z,MATCH,30,src/auto/f_007d32d0.cpp,2026-11-15
 0x00813870,_FSBAAllocate,DIFF,57,src/fsba/FSBA.cpp,2026-11-14
 0x00813920,_FSBADisable,MATCH,25,src/fsba/FSBA.cpp,2026-11-14
 0x00813940,_FSBAIsDisabled,MATCH,24,src/fsba/FSBA.cpp,2026-11-14
@@ -59,5 +64,8 @@ address,symbol,status,bytes,source,since
 0x00895ae0,?UnkStateHolder_GetField12C@@YAHPAUUnkStateHolder@@@Z,MATCH,20,src/auto/f_00895ae0.cpp,2026-11-15
 0x00896d00,?UnkStateHolder_GetField120@@YAHPAUUnkStateHolder@@@Z,MATCH,20,src/auto/f_00896d00.cpp,2026-11-15
 0x008a3570,?EmptyFramedStub_008a3570@@YAXXZ,MATCH,5,src/auto/f_008a3570.cpp,2026-11-15
+0x008cd490,?Reset@ResetState8cd490@@QAEXXZ,MATCH,30,src/auto/f_008cd490.cpp,2026-11-15
+0x008eb1d0,?GetCurrentIfAny@Holder008eb1d0@@QAEPAXXZ,MATCH,30,src/auto/f_008eb1d0.cpp,2026-11-15
+0x008eb960,?FillUInt32Range@@YAXPAI0PBI@Z,MATCH,30,src/auto/f_008eb960.cpp,2026-11-15
 0x008ff070,?AlwaysTrue_008ff070@@YG_NH@Z,MATCH,5,src/auto/f_008ff070.cpp,2026-11-15
 0x00928d60,?CtlObject_HandleMessage@@YAIPAUCtlObject@@HII@Z,MATCH,203,src/auto/f_00928d60.cpp,2026-11-15

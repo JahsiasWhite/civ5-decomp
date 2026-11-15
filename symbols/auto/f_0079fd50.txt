@@ -1,0 +1,2 @@
+0x0079fd50 ?IsSubObjectState9_0079fd50@@YA_NXZ
+0x00cc8e74 ?g_pOwner_00cc8e74@@3PAUGlobalOwner_0079fd50@@A
