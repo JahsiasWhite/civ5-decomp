@@ -1,0 +1,1 @@
+0x006eabb0 ?GetConstant_006eabb0@@YAHXZ

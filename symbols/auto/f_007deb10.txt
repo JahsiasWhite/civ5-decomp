@@ -1,0 +1,2 @@
+0x007deb10 ?GetGlobal_06196b30@@YAPAHXZ
+0x06196b30 ?g_Global_06196b30@@3HA

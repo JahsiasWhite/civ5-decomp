@@ -1,0 +1,2 @@
+0x00701d40 ?GetFlag_02de0446@@YA_NXZ
+0x02de0446 ?g_bFlag_02de0446@@3_NA

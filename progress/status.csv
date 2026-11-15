@@ -46,11 +46,16 @@ address,symbol,status,bytes,source,since
 0x006ce440,?TrackedHeapAlloc@@YAPAXPAX0II@Z,MATCH,201,src/auto/f_006ce440.cpp,2026-11-15
 0x006d86c0,??_9VCallSlot74@@$BHE@AE,MATCH,5,src/auto/f_006d86c0.cpp,2026-11-15
 0x006e15f0,?SetPair@PairForwarder@@QAEXABUIntPair@@@Z,MATCH,30,src/auto/f_006e15f0.cpp,2026-11-15
+0x006e45e0,?GetFlag_02dd2f5b@@YA_NXZ,MATCH,6,src/auto/f_006e45e0.cpp,2026-11-15
+0x006eabb0,?GetConstant_006eabb0@@YAHXZ,MATCH,6,src/auto/f_006eabb0.cpp,2026-11-15
 0x006f8d70,_GetSmallObjectAllocatorInitParams,MATCH,67,src/fsba/FSBAInitParams.cpp,2026-11-14
+0x006fa3f0,?GetConstant_006fa3f0@@YAHXZ,MATCH,6,src/auto/f_006fa3f0.cpp,2026-11-15
+0x00701d40,?GetFlag_02de0446@@YA_NXZ,MATCH,6,src/auto/f_00701d40.cpp,2026-11-15
 0x0071e7e0,?PushIdNameRecordToLua@@YAXPAUlua_State@@PBUIdNameRecord@@@Z,MATCH,40,src/auto/f_0071e7e0.cpp,2026-11-15
 0x00722720,?GetEntry@EntryTable_00722720@@QAEPAUEntry_00722720@@H@Z,MATCH,20,src/auto/f_00722720.cpp,2026-11-15
 0x00732f50,?GetRecord@LargeRecordTable@@QAEPAULargeRecord_00732f50@@H@Z,MATCH,20,src/auto/f_00732f50.cpp,2026-11-15
 0x00734b70,?TreeMin_00734b70@@YAPAUTreeNode_00734b70@@PAU1@@Z,MATCH,30,src/auto/f_00734b70.cpp,2026-11-15
+0x007491d0,?GetFlag_02de0445@@YA_NXZ,MATCH,6,src/auto/f_007491d0.cpp,2026-11-15
 0x0075fd30,?FillDwordRange@@YAXPAI0ABI@Z,MATCH,30,src/auto/f_0075fd30.cpp,2026-11-15
 0x00780eb0,??_9VCallSlot54@@$BFE@AE,MATCH,5,src/auto/f_00780eb0.cpp,2026-11-15
 0x00788490,?FormatBuffer256@@YAXPADPBDZZ,MATCH,30,src/auto/f_00788490.cpp,2026-11-15
@@ -64,6 +69,7 @@ address,symbol,status,bytes,source,since
 0x007cdee0,?UInt64PtrLess@@YGHPB_K0@Z,MATCH,40,src/auto/f_007cdee0.cpp,2026-11-15
 0x007d29a0,?Reset@BoundCallbackReset@@QAEXH@Z,MATCH,30,src/auto/f_007d29a0.cpp,2026-11-15
 0x007d32d0,?ProcessHeapAllocCallback@@YAPAXPAXK@Z,MATCH,30,src/auto/f_007d32d0.cpp,2026-11-15
+0x007deb10,?GetGlobal_06196b30@@YAPAHXZ,MATCH,6,src/auto/f_007deb10.cpp,2026-11-15
 0x00813870,_FSBAAllocate,DIFF,57,src/fsba/FSBA.cpp,2026-11-14
 0x00813920,_FSBADisable,MATCH,25,src/fsba/FSBA.cpp,2026-11-14
 0x00813940,_FSBAIsDisabled,MATCH,24,src/fsba/FSBA.cpp,2026-11-14
@@ -82,10 +88,12 @@ address,symbol,status,bytes,source,since
 0x0081d6b0,_FJobSetAddJobImpl,MATCH,26,src/job/FJobSet.cpp,2026-11-14
 0x00824800,_GetMemTrackerForDLL,MATCH,18,src/core/CoreExports.cpp,2026-11-14
 0x00829aa0,_GetTempHeap,MATCH,6,src/core/CoreExports.cpp,2026-11-14
+0x008337b0,?GetDataAfterHeader@UnkHeaderedBuffer@@QAEPADXZ,MATCH,6,src/auto/f_008337b0.cpp,2026-11-15
 0x00895ae0,?UnkStateHolder_GetField12C@@YAHPAUUnkStateHolder@@@Z,MATCH,20,src/auto/f_00895ae0.cpp,2026-11-15
 0x00896d00,?UnkStateHolder_GetField120@@YAHPAUUnkStateHolder@@@Z,MATCH,20,src/auto/f_00896d00.cpp,2026-11-15
 0x008a3570,?EmptyFramedStub_008a3570@@YAXXZ,MATCH,5,src/auto/f_008a3570.cpp,2026-11-15
 0x008cd490,?Reset@ResetState8cd490@@QAEXXZ,MATCH,30,src/auto/f_008cd490.cpp,2026-11-15
+0x008e2e00,?GetGlobal_05f637cc@@YAPAHXZ,MATCH,6,src/auto/f_008e2e00.cpp,2026-11-15
 0x008eb1d0,?GetCurrentIfAny@Holder008eb1d0@@QAEPAXXZ,MATCH,30,src/auto/f_008eb1d0.cpp,2026-11-15
 0x008eb960,?FillUInt32Range@@YAXPAI0PBI@Z,MATCH,30,src/auto/f_008eb960.cpp,2026-11-15
 0x008ff070,?AlwaysTrue_008ff070@@YG_NH@Z,MATCH,5,src/auto/f_008ff070.cpp,2026-11-15
