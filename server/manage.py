@@ -14,7 +14,7 @@
                                     consistent online copy of the DB (safe while serving)
 
 The nightly routine on the maintainer's machine (which has the game) is:
-  git pull  ->  python tools/c5d.py match  ->  python server/manage.py push
+  git pull  ->  python tools/c5d.py match  ->  python tools/c5d.py queue  ->  python server/manage.py push
 (`verify` does the same against a local DB, for testing.)
 """
 import argparse
@@ -69,15 +69,31 @@ def cmd_verify(db, args):
     print(f"verify: {db.apply_verified(statuses)} status changes from {args.status}")
 
 
+def read_ready(path):
+    """{0x-addr: 0/1} from build/queue.csv (ready = no unmatched callees)."""
+    with open(path, newline="") as fh:
+        return {f"0x{int(r['entry'], 16):08x}": int(r["pending_callees"] == "0") for r in csv.DictReader(fh)}
+
+
 def cmd_push(_db, args):
-    """Send the local match results to the live server (POST /api/admin/verify)."""
+    """Send the local match results (and, from build/queue.csv, which functions are now
+    ready) to the live server (POST /api/admin/verify)."""
     if not Path(args.status).exists():
         raise SystemExit(f"{args.status} not found: run `python tools/c5d.py match` first")
-    statuses = {f"0x{a:08x}": s for a, s in read_statuses(args.status).items()}
+    payload = {"statuses": {f"0x{a:08x}": s for a, s in read_statuses(args.status).items()}}
+    q = Path(args.queue)
+    if q.exists():
+        if q.stat().st_mtime < Path(args.status).stat().st_mtime:
+            print(f"warning: {q} is older than {args.status}; run `python tools/c5d.py queue` "
+                  "so newly unblocked functions are handed out", file=sys.stderr)
+        payload["ready"] = read_ready(q)
+    else:
+        print(f"warning: {q} not found; readiness not sent", file=sys.stderr)
     sys.path.insert(0, str(ROOT / "tools"))
     from remote import Remote
-    r = Remote(args.server, args.token).call("POST", "/api/admin/verify", {"statuses": statuses})
-    print(f"push: server received {r['received']} statuses, {r['changed']} status changes")
+    r = Remote(args.server, args.token).call("POST", "/api/admin/verify", payload)
+    print(f"push: server received {r['received']} statuses, {r['changed']} status changes, "
+          f"{r.get('ready_changed', 0)} readiness changes, {r.get('requeued', 0)} stale reports requeued")
 
 
 def backup_db(src, dest_dir, keep=14):
@@ -159,6 +175,7 @@ def main():
     v.set_defaults(fn=cmd_verify)
     pu = sub.add_parser("push", help="send progress/status.csv to the live server")
     pu.add_argument("--status", default=str(ROOT / "progress" / "status.csv"))
+    pu.add_argument("--queue", default=str(ROOT / "build" / "queue.csv"))
     pu.add_argument("--server", default=None, help="default: server in config.local.json")
     pu.add_argument("--token", default=None, help="default: token in config.local.json")
     pu.set_defaults(fn=cmd_push, no_db=True)

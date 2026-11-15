@@ -102,9 +102,12 @@ Then open `http://127.0.0.1:8765/dev-login?login=you`. Tests: `python -m pytest 
    addresses, sizes and names only). After that, never copy the DB over the live one:
    that would wipe claims and reports made since.
 5. Sign in on the site, create a token on `/account`, and `c5d remote login` with it.
-   Nightly on your machine: `git pull && python tools/c5d.py match && python server/manage.py push`.
-   `push` sends `progress/status.csv` to `POST /api/admin/verify` (only logins listed in
-   `C5D_ADMINS`, bearer token only).
+   Nightly on your machine:
+   `git pull && python tools/c5d.py match && python tools/c5d.py queue && python server/manage.py push`.
+   `push` sends `progress/status.csv` and the readiness column of `build/queue.csv` to
+   `POST /api/admin/verify` (only logins listed in `C5D_ADMINS`, bearer token only). That way
+   functions whose callees just matched start being handed out. Reported matches that
+   aren't verified within 14 days (no PR, or the PR wasn't merged) go back to the pool.
 6. Backups: `c5d-backup.timer` runs `manage.py backup` nightly (SQLite online backup into
    `/var/backups/c5d`, keeps 14). Copy that folder off the VPS now and then.
 7. Monitoring: `GET /healthz` returns `{"ok": true}` when the server and DB respond. Point

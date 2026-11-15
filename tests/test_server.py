@@ -304,7 +304,7 @@ def test_admin_verify(srv):
     assert req(base, "POST", "/api/admin/verify", payload)[0] == 401
     assert req(base, "POST", "/api/admin/verify", payload, token=alice)[0] == 403
     code, j = req(base, "POST", "/api/admin/verify", payload, token=boss)    # C5D_ADMINS is case-insensitive
-    assert code == 200 and j == {"received": 3, "changed": 2}
+    assert code == 200 and j == {"received": 3, "changed": 2, "ready_changed": 0, "requeued": 0}
     f = {r["addr"]: r["status"] for r in db.q("SELECT addr, status FROM functions")}
     assert f[0x401000] == "matched" and f[0x401010] == "diff"
     assert req(base, "POST", "/api/admin/verify", {"statuses": {"zz": "MATCH"}}, token=boss)[0] == 400
@@ -327,7 +327,14 @@ def test_manage_push(srv, tmp_path):
     csvp = tmp_path / "status.csv"
     csvp.write_text("address,symbol,status,bytes,source,since\n"
                     "0x00401020,?F2@@YAXXZ,MATCH,22,src/auto/f.cpp,2026-11-15\n")
-    manage.cmd_push(None, argparse.Namespace(status=str(csvp), server=base, token=boss))
+    queue = tmp_path / "queue.csv"           # F8 (0x401080) is not ready on the server; now it is
+    queue.write_text("entry,size,name,status,conv,entry_regs,depth,callees,pending_callees,callers,"
+                     "cluster,cluster_size\n"
+                     "0x00401080,28,F8,todo,stack,,0,1,0,0,0x00401080,1\n"
+                     "0x00401000,20,F0,todo,stack,,0,1,1,0,0x00401000,1\n")
+    manage.cmd_push(None, argparse.Namespace(status=str(csvp), queue=str(queue), server=base, token=boss))
+    ready = {r["addr"]: r["ready"] for r in db.q("SELECT addr, ready FROM functions")}
+    assert ready[0x401080] == 1 and ready[0x401000] == 0 and ready[0x401090] == 0   # unlisted untouched
     assert db.one("SELECT status FROM functions WHERE addr=?", (0x401020,))["status"] == "matched"
 
 
@@ -421,3 +428,43 @@ def test_stats_cached_and_invalidated(srv, monkeypatch):
     assert len(calls) == 3
     assert req(base, "POST", "/api/claim", {"n": 2}, token=tok)[0] == 200
     assert req(base, "GET", "/api/stats")[1]["claimed"] == 2           # fresh, not the cached 0
+
+
+# ------------------------------------------------------------ queue upkeep
+
+def test_stale_reports_return_to_pool(srv):
+    base, db = srv
+    import db as dbmod
+    a, b = make_user(db, "alice"), make_user(db, "bob")
+    req(base, "POST", "/api/claim", {"addr": "0x00401000"}, token=a)
+    req(base, "POST", "/api/report", {"addr": "0x00401000", "status": "MATCH", "model": "m1"}, token=a)
+    # a fresh report is not handed out again
+    _, j = req(base, "POST", "/api/claim", {"n": 1}, token=b)
+    assert j["claims"][0]["addr"] == "0x00401010"
+    # 15 days later with no verify: back in the pool, ahead in queue order
+    with db.tx():
+        db.conn.execute("UPDATE functions SET updated=? WHERE addr=?",
+                        (time.time() - dbmod.REPORTED_SECONDS - 86400, 0x401000))
+    _, j = req(base, "POST", "/api/claim", {"n": 1}, token=b)
+    assert j["claims"][0]["addr"] == "0x00401000"
+    f = db.one("SELECT status, by_user, model FROM functions WHERE addr=?", (0x401000,))
+    assert f["status"] == "todo" and f["model"] == "m1"            # credit kept for a late merge
+    assert db.one("SELECT COUNT(*) c FROM events WHERE kind='unreport'")["c"] == 1
+
+
+def test_admin_verify_readiness_and_requeue(srv):
+    base, db = srv
+    import db as dbmod
+    boss, a = make_user(db, "boss"), make_user(db, "alice")
+    req(base, "POST", "/api/claim", {"addr": "0x00401000"}, token=a)
+    req(base, "POST", "/api/report", {"addr": "0x00401000", "status": "MATCH"}, token=a)
+    with db.tx():
+        db.conn.execute("UPDATE functions SET updated=0 WHERE addr=?", (0x401000,))
+    code, j = req(base, "POST", "/api/admin/verify",
+                  {"statuses": {}, "ready": {"0x00401080": 1, "0x00401090": True, "0x00401010": 0}}, token=boss)
+    assert code == 200 and j["ready_changed"] == 3 and j["requeued"] == 1
+    assert req(base, "POST", "/api/admin/verify", {"statuses": {}, "ready": [1]}, token=boss)[0] == 400
+    # newly ready functions are handed out
+    _, j = req(base, "POST", "/api/claim", {"n": 25}, token=a)
+    got = {c["addr"] for c in j["claims"]}
+    assert {"0x00401080", "0x00401090", "0x00401000"} <= got and "0x00401010" not in got

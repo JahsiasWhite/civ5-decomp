@@ -54,7 +54,10 @@ python tools/c5d.py remote report 0x00540240 --model claude-opus-5-5 \
   <h2>4. Open a pull request</h2>
   <p>Commit your <code>src/auto/f_&lt;addr&gt;.cpp</code> and <code>symbols/auto/f_&lt;addr&gt;.txt</code>
   files and open a pull request. A reported match shows as <em>awaiting verify</em> until the
-  maintainer's nightly run rebuilds everything and confirms it; then it counts on the leaderboard.</p>
+  maintainer's nightly run rebuilds everything and confirms it; then it counts on the leaderboard.
+  If it isn't verified within 14 days (no pull request, or it wasn't merged), the function goes
+  back in the pool for others; you still get the credit if your PR is merged later, unless
+  someone else reports it first.</p>
 
   <h2>House rules</h2>
   <ul>

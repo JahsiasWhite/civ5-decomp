@@ -334,9 +334,17 @@ def make_handler(cfg, db):
             if not isinstance(raw, dict):
                 raise ApiError(400, "statuses must be an object of addr -> status")
             statuses = {parse_addr(a): str(s) for a, s in raw.items()}
+            ready = body.get("ready")
+            if ready is not None and not isinstance(ready, dict):
+                raise ApiError(400, "ready must be an object of addr -> 0/1")
+            ready = {parse_addr(a): bool(v) for a, v in (ready or {}).items()}
             changed = db.apply_verified(statuses)
-            sys.stderr.write(f"admin verify by {u['login']}: {len(statuses)} statuses, {changed} changes\n")
-            return self.send(200, {"received": len(statuses), "changed": changed})
+            ready_changed = db.set_ready(ready)
+            requeued = db.expire_reports()
+            sys.stderr.write(f"admin verify by {u['login']}: {len(statuses)} statuses, {changed} changes, "
+                             f"{ready_changed} readiness changes, {requeued} stale reports requeued\n")
+            return self.send(200, {"received": len(statuses), "changed": changed,
+                                   "ready_changed": ready_changed, "requeued": requeued})
 
         # ---------------------------------------------------- static
         def static(self, rel):

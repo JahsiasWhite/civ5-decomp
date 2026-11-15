@@ -113,6 +113,7 @@ def clean_model(m):
     return m or "unspecified"
 
 CLAIM_SECONDS = 4 * 3600          # a claim lapses if not reported within 4 h
+REPORTED_SECONDS = 14 * 86400     # a reported match not verified within 14 days goes back to the pool
 MAX_ACTIVE_CLAIMS = 25            # per user
 
 
@@ -216,6 +217,7 @@ class DB:
         """Claim specific `addr`, or the next `n` ready functions in queue order.
         Returns list of (addr, worker)."""
         self.expire_claims()
+        self.expire_reports()
         now = time.time()
         with self.tx():
             active = self.one("SELECT COUNT(*) c FROM claims WHERE user_id=?", (user_id,))["c"]
@@ -259,6 +261,30 @@ class DB:
             "JOIN functions f ON f.addr=c.addr WHERE c.user_id=? ORDER BY c.claimed", (user_id,))]
 
     # ------------------------------------------------------------ results
+    def expire_reports(self, now=None):
+        """Reported matches whose PR never landed (not verified in REPORTED_SECONDS) go back
+        to 'todo' so someone else can take them. by_user/model are kept: if the original PR
+        is merged later, verify still credits them (a new report overwrites both)."""
+        cutoff = (now or time.time()) - REPORTED_SECONDS
+        with self.tx():
+            rows = self.q("SELECT addr, by_user FROM functions WHERE status='reported' AND updated<?",
+                          (cutoff,))
+            for r in rows:
+                self.log("unreport", r["by_user"], r["addr"], detail="not verified within 14 days")
+            self.conn.execute("UPDATE functions SET status='todo', updated=? WHERE status='reported' "
+                              "AND updated<?", (time.time(), cutoff))
+        return len(rows)
+
+    def set_ready(self, ready):
+        """{addr: bool} from the maintainer's fresh `c5d queue` (all callees matched or none).
+        Unknown addresses are ignored. Returns how many flags changed."""
+        changed = 0
+        with self.tx():
+            for addr, r in ready.items():
+                changed += self.conn.execute("UPDATE functions SET ready=? WHERE addr=? AND ready<>?",
+                                             (int(bool(r)), addr, int(bool(r)))).rowcount
+        return changed
+
     def report(self, user_id, addr, status, detail="", model="", tokens_in=0, tokens_out=0,
                tokens_cached=0, tries=0):
         """Contributor reports a local result. MATCH becomes 'reported' until verified.
