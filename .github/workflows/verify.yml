@@ -1,0 +1,123 @@
+# Verify matches without the game: compile everything with VC++ 2008 SP1 under Wine
+# and compare against data/fingerprints.csv (see tools/fingerprint.py).
+#
+# - pull requests: a check that fails if a function in the PR's files doesn't MATCH
+# - main (push, twice daily, or by hand): also sends the results to civ5decomp.com, which
+#   is what marks reported matches as verified. Needs the C5D_ADMIN_TOKEN secret.
+name: verify
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "include/**"
+      - "symbols/**"
+      - "symbols.txt"
+      - "tools/**"
+      - "data/**"
+      - "config.json"
+      - ".github/workflows/verify.yml"
+      - ".github/ci/**"
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "include/**"
+      - "symbols/**"
+      - "symbols.txt"
+      - "tools/**"
+      - "data/**"
+      - "config.json"
+      - ".github/workflows/verify.yml"
+      - ".github/ci/**"
+  schedule:
+    - cron: "17 6,18 * * *"     # 06:17 and 18:17 UTC (off the hour: fewer delays)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  match:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install Wine and tools
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update -qq
+          sudo apt-get install -yqq --no-install-recommends wine wine32:i386 msitools >/dev/null
+          wine --version
+          python -m pip install -q capstone
+
+      - name: Cache the compiler
+        id: msvc-cache
+        uses: actions/cache@v4
+        with:
+          path: msvc
+          key: vc2008-sp1-vcforpython27-v1
+
+      - name: Download the compiler
+        if: steps.msvc-cache.outputs.cache-hit != 'true'
+        run: bash .github/ci/vc2008.sh msvc
+
+      - name: Set up Wine and the toolchain
+        run: |
+          echo "WINEPREFIX=$RUNNER_TEMP/wine" >> "$GITHUB_ENV"
+          export WINEPREFIX=$RUNNER_TEMP/wine WINEDEBUG=-all WINEDLLOVERRIDES="mscoree,mshtml="
+          wineboot -i >/dev/null 2>&1 || true
+          wineserver -p                     # keep Wine running between the many cl/link calls
+          banner=$(wine msvc/VC/bin/cl.exe 2>&1 | head -1 | tr -d '\r')
+          echo "$banner"
+          case "$banner" in *15.00.30729.01*) ;; *) echo "::error::wrong or broken compiler: $banner"; exit 1;; esac
+          printf '{"msvc_bin": "%s", "winsdk_dir": "%s"}\n' "$PWD/msvc/VC/bin" "$PWD/msvc/WinSDK" > config.local.json
+
+      - name: Match everything against the fingerprints
+        run: |
+          mkdir -p build
+          set +e
+          python tools/c5d.py match --fingerprints > build/match.txt 2>&1
+          set -e
+          tail -n 40 build/match.txt
+          # DIFFs are normal; a run that never got to the summary (compile/link failure) is not
+          grep -q "fingerprint mode\]" build/match.txt || { echo "::error::match run failed"; exit 1; }
+
+      - name: Report
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git diff --name-only "${{ github.event.pull_request.base.sha }}" HEAD > build/changed.txt
+            python tools/ci_report.py --changed build/changed.txt >> "$GITHUB_STEP_SUMMARY"
+          else
+            python tools/ci_report.py >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: match-results
+          path: |
+            build/match.txt
+            progress/status.csv
+
+      - name: Send results to civ5decomp.com
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          C5D_ADMIN_TOKEN: ${{ secrets.C5D_ADMIN_TOKEN }}
+        run: |
+          if [ -z "$C5D_ADMIN_TOKEN" ]; then
+            echo "::warning::C5D_ADMIN_TOKEN secret not set; results not sent to the site"
+            exit 0
+          fi
+          python server/manage.py push --server https://civ5decomp.com --token "$C5D_ADMIN_TOKEN"

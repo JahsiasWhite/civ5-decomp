@@ -19,6 +19,7 @@ address,symbol,status,bytes,source,since
 0x006ce440,?TrackedHeapAlloc@@YAPAXPAX0II@Z,MATCH,201,src/auto/f_006ce440.cpp,2026-11-15
 0x006f8d70,_GetSmallObjectAllocatorInitParams,MATCH,67,src/fsba/FSBAInitParams.cpp,2026-11-14
 0x00722720,?GetEntry@EntryTable_00722720@@QAEPAUEntry_00722720@@H@Z,MATCH,20,src/auto/f_00722720.cpp,2026-11-15
+0x0078f0b0,?DoTurn@CvEngineUtilityImpl@@QAEXXZ,MATCH,1,src/auto/f_0078f0b0.cpp,2026-11-15
 0x007cccf0,?Unk_007cccf0@@YAPAXXZ,DIFF,67,src/fsba/FMallocCallers.cpp,2026-11-14
 0x00813870,_FSBAAllocate,DIFF,57,src/fsba/FSBA.cpp,2026-11-14
 0x00813920,_FSBADisable,MATCH,25,src/fsba/FSBA.cpp,2026-11-14

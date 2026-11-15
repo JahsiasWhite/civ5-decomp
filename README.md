@@ -104,7 +104,10 @@ Then open `http://127.0.0.1:8765/dev-login?login=you`. Tests: `python -m pytest 
    addresses, sizes and names only). After that, never copy the DB over the live one:
    that would wipe claims and reports made since.
 5. Sign in on the site, create a token on `/account`, and `c5d remote login` with it.
-   Nightly on your machine:
+   Verification runs on GitHub (see "Verification without the game" below): twice a day
+   and on every push to `main`, `.github/workflows/verify.yml` matches everything and pushes
+   the results. Add a repository secret `C5D_ADMIN_TOKEN` with an API token of an admin login.
+   Readiness (which functions are unblocked) still comes from a run on a machine with the game:
    `git pull && python tools/c5d.py match && python tools/c5d.py queue && python server/manage.py push`.
    `push` sends `progress/status.csv` and the readiness column of `build/queue.csv` to
    `POST /api/admin/verify` (only logins listed in `C5D_ADMINS`, bearer token only). That way
@@ -132,6 +135,26 @@ Then open `http://127.0.0.1:8765/dev-login?login=you`. Tests: `python -m pytest 
    `C5D_SESSION_SECRET` signs everyone out.
 9. Before launch: fill in the contact address and get the draft terms in
    `server/static/legal.html` reviewed.
+
+## Verification without the game
+
+Matching needs the original exe, which can't leave your machine. CI uses fingerprints
+instead (`tools/fingerprint.py`):
+
+- `python tools/c5d.py fingerprint` (maintainers, once; needs the exe) writes
+  `data/fingerprints.csv`: per function, a SHA-256 of its original bytes and of the bytes
+  up to the next function, plus `data/fingerprints.json` (import and export tables). No game
+  code: hashes can't be turned back into bytes.
+- `python tools/c5d.py match --fingerprints` (automatic when the exe isn't there) links as
+  usual, rewrites every reference in our code to the address the original must have there
+  (from the symbols files), and compares hashes. Equal hashes mean the same code and the same
+  references. A DIFF can't show *where* it differs; run `match` with the exe for that. A
+  function with references not in any symbols file is `UNVERIFIED`.
+- `.github/workflows/verify.yml` does this on Linux: VC++ 2008 SP1 (`VCForPython27.msi`,
+  fetched from Microsoft and checked against its SHA-256 by `.github/ci/vc2008.sh`) runs
+  under Wine; paths are passed as `Z:\...` (`tools/config.py`). Pull requests get a check
+  that fails if a function in their files doesn't match; `main` also sends the results to
+  the site.
 
 ## Configuration
 

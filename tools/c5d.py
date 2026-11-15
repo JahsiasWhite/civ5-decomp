@@ -1,4 +1,4 @@
-﻿"""civ5-decomp command-line tool.
+"""civ5-decomp command-line tool.
 
     python tools/c5d.py env       check the toolchain
     python tools/c5d.py analyze   import and analyze the exe in Ghidra headless,
@@ -178,9 +178,9 @@ def msvc_env():
     vc = Path(CFG["msvc_bin"]).parent            # .../VC
     env = dict(os.environ)
     env["PATH"] = str(vc / "bin") + os.pathsep + env.get("PATH", "")
-    env["INCLUDE"] = os.pathsep.join(
-        [str(ROOT / "include"), str(vc / "include"), str(winsdk_dir() / "Include")])
-    return env
+    env["INCLUDE"] = ";".join(config.winpath(p) for p in
+                              [ROOT / "include", vc / "include", winsdk_dir() / "Include"])
+    return config.tool_env(env)
 
 
 def flags_for(src, base):
@@ -207,7 +207,8 @@ def compile_cpp(src, extra_flags=()):
     out_dir = work_dir() / "obj"
     out_dir.mkdir(parents=True, exist_ok=True)
     obj = out_dir / (src.stem + ".obj")
-    cmd = [str(MSVC_CL), *flags_for(src, CFG["cflags"]), *extra_flags, f"/Fo{obj}", str(src)]
+    cmd = [*config.tool_cmd(MSVC_CL), *flags_for(src, CFG["cflags"]), *extra_flags,
+           f"/Fo{config.winpath(obj)}", config.winpath(src)]
     r = subprocess.run(cmd, capture_output=True, text=True, env=msvc_env())
     if r.returncode != 0:
         print(r.stdout + r.stderr)
@@ -366,13 +367,29 @@ def obj_refs_of(sec, start, end):
             for r in sec.relocs if start <= r.offset < end}
 
 
+def fingerprint_mode(args):
+    """Fingerprint mode: on request, or automatically when there's no game exe
+    (CI). See tools/fingerprint.py."""
+    return getattr(args, "fingerprints", False) or not GAME_EXE.is_file()
+
+
 def cmd_match(args):
     from binfmt import PEImage
     load_func_sizes()
     syms = load_symbols()
-    image = PEImage(GAME_EXE)
+    fp_mode = fingerprint_mode(args)
+    if fp_mode:
+        if args.obj:
+            sys.exit("--obj needs the game exe; fingerprint mode only runs the LTCG link")
+        from fingerprint import FingerprintImage
+        image = FingerprintImage()
+        if image.exe_sha256 != CFG["target_sha256"]:
+            sys.exit("data/fingerprints.csv was made from a different exe than config.json targets")
+        print("fingerprint mode (no game exe): checking against data/fingerprints.csv")
+    else:
+        image = PEImage(GAME_EXE)
     sources = [Path(s) for s in args.sources] or default_sources()
-    totals = {"MATCH": 0, "MATCH?": 0, "DIFF": 0, "ERROR": 0}
+    totals = {"MATCH": 0, "MATCH?": 0, "DIFF": 0, "ERROR": 0, "UNVERIFIED": 0}
     results = {}
 
     per_file = compile_all(sources, args.flag or ())
@@ -397,6 +414,9 @@ def cmd_match(args):
                 continue
             if args.obj:
                 res = compare_function(image, syms, sym, sec, start, end)
+            elif fp_mode:
+                res = ltcg.compare_fp(sym.name, image, va, test_img, lmap, syms,
+                                      obj_refs_of(sec, start, end))
             else:
                 size = FUNC_SIZES.get(va, end - start)
                 res = ltcg.compare(sym.name, image, va, size, test_img, lmap, syms,
@@ -409,16 +429,18 @@ def cmd_match(args):
             if res["status"] == "ERROR":
                 print(f"         {res['detail']}")
                 continue
+            if res.get("detail"):
+                print(f"         {res['detail']}")
             for state, off, name, note in res["relocs"]:
                 if state != "ok" or args.verbose:
                     print(f"         ref +0x{off:03x} {name}: {note}")
             if res["size_note"]:
                 print(f"         {res['size_note']}")
-            if res["status"] == "DIFF" or args.verbose:
+            if (res["status"] == "DIFF" or args.verbose) and not fp_mode:
                 print_diff(res)
     if not args.obj and not args.only and not args.addr:
         record_status(results)
-    print(f"\n[{'obj' if args.obj else 'ltcg'} mode]  "
+    print(f"\n[{'obj' if args.obj else 'ltcg'}{' fingerprint' if fp_mode else ''} mode]  "
           + "  ".join(f"{k}: {v}" for k, v in totals.items()))
     return 0 if totals["DIFF"] == 0 and totals["ERROR"] == 0 else 1
 
@@ -473,6 +495,16 @@ def load_names():
     for sym, va in load_symbols().items():
         names[va] = sym
     return names
+
+
+def cmd_fingerprint(_args):
+    """Write data/fingerprints.csv + .json from the game exe (see tools/fingerprint.py)."""
+    import fingerprint
+    from binfmt import PEImage
+    n = fingerprint.export(PEImage(GAME_EXE), config.functions_csv(), CFG["target_sha256"])
+    print(f"wrote {n} fingerprints to {fingerprint.CSV_PATH.relative_to(ROOT)} "
+          f"(+ {fingerprint.META_PATH.relative_to(ROOT)})")
+    return 0
 
 
 def cmd_queue(args):
@@ -721,6 +753,8 @@ class LinkCtx:
         self.env = msvc_env()
         self.libpaths = [vc / "lib", winsdk_dir() / "Lib"]
         self.build = work_dir()
+        self.tool = config.tool_cmd          # [exe] on Windows, [wine, Z:\\...] elsewhere
+        self.wp = config.winpath
 
     def flags_for(self, src):
         return flags_for(src, self.cflags)
@@ -773,12 +807,17 @@ def cmd_setup(args):
 
 
 # commands that need the game exe and the toolchain from `c5d setup`
-NEEDS_SETUP = {"env", "analyze", "dump", "match", "scope", "queue", "task", "agent", "build"}
+NEEDS_SETUP = {"env", "analyze", "dump", "match", "scope", "queue", "task", "agent", "build",
+               "fingerprint"}
 
 
-def require_setup(cmd):
+def require_setup(cmd, args=None):
     if cmd not in NEEDS_SETUP:
         return
+    if cmd == "match" and fingerprint_mode(args):
+        if not CFG.get("msvc_bin"):
+            sys.exit("msvc_bin not set: run `python tools/c5d.py setup` (or set it in config.local.json)")
+        return                              # fingerprint mode needs only the compiler
     missing = config.missing_machine_keys(CFG)
     if missing:
         sys.exit(f"not set up yet ({', '.join(missing)} missing): run `python tools/c5d.py setup`")
@@ -828,7 +867,12 @@ def main():
     m.add_argument("-v", "--verbose", action="store_true", help="always show disassembly and relocations")
     m.add_argument("--obj", action="store_true",
                    help="fast per-file mode (no /GL + /LTCG link); fine for simple leaf functions")
+    m.add_argument("--fingerprints", action="store_true",
+                   help="check against data/fingerprints.csv instead of the exe "
+                        "(automatic when the exe isn't there, e.g. in CI)")
     m.set_defaults(fn=cmd_match)
+    sub.add_parser("fingerprint", help="write data/fingerprints.csv from the exe (maintainers)"
+                   ).set_defaults(fn=cmd_fingerprint)
     sub.add_parser("scope", help="classify functions: game (in scope) vs library/generated"
                    ).set_defaults(fn=cmd_scope)
     q = sub.add_parser("queue", help="build the leaves-first work queue (build/queue.csv)")
@@ -871,7 +915,7 @@ def main():
     args = p.parse_args()
     global WORKER
     WORKER = args.worker
-    require_setup(args.cmd)
+    require_setup(args.cmd, args)
     sys.exit(args.fn(args))
 
 

@@ -5,6 +5,7 @@ config.local.json  this machine only (git-ignored): game, Ghidra and MSVC paths,
                    login. Written by `c5d setup`; its keys override config.json.
 """
 import json
+import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -31,6 +32,28 @@ def load():
     cfg = json.loads(SHARED.read_text())
     cfg.update(load_local())
     return cfg
+
+
+IS_WINDOWS = os.name == "nt"
+
+
+def winpath(p):
+    """A path as the compiler sees it. On Linux the VC++ 2008 tools run under Wine,
+    where Z: is the root of the Linux filesystem (same trick fnvdecomp's CI uses)."""
+    return str(p) if IS_WINDOWS else "Z:" + str(Path(p).resolve()).replace("/", "\\")
+
+
+def tool_cmd(exe):
+    """Command prefix to run a Windows tool: itself on Windows, through Wine elsewhere."""
+    return [str(exe)] if IS_WINDOWS else ["wine", winpath(exe)]
+
+
+def tool_env(env):
+    """Environment tweaks for Wine: quiet, and no Mono/Gecko install prompts."""
+    if not IS_WINDOWS:
+        env.setdefault("WINEDEBUG", "-all")
+        env.setdefault("WINEDLLOVERRIDES", "mscoree,mshtml=")
+    return env
 
 
 def missing_machine_keys(cfg=None):

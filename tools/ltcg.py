@@ -60,16 +60,16 @@ def build(ctx, sources, include_syms):
     objs = []
     for src in sources:
         obj = out / (src.stem + ".obj")
-        cmd = [str(ctx.cl), *ctx.flags_for(src), "/GL", f"/Fo{obj}", str(src)]
+        cmd = [*ctx.tool(ctx.cl), *ctx.flags_for(src), "/GL", f"/Fo{ctx.wp(obj)}", ctx.wp(src)]
         r = subprocess.run(cmd, capture_output=True, text=True, env=ctx.env)
         if r.returncode:
             raise RuntimeError(f"compile failed: {src}\n{r.stdout}{r.stderr}")
         objs.append(obj)
 
     dll, mapf = out / "test.dll", out / "test.map"
-    base = [str(ctx.link), "/nologo", "/DLL", "/NOENTRY", "/LTCG", "/OPT:REF", "/OPT:ICF",
-            "/FIXED:NO", "/MACHINE:X86", f"/MAP:{mapf}", f"/OUT:{dll}",
-            *[f"/LIBPATH:{p}" for p in ctx.libpaths],
+    base = [*ctx.tool(ctx.link), "/nologo", "/DLL", "/NOENTRY", "/LTCG", "/OPT:REF", "/OPT:ICF",
+            "/FIXED:NO", "/MACHINE:X86", f"/MAP:{ctx.wp(mapf)}", f"/OUT:{ctx.wp(dll)}",
+            *[f"/LIBPATH:{ctx.wp(p)}" for p in ctx.libpaths],
             *[f"/INCLUDE:{s}" for s in include_syms],
             "kernel32.lib", "user32.lib", "msvcrt.lib"]
 
@@ -77,7 +77,7 @@ def build(ctx, sources, include_syms):
     extra = []
     missing_prev = []
     for _attempt in range(3):
-        r = subprocess.run(base + [str(o) for o in objs] + extra,
+        r = subprocess.run(base + [ctx.wp(o) for o in objs] + extra,
                            capture_output=True, text=True, env=ctx.env)
         if r.returncode == 0:
             return dll, mapf
@@ -87,7 +87,7 @@ def build(ctx, sources, include_syms):
         if not missing:
             raise RuntimeError(f"link failed:\n{r.stdout}{r.stderr}")
         make_stubs(ctx, missing, out / "stubs.asm", stub_obj)
-        extra = [str(stub_obj)]
+        extra = [ctx.wp(stub_obj)]
     raise RuntimeError(f"link still failing after stubbing:\n{r.stdout}")
 
 
@@ -98,7 +98,8 @@ def make_stubs(ctx, names, asm_path, obj_path):
         lines += [f"PUBLIC {n}", f"{n} dd 0"]
     lines.append("END")
     asm_path.write_text("\n".join(lines) + "\n")
-    r = subprocess.run([str(ctx.ml), "/nologo", "/c", "/coff", f"/Fo{obj_path}", str(asm_path)],
+    r = subprocess.run([*ctx.tool(ctx.ml), "/nologo", "/c", "/coff", f"/Fo{ctx.wp(obj_path)}",
+                        ctx.wp(asm_path)],
                        capture_output=True, text=True, env=ctx.env)
     if r.returncode:
         raise RuntimeError(f"stub assembly failed:\n{r.stdout}{r.stderr}")
@@ -265,3 +266,111 @@ def compare(name, orig_img, orig_va, orig_size, test_img, lmap, syms, obj_refs=N
             "orig_full": orig, "byte_diffs": byte_diffs, "relocs": notes,
             "size_note": size_note,
             "masked": {m for m in masked if not any(b <= m < b + 4 for b in bad_offs)}}
+
+
+def compare_fp(name, fp, orig_va, test_img, lmap, syms, obj_refs=None):
+    """compare() without the exe: `fp` is a fingerprint.FingerprintImage.
+
+    Every reference in our function is rewritten to the value the original must
+    hold there if the reference is right (absolute: the target's address; relative
+    branches: the displacement from the original's address), then the whole thing
+    is hashed and checked against the original's hash. Same statuses as compare(),
+    except a function with references we can't place is UNVERIFIED rather than
+    MATCH? (without the original bytes there's nothing to check them against).
+    """
+    from fingerprint import digest
+    obj_refs = obj_refs or {}
+    entry = fp.funcs.get(orig_va)
+    if entry is None:
+        return {"status": "UNVERIFIED", "detail": "no fingerprint (function split into several blocks)",
+                "relocs": [], "size_note": ""}
+    orig_size, code_hash, ext_len, ext_hash = entry
+
+    our_va = lmap.by_name.get(name)
+    if our_va is None:
+        return {"status": "ERROR", "detail": "not emitted by the linker (inlined, or "
+                "nothing references it yet; exported functions are kept automatically)"}
+
+    nxt = lmap.next_after(our_va)
+    our_len = (nxt - our_va) if nxt else orig_size
+    try:
+        ours = test_img.read(our_va, our_len)
+    except ValueError:
+        ours = test_img.read(our_va, orig_size)
+    ours = ours.rstrip(b"\xcc")
+    relocs_t = test_img.base_relocs()
+
+    # switch tables after the code: same detection as compare()
+    tail_start, tail = None, b""
+    if len(ours) > orig_size:
+        start = orig_size
+        while start < len(ours) and ours[start] in (0xCC, 0x90, 0x8D) and (our_va + start) not in relocs_t:
+            start += 1
+        start = (start + 3) & ~3 if (our_va + ((start + 3) & ~3)) in relocs_t else start
+        if our_va + start in relocs_t:
+            tail_start, tail = start, ours[start:]
+    code = ours[:orig_size] if tail_start is not None else ours
+    if len(code) != orig_size:
+        return {"status": "DIFF", "va": orig_va, "ours": ours, "relocs": [],
+                "size_note": f"size differs: ours {len(code)} bytes, original {orig_size} bytes"}
+
+    resolve = make_resolver(name, our_va, max(our_len, len(ours)), orig_va,
+                            test_img, fp, lmap, syms, obj_refs)
+    out = bytearray(code)
+    notes = []
+
+    # absolute references (base relocations)
+    for off in range(len(code) - 3):
+        if our_va + off in relocs_t:
+            label, expected = resolve(int.from_bytes(code[off:off + 4], "little"), off)
+            if expected is None:
+                notes.append(("?", off, label, "unknown in original"))
+            else:
+                out[off:off + 4] = (expected & 0xFFFFFFFF).to_bytes(4, "little")
+                notes.append(("ok", off, label, f"0x{expected:08x}"))
+
+    # relative branches leaving the function
+    for ins in _disasm(code, our_va):
+        bi = _branch_imm(ins)
+        if not bi:
+            continue
+        imm_off, imm_size, target = bi
+        if our_va <= target < our_va + len(ours):
+            continue
+        off = ins.address - our_va
+        label, expected = resolve(target)
+        if expected is None:
+            notes.append(("?", off, label, "unknown in original"))
+            continue
+        disp = expected - (orig_va + off + ins.size)
+        if imm_size == 1 and not -128 <= disp <= 127:
+            notes.append(("BAD", off, label, f"short jump can't reach 0x{expected:08x} from the original"))
+            continue
+        out[off + imm_off:off + imm_off + imm_size] = (disp & ((1 << (8 * imm_size)) - 1)).to_bytes(imm_size, "little")
+        notes.append(("ok", off, label, f"0x{expected:08x}"))
+
+    if any(s == "?" for s, *_ in notes):
+        return {"status": "UNVERIFIED", "va": orig_va, "ours": ours, "relocs": notes, "size_note": "",
+                "detail": "some references aren't in symbols.txt, so the code can't be checked"}
+    if any(s == "BAD" for s, *_ in notes):
+        return {"status": "DIFF", "va": orig_va, "ours": ours, "relocs": notes, "size_note": ""}
+
+    if tail_start is None:
+        same = digest(orig_va, out) == code_hash
+    else:
+        # tables point back into the function: same offsets in the original
+        t = bytearray(tail)
+        k = 0
+        while k + 4 <= len(t) and (our_va + tail_start + k) in relocs_t:
+            rel = int.from_bytes(t[k:k + 4], "little") - our_va
+            t[k:k + 4] = ((orig_va + rel) & 0xFFFFFFFF).to_bytes(4, "little")
+            k += 4
+        ext = bytes(out) + ours[orig_size:tail_start] + bytes(t)
+        if not ext_hash or len(ext) > ext_len:
+            same = False
+        else:
+            same = digest(orig_va, ext + b"\xcc" * (ext_len - len(ext))) == ext_hash
+        notes.append(("ok" if same else "BAD", tail_start, "switch tables",
+                      f"{len(tail)} bytes after code " + ("identical" if same else "differ")))
+    return {"status": "MATCH" if same else "DIFF", "va": orig_va, "ours": ours,
+            "relocs": notes, "size_note": ""}
