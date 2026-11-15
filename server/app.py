@@ -362,7 +362,8 @@ def make_handler(cfg, db):
             raw_merges = body.get("merges") or []
             try:
                 merges = [{"addr": parse_addr(m["addr"]), "size": int(m["size"]),
-                           "absorbed": [parse_addr(a) for a in m["absorbed"]]} for m in raw_merges]
+                           "absorbed": [parse_addr(a) for a in m["absorbed"]],
+                           "new": bool(m.get("new"))} for m in raw_merges]
             except (TypeError, KeyError, ValueError):
                 raise ApiError(400, "merges must be a list of {addr, size, absorbed: [addr]}")
             if any(m["size"] <= 0 for m in merges):
@@ -371,7 +372,8 @@ def make_handler(cfg, db):
             if models is not None and not isinstance(models, dict):
                 raise ApiError(400, "models must be an object of addr -> model")
             models = {parse_addr(a): str(m) for a, m in (models or {}).items()}
-            resized, removed = db.apply_merges(merges)      # before verify: sizes count toward bytes
+            # before verify (sizes count toward bytes) and readiness (covers added functions)
+            resized, removed, added = db.apply_merges(merges)
             changed = db.apply_verified(statuses)
             credited = db.apply_credits(models)             # after verify: covers new matches too
             ready_changed = db.set_ready(ready)
@@ -380,11 +382,12 @@ def make_handler(cfg, db):
             sys.stderr.write(f"admin verify by {u['login']}: {len(statuses)} statuses, {changed} changes, "
                              f"{credited} credits, {ready_changed} readiness changes, "
                              f"{requeued} stale reports requeued, "
-                             f"{resized} resized / {removed} removed by boundary fixes, "
+                             f"{resized} resized / {removed} removed / {added} added by boundary fixes, "
                              f"{len(milestones)} milestones\n")
             return self.send(200, {"received": len(statuses), "changed": changed, "credited": credited,
                                    "ready_changed": ready_changed, "requeued": requeued,
-                                   "resized": resized, "merged_away": removed, "milestones": milestones})
+                                   "resized": resized, "merged_away": removed, "added": added,
+                                   "milestones": milestones})
 
         # ---------------------------------------------------- static
         def static(self, rel):

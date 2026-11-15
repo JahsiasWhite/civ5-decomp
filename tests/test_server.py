@@ -305,7 +305,7 @@ def test_admin_verify(srv):
     assert req(base, "POST", "/api/admin/verify", payload, token=alice)[0] == 403
     code, j = req(base, "POST", "/api/admin/verify", payload, token=boss)    # C5D_ADMINS is case-insensitive
     assert code == 200 and j == {"received": 3, "changed": 2, "credited": 0, "ready_changed": 0,
-                                 "requeued": 0, "resized": 0, "merged_away": 0,
+                                 "requeued": 0, "resized": 0, "merged_away": 0, "added": 0,
                                  "milestones": ["First function matched"] + [
                                      f"{p} of the code matched (20 of 245 bytes, 1 functions)"
                                      for p in ("0.1%", "1%", "5%")]}
@@ -420,6 +420,25 @@ def test_admin_verify_merge_into_unknown_function_still_drops_pieces(srv):
     assert code == 200 and j["resized"] == 0 and j["merged_away"] == 2
     f = {r["addr"] for r in db.q("SELECT addr FROM functions")}
     assert 0x401038 not in f and 0x401040 not in f and 0x401050 not in f and 0x401060 in f
+    assert j["added"] == 0                          # not marked `new`: not added
+
+
+def test_admin_verify_adds_new_function(srv):
+    # `<entry> <end> new` in boundary_overrides.txt: the push adds the function (not ready,
+    # last in the queue) and a readiness flag in the same push applies to it
+    base, db = srv
+    boss = make_user(db, "boss")
+    last = db.one("SELECT MAX(queue_pos) p FROM functions")["p"]
+    merges = [{"addr": "0x00401038", "size": 40, "absorbed": ["0x00401040"], "new": True}]
+    code, j = req(base, "POST", "/api/admin/verify", {"statuses": {}, "merges": merges}, token=boss)
+    assert code == 200 and j["added"] == 1 and j["merged_away"] == 1 and j["resized"] == 0
+    f = db.one("SELECT * FROM functions WHERE addr=?", (0x401038,))
+    assert (f["size"], f["name"], f["ready"], f["status"], f["queue_pos"]) == (
+        40, "FUN_00401038", 0, "todo", last + 1)
+    _, j = req(base, "POST", "/api/admin/verify",
+               {"statuses": {}, "merges": merges, "ready": {"0x00401038": 1}}, token=boss)
+    assert j["added"] == 0 and j["ready_changed"] == 1   # pushing again adds nothing
+    assert db.one("SELECT ready FROM functions WHERE addr=?", (0x401038,))["ready"] == 1
 
 
 def test_admin_verify_accepts_large_body_others_dont(srv):

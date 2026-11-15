@@ -409,13 +409,14 @@ class DB:
                     "ready=excluded.ready, queue_pos=excluded.queue_pos", r)
 
     def apply_merges(self, merges):
-        """Boundary fixes (boundary_overrides.txt): [{"addr", "size", "absorbed": [addr]}].
-        The function at addr now spans `size` bytes; each absorbed entry was a piece
-        Ghidra split off it, so it leaves the pool along with any claim on it. A piece
-        already matched is kept (that would need a closer look). An addr the server does
-        not have (a `new` function Ghidra missed; `manage.py import` adds it) is not
-        resized, but its absorbed pieces still leave the pool. Returns (resized, removed)."""
-        resized = removed = 0
+        """Boundary fixes (boundary_overrides.txt): [{"addr", "size", "absorbed": [addr],
+        "new": bool}]. The function at addr now spans `size` bytes; each absorbed entry was
+        a piece Ghidra split off it (or misread from inside it), so it leaves the pool along
+        with any claim on it. A piece already matched is kept (that would need a closer
+        look). A `new` addr the server doesn't have (Ghidra missed the function) is added
+        at the end of the queue, not ready until a readiness push says so; any other
+        unknown addr is ignored. Returns (resized, removed, added)."""
+        resized = removed = added = 0
         with self.tx():
             for m in merges:
                 addr = m["addr"]
@@ -423,6 +424,13 @@ class DB:
                     resized += self.conn.execute(
                         "UPDATE functions SET size=?, updated=? WHERE addr=? AND size<>?",
                         (m["size"], time.time(), addr, m["size"])).rowcount
+                elif m.get("new"):
+                    pos = self.one("SELECT COALESCE(MAX(queue_pos), -1) + 1 p FROM functions")["p"]
+                    self.conn.execute(
+                        "INSERT INTO functions(addr,size,name,cluster,ready,queue_pos,updated) "
+                        "VALUES (?,?,?,?,0,?,?)", (addr, m["size"], f"FUN_{addr:08x}", addr, pos, time.time()))
+                    self.log("merge", None, addr, "", "added (function Ghidra missed)")
+                    added += 1
                 for a in m["absorbed"]:
                     f = self.one("SELECT status FROM functions WHERE addr=?", (a,))
                     if not f or f["status"] == "matched":
@@ -431,7 +439,7 @@ class DB:
                     self.conn.execute("DELETE FROM functions WHERE addr=?", (a,))
                     self.log("merge", None, a, "", f"part of 0x{addr:08x} (boundary fix)")
                     removed += 1
-        return resized, removed
+        return resized, removed, added
 
     # ------------------------------------------------------------ stats
     def fingerprint(self):
