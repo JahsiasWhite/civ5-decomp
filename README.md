@@ -110,13 +110,13 @@ Then open `http://127.0.0.1:8765/dev-login?login=you`. Tests: `python -m pytest 
    aren't verified within 14 days (no PR, or the PR wasn't merged) go back to the pool.
 6. Automatic deploys: `.github/workflows/tests.yml` runs the server tests on every push.
    On the VPS, `c5d-deploy.timer` runs `deploy/autodeploy.py` every 2 minutes as root: when
-   `origin/main` has moved and its `server-tests` check passed, it fast-forwards
+   `origin/main` has moved and its `tests` workflow passed, it fast-forwards
    `/opt/civ5-decomp`, restarts `c5d` if anything under `server/` changed, and rolls back if
    `/healthz` doesn't answer. Nothing on GitHub can reach the server. Install once:
    `sudo cp deploy/c5d-deploy.service deploy/c5d-deploy.timer /etc/systemd/system/ &&
    sudo systemctl daemon-reload && sudo systemctl enable --now c5d-deploy.timer`.
    If the repo is private, also create `/etc/c5d-deploy.env` (root, chmod 600) with
-   `C5D_GITHUB_TOKEN=` a fine-grained token for this repo with Contents: read and Checks: read.
+   `C5D_GITHUB_TOKEN=` a fine-grained token for this repo with Contents: read and Actions: read.
    Logs: `journalctl -u c5d-deploy`. Changes to the systemd units, the Caddyfile or
    `/etc/c5d.env` still need installing by hand.
 7. Backups: `c5d-backup.timer` runs `manage.py backup` nightly (SQLite online backup into

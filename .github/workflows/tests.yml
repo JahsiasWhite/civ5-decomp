@@ -1,5 +1,5 @@
 # Server tests on every push and pull request. The VPS only deploys commits on main
-# whose "server-tests" check passed (see deploy/autodeploy.py).
+# whose "tests" workflow passed (see deploy/autodeploy.py).
 name: tests
 
 on:

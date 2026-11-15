@@ -1,15 +1,18 @@
 """Pull-based auto deploy for the coordination server (run by c5d-deploy.timer as root).
 
-Every few minutes: fetch origin/main. If it moved, wait until GitHub's "server-tests"
-check for that commit has passed, fast-forward the checkout, and restart c5d if anything
+Every few minutes: fetch origin/main. If it moved, wait until the GitHub Actions "tests"
+workflow for that commit has passed, fast-forward the checkout, and restart c5d if anything
 under server/ changed. If /healthz doesn't come back, roll back to the previous commit.
 
 Pull rather than push, so GitHub never holds a key to this machine. For a private repo,
-put a read-only token in /etc/c5d-deploy.env as C5D_GITHUB_TOKEN (fine-grained, this repo
-only, permissions Contents: read and Checks: read). A public repo needs none (60 requests/hour
-unauthenticated; this makes at most one per run, only while a new commit is waiting).
+put a read-only token in /etc/c5d-deploy.env as C5D_GITHUB_TOKEN: a fine-grained token for
+this repo only, with Contents: read and Actions: read. It's used for both the git fetch and
+the workflow lookup (passed to git through the environment, never on the command line).
+A public repo needs none (60 API requests/hour unauthenticated; this makes at most one per
+run, only while a new commit is waiting).
 Standard library only. Logs go to the journal: journalctl -u c5d-deploy
 """
+import base64
 import json
 import os
 import subprocess
@@ -22,7 +25,7 @@ from pathlib import Path
 REPO = Path(os.environ.get("C5D_REPO", "/opt/civ5-decomp"))
 BRANCH = os.environ.get("C5D_BRANCH", "main")
 SLUG = os.environ.get("C5D_GITHUB_REPO", "JahsiasWhite/civ5-decomp")
-CHECK = os.environ.get("C5D_CHECK_NAME", "server-tests")
+WORKFLOW = os.environ.get("C5D_WORKFLOW_NAME", "tests")
 TOKEN = os.environ.get("C5D_GITHUB_TOKEN", "")
 SERVICE = os.environ.get("C5D_SERVICE", "c5d")
 HEALTH = f"http://127.0.0.1:{os.environ.get('C5D_PORT', '8765')}/healthz"
@@ -33,19 +36,31 @@ def log(msg):
     print(msg, flush=True)
 
 
-def git(*args):
-    return subprocess.run(["git", "-C", str(REPO), "-c", f"safe.directory={REPO}", *args],
-                          check=True, capture_output=True, text=True).stdout.strip()
+def git_env():
+    env = dict(os.environ)
+    if TOKEN:   # same mechanism actions/checkout uses; GIT_CONFIG_* keeps it out of `ps`
+        auth = base64.b64encode(f"x-access-token:{TOKEN}".encode()).decode()
+        env.update(GIT_CONFIG_COUNT="1", GIT_CONFIG_KEY_0="http.https://github.com/.extraheader",
+                   GIT_CONFIG_VALUE_0=f"AUTHORIZATION: basic {auth}", GIT_TERMINAL_PROMPT="0")
+    return env
+
+
+def git(*args, check=True):
+    r = subprocess.run(["git", "-C", str(REPO), "-c", f"safe.directory={REPO}", *args],
+                       capture_output=True, text=True, env=git_env())
+    if check and r.returncode:
+        raise RuntimeError(f"git {args[0]} failed: {r.stderr.strip()}")
+    return r if not check else r.stdout.strip()
 
 
 def check_state(sha):
-    """'success', 'pending' or 'failed' for the CI check on this commit."""
+    """'success', 'pending' or 'failed' for the CI workflow on this commit."""
     req = urllib.request.Request(
-        f"https://api.github.com/repos/{SLUG}/commits/{sha}/check-runs?check_name={CHECK}",
+        f"https://api.github.com/repos/{SLUG}/actions/runs?head_sha={sha}&event=push",
         headers={"Accept": "application/vnd.github+json", "User-Agent": "c5d-autodeploy",
                  **({"Authorization": f"Bearer {TOKEN}"} if TOKEN else {})})
     with urllib.request.urlopen(req, timeout=20) as r:
-        runs = json.load(r).get("check_runs", [])
+        runs = [x for x in json.load(r).get("workflow_runs", []) if x.get("name") == WORKFLOW]
     if not runs or any(x["status"] != "completed" for x in runs):
         return "pending"
     return "success" if all(x["conclusion"] == "success" for x in runs) else "failed"
@@ -79,8 +94,7 @@ def main():
         return 0
     if STATE.exists() and STATE.read_text().strip() == new:
         return 0                                   # already rejected (failed CI or rolled back)
-    if subprocess.run(["git", "-C", str(REPO), "-c", f"safe.directory={REPO}",
-                       "merge-base", "--is-ancestor", cur, new]).returncode != 0:
+    if git("merge-base", "--is-ancestor", cur, new, check=False).returncode != 0:
         log(f"origin/{BRANCH} {new[:8]} is not a fast-forward of {cur[:8]}; fix the checkout by hand")
         return 1
 
@@ -96,7 +110,7 @@ def main():
     if state == "pending":
         return 0                                   # CI still running; next tick
     if state == "failed":
-        log(f"{new[:8]}: '{CHECK}' failed on GitHub; not deploying")
+        log(f"{new[:8]}: '{WORKFLOW}' workflow failed on GitHub; not deploying")
         reject(new)
         return 0
 
@@ -121,4 +135,9 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except RuntimeError as e:
+        hint = "" if TOKEN else " (private repo? set C5D_GITHUB_TOKEN in /etc/c5d-deploy.env)"
+        log(f"{e}{hint}")
+        sys.exit(1)
