@@ -156,6 +156,8 @@ ol.log time { font: 12px/1.6 var(--mono); color: var(--brass); }
 .btn { display: inline-block; border: 1px solid var(--brass); background: var(--brass); color: var(--bg);
   font: 600 14px/1 var(--sans); padding: 11px 16px; border-radius: 8px; cursor: pointer; text-decoration: none; }
 .btn.ghost { background: transparent; color: var(--brass-2); }
+button.link { background: none; border: 0; padding: 0; font: inherit; color: var(--brass-2);
+  text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .row-gap > * { margin: 0 8px 8px 0; }
 input[type=text] { font: 15px var(--sans); padding: 10px 12px; border: 1px solid var(--rule); border-radius: 8px;
   background: var(--panel); color: var(--ink); width: min(320px, 100%); }

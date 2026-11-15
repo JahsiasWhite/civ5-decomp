@@ -22,6 +22,7 @@ import mimetypes
 import os
 import secrets
 import sys
+import threading
 import time
 import traceback
 import urllib.parse
@@ -101,7 +102,22 @@ def as_int(v, name, default=0):
         raise ApiError(400, f"{name} must be an integer")
 
 
+STATS_TTL = 30                        # seconds /api/stats is served from memory
+
+
 def make_handler(cfg, db):
+    stats_cache = {"t": 0.0, "v": None, "fp": None}
+    stats_lock = threading.Lock()
+
+    def stats():
+        """db.stats() at most once per STATS_TTL. Recomputed early when a successful POST
+        clears the cache or the DB fingerprint changes (writes from manage.py etc.)."""
+        with stats_lock:
+            now, fp = time.monotonic(), db.fingerprint()
+            if stats_cache["v"] is None or fp != stats_cache["fp"] or now - stats_cache["t"] >= STATS_TTL:
+                stats_cache.update(v=db.stats(), t=now, fp=fp)
+            return stats_cache["v"]
+
     class Handler(BaseHTTPRequestHandler):
         server_version = "c5d"
         timeout = REQUEST_TIMEOUT          # socket timeout: idle/slow clients can't pin a thread
@@ -192,10 +208,12 @@ def make_handler(cfg, db):
                 user = db.user_by_token(auth[7:].strip())
             else:
                 v = unsign(cfg, self.cookies().get("c5d_session"))
-                if v:
-                    uid, exp = v.split(":")
-                    if float(exp) > time.time():
-                        user = db.one("SELECT * FROM users WHERE id=?", (int(uid),))
+                parts = v.split(":") if v else []
+                if len(parts) == 3 and float(parts[2]) > time.time():
+                    row = db.one("SELECT * FROM users WHERE id=?", (int(parts[0]),))
+                    # session_gen is bumped by "sign out everywhere" / manage.py revoke
+                    if row and row["session_gen"] == int(parts[1]):
+                        user = row
             if required and not user:
                 raise ApiError(401, "sign in first (GitHub) or pass Authorization: Bearer <token>")
             return user
@@ -219,7 +237,7 @@ def make_handler(cfg, db):
                     db.one("SELECT 1")
                     return self.send(200, {"ok": True}, headers={"Cache-Control": "no-store"})
                 if path == "/api/stats":
-                    return self.send(200, db.stats(), headers={"Cache-Control": "max-age=30"})
+                    return self.send(200, stats(), headers={"Cache-Control": "max-age=30"})
                 if path == "/api/me":
                     u = self.current_user()
                     return self.send(200, {"login": u["login"], "display": u["display"],
@@ -232,7 +250,8 @@ def make_handler(cfg, db):
                 if path == "/auth/callback":
                     return self.callback()
                 if path == "/logout":
-                    return self.redirect("/", self.set_cookie("c5d_session", "", 0))
+                    # signing out is POST /api/logout (JSON), so other sites can't do it with a link
+                    raise ApiError(405, "sign out with POST /api/logout")
                 if path == "/dev-login":
                     return self.dev_login()
                 raise ApiError(404, "not found")
@@ -244,6 +263,7 @@ def make_handler(cfg, db):
         def do_POST(self):
             try:
                 self.post()
+                stats_cache["v"] = None        # writes show up on the dashboard right away
             except ApiError as e:
                 self.send(e.code, {"error": str(e)})
             except Exception as e:
@@ -253,8 +273,13 @@ def make_handler(cfg, db):
             path = urllib.parse.urlparse(self.path).path
             if path == "/api/admin/verify":
                 return self.admin_verify()
-            body = self.json_body()
+            body = self.json_body()             # JSON-only: a cross-site form can't post here
+            if path == "/api/logout":
+                return self.send(200, {"ok": True}, headers=self.set_cookie("c5d_session", "", 0))
             u = self.current_user()
+            if path == "/api/logout-all":
+                db.revoke_sessions(u["id"])
+                return self.send(200, {"ok": True}, headers=self.set_cookie("c5d_session", "", 0))
             if path == "/api/terms":
                 db.accept_terms(u["id"])
                 return self.send(200, {"ok": True})
@@ -328,7 +353,9 @@ def make_handler(cfg, db):
         # ---------------------------------------------------- auth
         def start_session(self, user_id):
             exp = time.time() + SESSION_DAYS * 86400
-            return self.set_cookie("c5d_session", sign(cfg, f"{user_id}:{exp:.0f}"), SESSION_DAYS * 86400)
+            gen = db.one("SELECT session_gen FROM users WHERE id=?", (user_id,))["session_gen"]
+            return self.set_cookie("c5d_session", sign(cfg, f"{user_id}:{gen}:{exp:.0f}"),
+                                   SESSION_DAYS * 86400)
 
         def login(self):
             if not (cfg.gh_id and cfg.gh_secret):

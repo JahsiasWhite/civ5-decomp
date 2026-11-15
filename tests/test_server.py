@@ -345,3 +345,79 @@ def test_manage_backup(tmp_path):
     dest, pruned = manage.backup_db(src, out, keep=2)
     assert pruned == 2 and sorted(p.name for p in out.iterdir())[-1] == dest.name
     assert dbmod.DB(dest).one("SELECT COUNT(*) c FROM functions")["c"] == 1
+
+
+# ------------------------------------------------------------ sessions, logout, stats cache
+
+def dev_cookie(base, login):
+    class NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, *a, **k):
+            return None
+    try:
+        urllib.request.build_opener(NoRedirect).open(base + "/dev-login?login=" + login)
+    except urllib.error.HTTPError as e:
+        return e.headers["Set-Cookie"].split(";")[0]
+    raise AssertionError("no redirect")
+
+
+def raw_post(base, path, cookie, ctype="application/json"):
+    r = urllib.request.Request(base + path, method="POST", data=b"{}",
+                               headers={"Content-Type": ctype, "Cookie": cookie})
+    try:
+        with urllib.request.urlopen(r) as resp:
+            return resp.status, resp.headers.get("Set-Cookie")
+    except urllib.error.HTTPError as e:
+        return e.code, e.headers.get("Set-Cookie")
+
+
+def test_logout_is_post_only(srv):
+    base, _ = srv
+    cookie = dev_cookie(base, "dana")
+    assert req(base, "GET", "/logout", cookie=cookie)[0] == 405
+    assert req(base, "GET", "/api/me", cookie=cookie)[0] == 200          # GET didn't sign out
+    assert raw_post(base, "/api/logout", cookie, ctype="application/x-www-form-urlencoded")[0] == 415
+    code, sc = raw_post(base, "/api/logout", cookie)
+    assert code == 200 and sc.startswith("c5d_session=;") and "Max-Age=0" in sc
+
+
+def test_logout_everywhere_revokes_old_sessions(srv):
+    base, db = srv
+    laptop, phone = dev_cookie(base, "erin"), dev_cookie(base, "erin")
+    uid = db.one("SELECT id FROM users WHERE login='dev:erin'")["id"]
+    tok = db.new_token(uid)
+    assert raw_post(base, "/api/logout-all", laptop)[0] == 200
+    assert req(base, "GET", "/api/me", cookie=phone)[0] == 401           # other browser is out too
+    assert req(base, "GET", "/api/me", cookie=laptop)[0] == 401
+    assert req(base, "GET", "/api/me", token=tok)[0] == 200              # CLI token unaffected
+    assert req(base, "GET", "/api/me", cookie=dev_cookie(base, "erin"))[0] == 200   # can sign in again
+
+
+def test_manage_revoke(srv):
+    base, db = srv
+    import argparse
+    import manage
+    cookie = dev_cookie(base, "finn")
+    uid = db.one("SELECT id FROM users WHERE login='dev:finn'")["id"]
+    tok = db.new_token(uid)
+    manage.cmd_revoke(db, argparse.Namespace(login="dev:finn", keep_token=False))
+    assert req(base, "GET", "/api/me", cookie=cookie)[0] == 401
+    assert req(base, "GET", "/api/me", token=tok)[0] == 401
+    with pytest.raises(SystemExit):
+        manage.cmd_revoke(db, argparse.Namespace(login="nobody", keep_token=False))
+
+
+def test_stats_cached_and_invalidated(srv, monkeypatch):
+    base, db = srv
+    real, calls = db.stats, []
+    monkeypatch.setattr(db, "stats", lambda: calls.append(1) or real())
+    for _ in range(5):
+        assert req(base, "GET", "/api/stats")[0] == 200
+    assert len(calls) == 1                                               # served from memory
+    tok = make_user(db, "alice")                                         # new user: fingerprint changes
+    req(base, "GET", "/api/stats")
+    assert len(calls) == 2
+    req(base, "POST", "/api/display", {"display": "Al"}, token=tok)      # POST clears the cache
+    req(base, "GET", "/api/stats")
+    assert len(calls) == 3
+    assert req(base, "POST", "/api/claim", {"n": 2}, token=tok)[0] == 200
+    assert req(base, "GET", "/api/stats")[1]["claimed"] == 2           # fresh, not the cached 0

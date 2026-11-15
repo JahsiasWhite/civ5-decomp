@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS milestones (
 
 # columns added after the first release: (table, column, declaration)
 MIGRATIONS = [
+    ("users", "session_gen", "INTEGER NOT NULL DEFAULT 0"),      # bump to revoke all sessions
     ("functions", "model", "TEXT NOT NULL DEFAULT ''"),          # model/tool credited with the match
     ("functions", "matched_day", "TEXT"),                        # YYYY-MM-DD (UTC) first verified
     ("functions", "tried", "INTEGER NOT NULL DEFAULT 0"),        # ever attempted
@@ -180,6 +181,15 @@ class DB:
         with self.tx():
             self.conn.execute("UPDATE users SET token_hash=? WHERE id=?", (hash_token(token), user_id))
         return token
+
+    def revoke_sessions(self, user_id, token=False):
+        """Invalidate every signed-in browser session of this user (and, with token=True,
+        the CLI token too). Returns False if there is no such user."""
+        with self.tx():
+            cur = self.conn.execute(
+                "UPDATE users SET session_gen=session_gen+1" + (", token_hash=NULL" if token else "") +
+                " WHERE id=?", (user_id,))
+        return cur.rowcount > 0
 
     def user_by_token(self, token):
         if not token:
@@ -328,6 +338,16 @@ class DB:
                     "ready=excluded.ready, queue_pos=excluded.queue_pos", r)
 
     # ------------------------------------------------------------ stats
+    def fingerprint(self):
+        """Cheap value that changes whenever anything stats() shows changes (used to keep the
+        server's stats cache honest when another process, e.g. manage.py, writes the DB)."""
+        return tuple(self.one(
+            "SELECT (SELECT MAX(rowid) FROM events), (SELECT MAX(rowid) FROM runs), "
+            "(SELECT COUNT(*) FROM claims), (SELECT MAX(rowid) FROM claims), "
+            "(SELECT MAX(rowid) FROM spend), (SELECT MAX(rowid) FROM milestones), "
+            "(SELECT COUNT(*) FROM users), (SELECT COUNT(*) FROM functions), "
+            "(SELECT MAX(updated) FROM functions)"))
+
     def stats(self):
         """Everything the dashboard shows. Days are UTC."""
         now = time.time()

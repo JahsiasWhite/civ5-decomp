@@ -50,4 +50,9 @@ $("new-token").addEventListener("click", () =>
     $("token").textContent = j.token;
     $("token-box").classList.remove("hidden");
   }));
+$("logout").addEventListener("click", () => post("/api/logout").then(() => location.assign("/")));
+$("logout-all").addEventListener("click", () => {
+  if (confirm("Sign out of every browser where you're signed in? Your CLI token keeps working."))
+    post("/api/logout-all").then(() => location.assign("/"));
+});
 load();

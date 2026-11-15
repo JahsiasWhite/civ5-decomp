@@ -8,6 +8,8 @@
   python server/manage.py push [--server URL] [--token T]
                                     send progress/status.csv to the live server
                                     (your login must be in the server's C5D_ADMINS)
+  python server/manage.py revoke <login> [--keep-token]
+                                    sign a user out of every browser (and kill their CLI token)
   python server/manage.py backup --dir DIR [--keep 14]
                                     consistent online copy of the DB (safe while serving)
 
@@ -110,6 +112,14 @@ def cmd_token(db, args):
     print(db.new_token(uid))
 
 
+def cmd_revoke(db, args):
+    u = db.one("SELECT id FROM users WHERE login=?", (args.login,))
+    if not u:
+        raise SystemExit(f"no user {args.login!r}")
+    db.revoke_sessions(u["id"], token=not args.keep_token)
+    print(f"revoked sessions{'' if args.keep_token else ' and API token'} for {args.login}")
+
+
 def cmd_stats(db, _args):
     s = db.stats()
     for k in ("tiers", "trend_by_model", "leaderboard"):
@@ -160,6 +170,10 @@ def main():
     t.add_argument("login")
     t.add_argument("--display", default=None)
     t.set_defaults(fn=cmd_token)
+    rv = sub.add_parser("revoke", help="sign a user out everywhere")
+    rv.add_argument("login")
+    rv.add_argument("--keep-token", action="store_true", help="leave their CLI token working")
+    rv.set_defaults(fn=cmd_revoke)
     sub.add_parser("stats").set_defaults(fn=cmd_stats)
     sp = sub.add_parser("spend", help="add a cost ledger entry")
     sp.add_argument("day")

@@ -108,7 +108,12 @@ Then open `http://127.0.0.1:8765/dev-login?login=you`. Tests: `python -m pytest 
 6. Backups: `c5d-backup.timer` runs `manage.py backup` nightly (SQLite online backup into
    `/var/backups/c5d`, keeps 14). Copy that folder off the VPS now and then.
 7. Monitoring: `GET /healthz` returns `{"ok": true}` when the server and DB respond. Point
-   an uptime checker at it.
+   an uptime checker at it. `/api/stats` is computed at most every 30 s (sooner after any
+   write), so dashboard traffic doesn't rerun the aggregate queries.
+   Sessions: users can "Sign out everywhere" on `/account`. To lock someone out, run
+   `python server/manage.py revoke <login>` on the server; it ends their browser sessions and
+   deletes their CLI token (`--keep-token` leaves the token working). Changing
+   `C5D_SESSION_SECRET` signs everyone out.
 8. Before launch: fill in the contact address and get the draft terms in
    `server/static/legal.html` reviewed.
 
