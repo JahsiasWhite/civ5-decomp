@@ -1,0 +1,10 @@
+[Unit]
+Description=Nightly backup of the civ5-decomp coordination DB
+
+[Timer]
+OnCalendar=*-*-* 04:30:00 UTC
+RandomizedDelaySec=10m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

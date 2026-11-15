@@ -8,6 +8,8 @@ Standard library only. Configure with environment variables:
   C5D_SESSION_SECRET     secret for signing session cookies (required in production)
   GITHUB_CLIENT_ID       GitHub OAuth app credentials (sign-in with GitHub)
   GITHUB_CLIENT_SECRET
+  C5D_ADMINS             comma-separated GitHub logins allowed to push verify results
+                         (POST /api/admin/verify, bearer token only; see manage.py push)
   C5D_DEV_AUTH=1         local testing only: /dev-login?login=<name> signs in without
                          GitHub. Refused unless bound to 127.0.0.1/localhost.
 
@@ -21,6 +23,7 @@ import os
 import secrets
 import sys
 import time
+import traceback
 import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -33,7 +36,9 @@ HERE = Path(__file__).resolve().parent
 STATIC = HERE / "static"
 PAGES = {"/": "index.html", "/how": "how.html", "/legal": "legal.html", "/account": "account.html"}
 MAX_BODY = 16 * 1024
+ADMIN_MAX_BODY = 8 * 1024 * 1024      # a full status list (~20k functions) for /api/admin/verify
 SESSION_DAYS = 30
+REQUEST_TIMEOUT = 30                  # seconds a client may sit idle on a socket
 
 
 def env(name, default=None):
@@ -51,6 +56,7 @@ class Config:
             print("warning: C5D_SESSION_SECRET not set; using a random one", file=sys.stderr)
         self.gh_id = env("GITHUB_CLIENT_ID")
         self.gh_secret = env("GITHUB_CLIENT_SECRET")
+        self.admins = {a.strip().lower() for a in (env("C5D_ADMINS") or "").split(",") if a.strip()}
         self.dev_auth = env("C5D_DEV_AUTH") == "1"
         if self.dev_auth and self.host not in ("127.0.0.1", "localhost", "::1"):
             raise SystemExit("C5D_DEV_AUTH is only allowed when bound to localhost")
@@ -86,13 +92,41 @@ def parse_addr(v):
     return a
 
 
+def as_int(v, name, default=0):
+    if v is None or v == "":
+        return default
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        raise ApiError(400, f"{name} must be an integer")
+
+
 def make_handler(cfg, db):
     class Handler(BaseHTTPRequestHandler):
         server_version = "c5d"
+        timeout = REQUEST_TIMEOUT          # socket timeout: idle/slow clients can't pin a thread
 
         # ---------------------------------------------------- plumbing
+        def address_string(self):
+            # behind the reverse proxy every request comes from loopback; log the real client
+            ip = self.client_address[0]
+            fwd = self.headers.get("X-Forwarded-For") if getattr(self, "headers", None) else None
+            if fwd and ip in ("127.0.0.1", "::1"):
+                return fwd.split(",")[-1].strip()
+            return ip
+
         def log_message(self, fmt, *args):
             sys.stderr.write("%s %s\n" % (self.address_string(), fmt % args))
+
+        def fail(self, exc):
+            """Last-resort handler: log the traceback, answer 500 JSON (never leak details)."""
+            if isinstance(exc, (BrokenPipeError, ConnectionResetError)):
+                return                     # client went away; nothing to answer
+            sys.stderr.write(f"error handling {self.command} {self.path}:\n{traceback.format_exc()}")
+            try:
+                self.send(500, {"error": "internal server error"})
+            except OSError:
+                pass
 
         def send(self, code, body, ctype="application/json", headers=None):
             data = body if isinstance(body, bytes) else (
@@ -134,16 +168,22 @@ def make_handler(cfg, db):
                 flags += "; Secure"
             return {"Set-Cookie": f"{name}={value}; {flags}"}
 
-        def json_body(self):
+        def json_body(self, limit=MAX_BODY):
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 raise ApiError(415, "send application/json")      # also blocks cross-site form posts
-            n = int(self.headers.get("Content-Length") or 0)
-            if n > MAX_BODY:
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                raise ApiError(400, "bad Content-Length")
+            if n < 0 or n > limit:
                 raise ApiError(413, "body too large")
             try:
-                return json.loads(self.rfile.read(n) or b"{}")
-            except json.JSONDecodeError:
+                body = json.loads(self.rfile.read(n) or b"{}")
+            except (json.JSONDecodeError, UnicodeDecodeError):
                 raise ApiError(400, "invalid JSON")
+            if not isinstance(body, dict):
+                raise ApiError(400, "body must be a JSON object")
+            return body
 
         def current_user(self, required=True):
             auth = self.headers.get("Authorization") or ""
@@ -175,6 +215,9 @@ def make_handler(cfg, db):
                     return self.send(200, (STATIC / PAGES[path]).read_bytes(), "text/html")
                 if path.startswith("/static/"):
                     return self.static(path[len("/static/"):])
+                if path == "/healthz":
+                    db.one("SELECT 1")
+                    return self.send(200, {"ok": True}, headers={"Cache-Control": "no-store"})
                 if path == "/api/stats":
                     return self.send(200, db.stats(), headers={"Cache-Control": "max-age=30"})
                 if path == "/api/me":
@@ -195,52 +238,80 @@ def make_handler(cfg, db):
                 raise ApiError(404, "not found")
             except ApiError as e:
                 self.send(e.code, {"error": str(e)})
+            except Exception as e:
+                self.fail(e)
 
         def do_POST(self):
             try:
-                path = urllib.parse.urlparse(self.path).path
-                body = self.json_body()
-                u = self.current_user()
-                if path == "/api/terms":
-                    db.accept_terms(u["id"])
-                    return self.send(200, {"ok": True})
-                if path == "/api/display":
-                    d = str(body.get("display", ""))[:40].strip()
-                    db.set_display(u["id"], d)
-                    return self.send(200, {"ok": True, "display": d})
-                if path == "/api/token":
-                    return self.send(200, {"token": db.new_token(u["id"])})
-                self.require_terms(u)
-                if path == "/api/claim":
-                    n = max(1, min(int(body.get("n", 1)), 25))
-                    addr = parse_addr(body["addr"]) if body.get("addr") is not None else None
-                    prefix = "".join(c for c in str(body.get("worker_prefix", "w")) if c.isalnum())[:8] or "w"
-                    try:
-                        got = db.claim(u["id"], n=n, addr=addr, worker_prefix=prefix,
-                                       min_size=int(body.get("min_size", 0)),
-                                       max_size=int(body["max_size"]) if body.get("max_size") else None)
-                    except LookupError as e:
-                        raise ApiError(404, str(e))
-                    except ValueError as e:
-                        raise ApiError(409, str(e))
-                    return self.send(200, {"claims": [{"addr": f"0x{a:08x}", "worker": w} for a, w in got]})
-                if path == "/api/release":
-                    ok = db.release(u["id"], parse_addr(body.get("addr")))
-                    return self.send(200 if ok else 404, {"released": ok})
-                if path == "/api/report":
-                    try:
-                        db.report(u["id"], parse_addr(body.get("addr")), str(body.get("status", "")),
-                                  str(body.get("detail", "")), str(body.get("model", "")),
-                                  body.get("tokens_in", 0), body.get("tokens_out", 0),
-                                  body.get("tokens_cached", 0), body.get("tries", 0))
-                    except PermissionError as e:
-                        raise ApiError(403, str(e))
-                    except ValueError as e:
-                        raise ApiError(400, str(e))
-                    return self.send(200, {"ok": True})
-                raise ApiError(404, "not found")
+                self.post()
             except ApiError as e:
                 self.send(e.code, {"error": str(e)})
+            except Exception as e:
+                self.fail(e)
+
+        def post(self):
+            path = urllib.parse.urlparse(self.path).path
+            if path == "/api/admin/verify":
+                return self.admin_verify()
+            body = self.json_body()
+            u = self.current_user()
+            if path == "/api/terms":
+                db.accept_terms(u["id"])
+                return self.send(200, {"ok": True})
+            if path == "/api/display":
+                d = str(body.get("display", ""))[:40].strip()
+                db.set_display(u["id"], d)
+                return self.send(200, {"ok": True, "display": d})
+            if path == "/api/token":
+                return self.send(200, {"token": db.new_token(u["id"])})
+            self.require_terms(u)
+            if path == "/api/claim":
+                n = max(1, min(as_int(body.get("n"), "n", 1), 25))
+                addr = parse_addr(body["addr"]) if body.get("addr") is not None else None
+                prefix = "".join(c for c in str(body.get("worker_prefix", "w")) if c.isalnum())[:8] or "w"
+                min_size = as_int(body.get("min_size"), "min_size", 0)
+                max_size = as_int(body.get("max_size"), "max_size", None) or None
+                try:
+                    got = db.claim(u["id"], n=n, addr=addr, worker_prefix=prefix,
+                                   min_size=min_size, max_size=max_size)
+                except LookupError as e:
+                    raise ApiError(404, str(e))
+                except ValueError as e:
+                    raise ApiError(409, str(e))
+                return self.send(200, {"claims": [{"addr": f"0x{a:08x}", "worker": w} for a, w in got]})
+            if path == "/api/release":
+                ok = db.release(u["id"], parse_addr(body.get("addr")))
+                return self.send(200 if ok else 404, {"released": ok})
+            if path == "/api/report":
+                try:
+                    db.report(u["id"], parse_addr(body.get("addr")), str(body.get("status", "")),
+                              str(body.get("detail", "")), str(body.get("model", "")),
+                              body.get("tokens_in", 0), body.get("tokens_out", 0),
+                              body.get("tokens_cached", 0), body.get("tries", 0))
+                except PermissionError as e:
+                    raise ApiError(403, str(e))
+                except ValueError as e:
+                    raise ApiError(400, str(e))
+                return self.send(200, {"ok": True})
+            raise ApiError(404, "not found")
+
+        def admin_verify(self):
+            """Maintainer pushes a full local `c5d match` result: {"statuses": {"0x..": "MATCH"}}.
+            Bearer token only (no cookies), and the user's login must be in C5D_ADMINS.
+            Authenticated before the (large) body is read."""
+            if not (self.headers.get("Authorization") or "").startswith("Bearer "):
+                raise ApiError(401, "admin calls need Authorization: Bearer <token>")
+            u = self.current_user()
+            if u["login"].lower() not in cfg.admins:
+                raise ApiError(403, "not an admin (C5D_ADMINS)")
+            body = self.json_body(ADMIN_MAX_BODY)
+            raw = body.get("statuses")
+            if not isinstance(raw, dict):
+                raise ApiError(400, "statuses must be an object of addr -> status")
+            statuses = {parse_addr(a): str(s) for a, s in raw.items()}
+            changed = db.apply_verified(statuses)
+            sys.stderr.write(f"admin verify by {u['login']}: {len(statuses)} statuses, {changed} changes\n")
+            return self.send(200, {"received": len(statuses), "changed": changed})
 
         # ---------------------------------------------------- static
         def static(self, rel):
@@ -274,21 +345,27 @@ def make_handler(cfg, db):
             state, code = qs.get("state", [""])[0], qs.get("code", [""])[0]
             if not code or unsign(cfg, self.cookies().get("c5d_state")) != state:
                 raise ApiError(400, "sign-in state mismatch; try again")
-            req = urllib.request.Request(
-                "https://github.com/login/oauth/access_token",
-                data=urllib.parse.urlencode({"client_id": cfg.gh_id, "client_secret": cfg.gh_secret,
-                                             "code": code}).encode(),
-                headers={"Accept": "application/json"})
-            with urllib.request.urlopen(req, timeout=15) as r:
-                tok = json.loads(r.read()).get("access_token")
-            if not tok:
-                raise ApiError(400, "GitHub sign-in failed")
-            req = urllib.request.Request("https://api.github.com/user",
-                                         headers={"Authorization": f"Bearer {tok}",
-                                                  "Accept": "application/vnd.github+json",
-                                                  "User-Agent": "c5d-server"})
-            with urllib.request.urlopen(req, timeout=15) as r:
-                login = json.loads(r.read())["login"]
+            if not (cfg.gh_id and cfg.gh_secret):
+                raise ApiError(503, "GitHub sign-in is not configured on this server")
+            try:
+                req = urllib.request.Request(
+                    "https://github.com/login/oauth/access_token",
+                    data=urllib.parse.urlencode({"client_id": cfg.gh_id, "client_secret": cfg.gh_secret,
+                                                 "code": code}).encode(),
+                    headers={"Accept": "application/json"})
+                with urllib.request.urlopen(req, timeout=15) as r:
+                    tok = json.loads(r.read()).get("access_token")
+                if not tok:
+                    raise ApiError(400, "GitHub sign-in failed")
+                req = urllib.request.Request("https://api.github.com/user",
+                                             headers={"Authorization": f"Bearer {tok}",
+                                                      "Accept": "application/vnd.github+json",
+                                                      "User-Agent": "c5d-server"})
+                with urllib.request.urlopen(req, timeout=15) as r:
+                    login = json.loads(r.read())["login"]
+            except (OSError, ValueError, KeyError) as e:   # URLError/timeout are OSError
+                sys.stderr.write(f"GitHub sign-in error: {e!r}\n")
+                raise ApiError(502, "could not reach GitHub to finish sign-in; try again")
             uid = db.upsert_user(login)
             self.redirect("/account", self.start_session(uid))
 

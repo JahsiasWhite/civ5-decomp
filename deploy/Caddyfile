@@ -1,0 +1,41 @@
+# Caddy reverse proxy for the coordination server.
+# Install to /etc/caddy/Caddyfile, replace c5d.example.org with your domain
+# (DNS A/AAAA record pointing at the VPS), then: systemctl reload caddy
+# Caddy gets and renews the HTTPS certificate automatically.
+
+c5d.example.org {
+	encode zstd gzip
+
+	# The app limits normal bodies to 16 KB itself; admin verify pushes are up to 8 MB.
+	request_body {
+		max_size 8MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
+	reverse_proxy 127.0.0.1:8765 {
+		# the app logs the client address from X-Forwarded-For (only from loopback)
+		header_up X-Forwarded-For {remote_host}
+	}
+
+	log {
+		output file /var/log/caddy/c5d.access.log {
+			roll_size 20MiB
+			roll_keep 5
+		}
+	}
+}
+
+# Rate limiting is not built into stock Caddy. If the site attracts abuse, build Caddy
+# with github.com/mholt/caddy-ratelimit (xcaddy) and add, inside the site block:
+#
+#	rate_limit {
+#		zone per_ip {
+#			key    {remote_host}
+#			events 120
+#			window 1m
+#		}
+#	}

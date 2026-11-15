@@ -5,15 +5,23 @@
   python server/manage.py token <login> [--display NAME]
                                     create/refresh an API token (e.g. for yourself)
   python server/manage.py stats     print the dashboard numbers
+  python server/manage.py push [--server URL] [--token T]
+                                    send progress/status.csv to the live server
+                                    (your login must be in the server's C5D_ADMINS)
+  python server/manage.py backup --dir DIR [--keep 14]
+                                    consistent online copy of the DB (safe while serving)
 
 The nightly routine on the maintainer's machine (which has the game) is:
-  git pull  ->  python tools/c5d.py match  ->  python server/manage.py verify
+  git pull  ->  python tools/c5d.py match  ->  python server/manage.py push
+(`verify` does the same against a local DB, for testing.)
 """
 import argparse
 import csv
 import json
 import os
+import sqlite3
 import sys
+import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -22,8 +30,12 @@ sys.path.insert(0, str(HERE))
 from db import DB  # noqa: E402
 
 
+def db_path():
+    return Path(os.environ.get("C5D_DB", HERE / "data" / "c5d.sqlite"))
+
+
 def open_db():
-    p = Path(os.environ.get("C5D_DB", HERE / "data" / "c5d.sqlite"))
+    p = db_path()
     p.parent.mkdir(parents=True, exist_ok=True)
     return DB(p)
 
@@ -41,13 +53,55 @@ def cmd_import(db, args):
     cmd_verify(db, args)
 
 
-def cmd_verify(db, args):
+def read_statuses(path):
     statuses = {}
-    if Path(args.status).exists():
-        with open(args.status, newline="") as fh:
+    if Path(path).exists():
+        with open(path, newline="") as fh:
             for r in csv.DictReader(fh):
                 statuses[int(r["address"], 16)] = r["status"]
+    return statuses
+
+
+def cmd_verify(db, args):
+    statuses = read_statuses(args.status)
     print(f"verify: {db.apply_verified(statuses)} status changes from {args.status}")
+
+
+def cmd_push(_db, args):
+    """Send the local match results to the live server (POST /api/admin/verify)."""
+    if not Path(args.status).exists():
+        raise SystemExit(f"{args.status} not found: run `python tools/c5d.py match` first")
+    statuses = {f"0x{a:08x}": s for a, s in read_statuses(args.status).items()}
+    sys.path.insert(0, str(ROOT / "tools"))
+    from remote import Remote
+    r = Remote(args.server, args.token).call("POST", "/api/admin/verify", {"statuses": statuses})
+    print(f"push: server received {r['received']} statuses, {r['changed']} status changes")
+
+
+def backup_db(src, dest_dir, keep=14):
+    """Online backup via SQLite's backup API (consistent even with WAL and live writers).
+    Writes c5d-YYYYMMDD-HHMMSS.sqlite and keeps the newest `keep` files."""
+    dest_dir = Path(dest_dir)
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / time.strftime("c5d-%Y%m%d-%H%M%S.sqlite", time.gmtime())
+    tmp = dest.with_suffix(".tmp")
+    s = sqlite3.connect(f"file:{Path(src).as_posix()}?mode=ro", uri=True)
+    d = sqlite3.connect(tmp)
+    try:
+        s.backup(d)
+    finally:
+        d.close()
+        s.close()
+    tmp.replace(dest)
+    old = sorted(dest_dir.glob("c5d-*.sqlite"))[:-keep] if keep > 0 else []
+    for f in old:
+        f.unlink()
+    return dest, len(old)
+
+
+def cmd_backup(_db, args):
+    dest, pruned = backup_db(db_path(), args.dir, args.keep)
+    print(f"backup: {dest} ({dest.stat().st_size:,} bytes; pruned {pruned} old)")
 
 
 def cmd_token(db, args):
@@ -93,6 +147,15 @@ def main():
     v = sub.add_parser("verify")
     v.add_argument("--status", default=str(ROOT / "progress" / "status.csv"))
     v.set_defaults(fn=cmd_verify)
+    pu = sub.add_parser("push", help="send progress/status.csv to the live server")
+    pu.add_argument("--status", default=str(ROOT / "progress" / "status.csv"))
+    pu.add_argument("--server", default=None, help="default: server in config.local.json")
+    pu.add_argument("--token", default=None, help="default: token in config.local.json")
+    pu.set_defaults(fn=cmd_push, no_db=True)
+    b = sub.add_parser("backup", help="online copy of the DB into --dir")
+    b.add_argument("--dir", required=True)
+    b.add_argument("--keep", type=int, default=14)
+    b.set_defaults(fn=cmd_backup, no_db=True)
     t = sub.add_parser("token")
     t.add_argument("login")
     t.add_argument("--display", default=None)
@@ -114,7 +177,7 @@ def main():
     cr.add_argument("--day", default=None, help="matched day YYYY-MM-DD")
     cr.set_defaults(fn=cmd_credit)
     args = p.parse_args()
-    args.fn(open_db(), args)
+    args.fn(None if getattr(args, "no_db", False) else open_db(), args)
 
 
 if __name__ == "__main__":

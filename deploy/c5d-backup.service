@@ -1,0 +1,15 @@
+[Unit]
+Description=Back up the civ5-decomp coordination DB
+
+[Service]
+Type=oneshot
+User=c5d
+Group=c5d
+WorkingDirectory=/opt/civ5-decomp
+EnvironmentFile=/etc/c5d.env
+ExecStart=/usr/bin/python3 server/manage.py backup --dir /var/backups/c5d --keep 14
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/c5d /var/backups/c5d

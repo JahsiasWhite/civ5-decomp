@@ -86,19 +86,30 @@ python server/dev.py
 
 Then open `http://127.0.0.1:8765/dev-login?login=you`. Tests: `python -m pytest tests/`.
 
-**Deploying publicly:**
-1. Put it behind an HTTPS reverse proxy (Caddy or nginx) on a small VPS, and set
-   `C5D_PUBLIC_URL=https://your-domain`, `C5D_SESSION_SECRET=<long random>` and
-   `C5D_HOST=127.0.0.1` (the proxy forwards to it). Never set `C5D_DEV_AUTH` in production.
-2. Create a GitHub OAuth app (GitHub → Settings → Developer settings → OAuth Apps)
+**Deploying publicly** (a small Linux VPS; ready-made files are in `deploy/`):
+1. Clone the repo to `/opt/civ5-decomp`, then install the systemd units and the env file
+   as described at the top of `deploy/c5d.service`. Fill in `/etc/c5d.env` (template:
+   `deploy/c5d.env.example`): `C5D_PUBLIC_URL`, a long random `C5D_SESSION_SECRET`,
+   `C5D_DB=/var/lib/c5d/c5d.sqlite`, and `C5D_ADMINS=<your GitHub login>`. The server binds
+   `127.0.0.1` only. Never set `C5D_DEV_AUTH` in production.
+2. Install Caddy and use `deploy/Caddyfile` (change the domain). It handles HTTPS
+   certificates, HSTS and the body size limit, and passes the client IP for the logs.
+3. Create a GitHub OAuth app (GitHub → Settings → Developer settings → OAuth Apps)
    with the callback `https://your-domain/auth/callback`, and set `GITHUB_CLIENT_ID` /
    `GITHUB_CLIENT_SECRET`. No scopes are requested; the server only reads the public login.
-3. Copy `server/data/c5d.sqlite` (after `manage.py import`) to the server, or run
-   the import there with your `build/queue.csv` (it contains addresses, sizes and names only).
-4. Nightly: `git pull && python tools/c5d.py match && python server/manage.py verify`
-   on your machine, then sync the verify results (the DB, or run `verify` on the server
-   with `progress/status.csv`).
-5. Before launch: fill in the contact address and get the draft terms in
+4. Seed the DB once: copy `server/data/c5d.sqlite` (after `manage.py import`) to
+   `/var/lib/c5d/`, or run the import there with your `build/queue.csv` (it contains
+   addresses, sizes and names only). After that, never copy the DB over the live one:
+   that would wipe claims and reports made since.
+5. Sign in on the site, create a token on `/account`, and `c5d remote login` with it.
+   Nightly on your machine: `git pull && python tools/c5d.py match && python server/manage.py push`.
+   `push` sends `progress/status.csv` to `POST /api/admin/verify` (only logins listed in
+   `C5D_ADMINS`, bearer token only).
+6. Backups: `c5d-backup.timer` runs `manage.py backup` nightly (SQLite online backup into
+   `/var/backups/c5d`, keeps 14). Copy that folder off the VPS now and then.
+7. Monitoring: `GET /healthz` returns `{"ok": true}` when the server and DB respond. Point
+   an uptime checker at it.
+8. Before launch: fill in the contact address and get the draft terms in
    `server/static/legal.html` reviewed.
 
 ## Configuration

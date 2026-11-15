@@ -20,6 +20,7 @@ def srv(tmp_path, monkeypatch):
     monkeypatch.setenv("C5D_DEV_AUTH", "1")
     monkeypatch.setenv("C5D_HOST", "127.0.0.1")
     monkeypatch.setenv("C5D_SESSION_SECRET", "test-secret")
+    monkeypatch.setenv("C5D_ADMINS", "Boss, other")
     import app as appmod
     import db as dbmod
     db = dbmod.DB(tmp_path / "t.sqlite")
@@ -237,3 +238,110 @@ def test_dev_auth_refused_on_public_bind(monkeypatch):
     import app as appmod
     with pytest.raises(SystemExit):
         appmod.Config()
+
+
+# ------------------------------------------------------------ deploy hardening
+
+def test_healthz(srv):
+    base, _ = srv
+    assert req(base, "GET", "/healthz") == (200, {"ok": True})
+
+
+def test_malformed_numbers_are_400_not_500(srv):
+    base, db = srv
+    tok = make_user(db, "alice")
+    for body in ({"n": "lots"}, {"n": [1]}, {"min_size": "x"}, {"max_size": {}}):
+        code, j = req(base, "POST", "/api/claim", body, token=tok)
+        assert code == 400 and "integer" in j["error"], body
+
+
+def test_non_object_json_body(srv):
+    base, db = srv
+    tok = make_user(db, "alice")
+    r = urllib.request.Request(base + "/api/claim", method="POST", data=b"[1,2]",
+                               headers={"Content-Type": "application/json", "Authorization": f"Bearer {tok}"})
+    with pytest.raises(urllib.error.HTTPError) as e:
+        urllib.request.urlopen(r)
+    assert e.value.code == 400
+
+
+def test_unexpected_error_returns_500_json(srv, monkeypatch, capsys):
+    base, db = srv
+    monkeypatch.setattr(db, "stats", lambda: 1 / 0)
+    code, j = req(base, "GET", "/api/stats")
+    assert code == 500 and j == {"error": "internal server error"}     # no traceback leaked
+    tok = make_user(db, "alice")
+    monkeypatch.setattr(db, "release", lambda *a: {}["boom"])
+    assert req(base, "POST", "/api/release", {"addr": "0x00401000"}, token=tok)[0] == 500
+    # server still serves afterwards
+    assert req(base, "GET", "/healthz")[0] == 200
+
+
+def test_idle_client_is_disconnected(tmp_path, monkeypatch):
+    import socket
+    monkeypatch.setenv("C5D_SESSION_SECRET", "x")
+    import app as appmod
+    import db as dbmod
+    monkeypatch.setattr(appmod, "REQUEST_TIMEOUT", 0.5)
+    httpd = appmod.Server(("127.0.0.1", 0), appmod.make_handler(appmod.Config(), dbmod.DB(tmp_path / "t.sqlite")))
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    try:
+        s = socket.create_connection(httpd.server_address)
+        s.settimeout(5)
+        s.sendall(b"GET / HTTP/1.1\r\n")          # never finish the request
+        t0 = time.time()
+        assert s.recv(1024) == b""                  # server hung up on us
+        assert time.time() - t0 < 4
+        s.close()
+    finally:
+        httpd.shutdown()
+
+
+def test_admin_verify(srv):
+    base, db = srv
+    boss, alice = make_user(db, "boss"), make_user(db, "alice")
+    payload = {"statuses": {"0x00401000": "MATCH", "0x00401010": "DIFF", "0x00999999": "MATCH"}}
+    assert req(base, "POST", "/api/admin/verify", payload)[0] == 401
+    assert req(base, "POST", "/api/admin/verify", payload, token=alice)[0] == 403
+    code, j = req(base, "POST", "/api/admin/verify", payload, token=boss)    # C5D_ADMINS is case-insensitive
+    assert code == 200 and j == {"received": 3, "changed": 2}
+    f = {r["addr"]: r["status"] for r in db.q("SELECT addr, status FROM functions")}
+    assert f[0x401000] == "matched" and f[0x401010] == "diff"
+    assert req(base, "POST", "/api/admin/verify", {"statuses": {"zz": "MATCH"}}, token=boss)[0] == 400
+    assert req(base, "POST", "/api/admin/verify", {"statuses": []}, token=boss)[0] == 400
+
+
+def test_admin_verify_accepts_large_body_others_dont(srv):
+    base, db = srv
+    boss, alice = make_user(db, "boss"), make_user(db, "alice")
+    big = {"statuses": {f"0x{0x500000 + i * 16:08x}": "MATCH" for i in range(20000)}}   # ~550 KB
+    assert req(base, "POST", "/api/admin/verify", big, token=boss)[0] == 200
+    assert req(base, "POST", "/api/display", {"display": "x" * 20000}, token=alice)[0] == 413
+
+
+def test_manage_push(srv, tmp_path):
+    base, db = srv
+    import argparse
+    import manage
+    boss = make_user(db, "boss")
+    csvp = tmp_path / "status.csv"
+    csvp.write_text("address,symbol,status,bytes,source,since\n"
+                    "0x00401020,?F2@@YAXXZ,MATCH,22,src/auto/f.cpp,2026-11-15\n")
+    manage.cmd_push(None, argparse.Namespace(status=str(csvp), server=base, token=boss))
+    assert db.one("SELECT status FROM functions WHERE addr=?", (0x401020,))["status"] == "matched"
+
+
+def test_manage_backup(tmp_path):
+    import manage
+    import db as dbmod
+    src = tmp_path / "live.sqlite"
+    live = dbmod.DB(src)
+    live.import_functions([{"addr": 0x401000, "size": 9, "name": "F", "conv": "stack", "depth": 0,
+                            "cluster": 0x401000, "ready": 1, "queue_pos": 0}])
+    out = tmp_path / "bk"
+    for i in range(3):
+        (out / f"c5d-2000010{i}-000000.sqlite").parent.mkdir(exist_ok=True)
+        (out / f"c5d-2000010{i}-000000.sqlite").write_bytes(b"old")
+    dest, pruned = manage.backup_db(src, out, keep=2)
+    assert pruned == 2 and sorted(p.name for p in out.iterdir())[-1] == dest.name
+    assert dbmod.DB(dest).one("SELECT COUNT(*) c FROM functions")["c"] == 1

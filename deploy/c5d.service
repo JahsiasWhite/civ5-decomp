@@ -1,0 +1,35 @@
+# systemd unit for the coordination server.
+#   sudo useradd --system --home /opt/civ5-decomp --shell /usr/sbin/nologin c5d
+#   sudo install -d -o c5d -g c5d /var/lib/c5d /var/backups/c5d
+#   sudo cp deploy/c5d.service deploy/c5d-backup.service deploy/c5d-backup.timer /etc/systemd/system/
+#   sudo install -m 600 -o root deploy/c5d.env.example /etc/c5d.env   # then edit it
+#   sudo systemctl daemon-reload && sudo systemctl enable --now c5d c5d-backup.timer
+
+[Unit]
+Description=civ5-decomp coordination server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=c5d
+Group=c5d
+WorkingDirectory=/opt/civ5-decomp
+EnvironmentFile=/etc/c5d.env
+ExecStart=/usr/bin/python3 server/app.py
+Restart=on-failure
+RestartSec=5
+
+# hardening: read-only system, writable only where the DB and backups live
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadWritePaths=/var/lib/c5d /var/backups/c5d
+
+[Install]
+WantedBy=multi-user.target
