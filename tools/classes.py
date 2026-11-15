@@ -23,6 +23,12 @@ members' committed symbols are decorated with. Otherwise `Vtbl_<address>`.
 A header claims a class with a line like `// c5d-vtable: 0x00a04240` near the
 top (one line per vtable; secondary vtables optional). Every bundle for a member
 of that class then includes the header, so layouts grow in one place.
+
+Methods outside any vtable (most of them) are placed through same-object calls
+(ObjectGraph): a method that passes its own `this` on to another works on the
+same object. Bundles show the class reached that way from known members, and the
+group of methods that call each other on one object; once one of them is matched
+as a member of a class, the rest are told to use that class and its header.
 """
 import bisect
 import csv
@@ -296,6 +302,22 @@ class ClassIndex:
         # inherited without override: the most-base class among them defines it
         return [c for c in cs if self.base_of.get(c) not in cs] or cs
 
+    def object_graph(self, queue_by_addr):
+        """Same-object call graph (built on first use: it disassembles every method)."""
+        if getattr(self, "_graph", None) is None:
+            self._graph = ObjectGraph(self, queue_by_addr)
+        return self._graph
+
+    def header_for_name(self, name):
+        """Header for a class name: one claiming a vtable of a class with that name,
+        else include/<name>.h."""
+        for vt, h in self.headers.items():
+            c = self.class_of_vtable.get(vt)
+            if c is not None and self.name(c) == name:
+                return h
+        p = INCLUDE / f"{name}.h"
+        return p if p.exists() else None
+
     def lookup(self, addr):
         """Class key for a vtable, secondary vtable or member function address."""
         if addr in self.class_of_vtable:
@@ -304,9 +326,197 @@ class ClassIndex:
         return own[0] if own else None
 
 
+# ---------------------------------------------------------------- same-object calls
+class ObjectGraph:
+    """Calls a method makes on its own object: `this` arrives in ecx, and a call made
+    while ecx still holds it (directly, or copied back from the register it was
+    saved in) runs on the same object. The callee is then a method of the same class
+    or one of its bases. Tracked in one pass per function, ignoring branches, so it
+    is a hint, not proof.
+
+    - inferred: functions reached from a class's members (vtable slots and
+      constructors) through such calls, with the classes they were reached from.
+    - groups: functions connected by such calls, whether or not a class is known.
+      Groups over GROUP_MAX are dropped: base-class methods called from many
+      classes chain unrelated ones together.
+    """
+    GROUP_MAX = 40
+
+    def __init__(self, idx, queue_by_addr):
+        import capstone
+        from capstone import x86
+        from workqueue import SUBREG
+        self.idx = idx
+        md = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_32)
+        md.detail = True
+        self.calls = {}                          # caller -> same-object callees
+        for a, r in queue_by_addr.items():
+            if r["conv"] == "thiscall" or idx.owning_classes(a):
+                # a callee that doesn't read ecx ignores whatever it holds: no evidence
+                self.calls[a] = {c for c in self._same_this(md, x86, SUBREG, a, int(r["size"]))
+                                 if c != a and c in queue_by_addr
+                                 and (queue_by_addr[c]["conv"] == "thiscall" or idx.owning_classes(c))}
+        self.callers = defaultdict(set)
+        for a, cs in self.calls.items():
+            for c in cs:
+                self.callers[c].add(a)
+        self._infer()
+        self._group()
+
+    def _same_this(self, md, x86, subreg, a, size):
+        try:
+            code = self.idx.img.read(a, size)
+        except ValueError:
+            return set()
+        ecx = x86.X86_REG_ECX
+        hold, out = {ecx}, set()
+        for ins in md.disasm(code, a):
+            op0 = ins.operands[0] if ins.operands else None
+            if ins.id == x86.X86_INS_CALL:
+                if op0.type == x86.X86_OP_IMM and ecx in hold:
+                    out.add(op0.imm & 0xFFFFFFFF)
+                hold -= {x86.X86_REG_EAX, ecx, x86.X86_REG_EDX}      # caller-saved
+            elif ins.id == x86.X86_INS_JMP and op0.type == x86.X86_OP_IMM:
+                t = op0.imm & 0xFFFFFFFF
+                if not (a <= t < a + size) and ecx in hold:
+                    out.add(t)                                       # tail call
+            elif (ins.id == x86.X86_INS_MOV and len(ins.operands) == 2
+                  and op0.type == x86.X86_OP_REG and op0.size == 4
+                  and ins.operands[1].type == x86.X86_OP_REG
+                  and subreg.get(ins.operands[1].reg, ins.operands[1].reg) in hold):
+                hold.add(op0.reg)
+            else:
+                for r in ins.regs_access()[1]:
+                    hold.discard(subreg.get(r, r))
+            if not hold:
+                break
+        return out
+
+    def _infer(self):
+        seed = {a: set(self.idx.owning_classes(a)) for a in self.calls if self.idx.owning_classes(a)}
+        self.inferred = defaultdict(set)         # function -> classes it was reached from
+        self.via = {}                            # (function, class) -> a caller that showed it
+        frontier = list(seed)
+        while frontier:
+            nxt = []
+            for a in frontier:
+                have = seed.get(a) or self.inferred[a]
+                for b in self.calls.get(a, ()):
+                    if b in seed:
+                        continue
+                    new = have - self.inferred[b]
+                    if new:
+                        for c in new:
+                            self.via.setdefault((b, c), a)
+                        self.inferred[b] |= new
+                        nxt.append(b)
+            frontier = nxt
+
+    def _group(self):
+        parent = {}
+
+        def find(x):
+            parent.setdefault(x, x)
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+        for a, cs in self.calls.items():
+            for c in cs:
+                parent[find(a)] = find(c)
+        comps = defaultdict(list)
+        for x in list(parent):
+            comps[find(x)].append(x)
+        self.group_of = {}
+        for members in comps.values():
+            if 2 <= len(members) <= self.GROUP_MAX:
+                g = sorted(members)
+                for m in g:
+                    self.group_of[m] = g
+
+
+def _layout_lines(idx, name, h, claim_line):
+    """Header text to inline, or where to create one."""
+    if h:
+        text = h.read_text(errors="replace")
+        return [f"Its layout so far is in `{h.relative_to(ROOT).as_posix()}`. Use and extend that "
+                "header (add fields, methods) instead of declaring a new struct:", "",
+                "```cpp", text[:HEADER_CHARS].rstrip(), "```" if len(text) <= HEADER_CHARS
+                else "// ... (truncated; read the file)\n```", ""]
+    file = name if not name.startswith("Vtbl_") else "Unk_" + name[5:]
+    return [f"No header claims this class yet. If you work out any of its layout, put it "
+            f"in `include/{file}.h`{claim_line}, so later tasks on this class get it. "
+            "Keep the vtable pointer, if it has one, as the first member (declare the "
+            "virtuals you know, in slot order).", ""]
+
+
+def _object_lines(idx, addr, queue_by_addr, status_of):
+    """Lines for a function with no vtable class: the class its same-object callers
+    belong to, and the group of methods that call each other on the same object."""
+    g = idx.object_graph(queue_by_addr)
+    lines = []
+    cs = sorted(g.inferred.get(addr, ()), key=lambda c: idx.name(c))
+    named_header = None
+    if cs:
+        lines += ["## Class (inferred)", ""]
+        if len(cs) == 1:
+            c = cs[0]
+            lines.append(f"Probably a method of **{idx.name(c)}** (vtable 0x{c:08x}) or one of "
+                         f"its bases: 0x{g.via[(addr, c)]:08x}, reached from that class's members, "
+                         "calls it on its own `this`. Run "
+                         f"`python tools/c5d.py classes 0x{c:08x}` to see the class.")
+            lines.append("")
+            lines += _layout_lines(idx, idx.name(c), idx.header(c),
+                                   f" with the line `// c5d-vtable: 0x{c:08x}` near the top")
+            named_header = idx.header(c)
+        else:
+            lines.append("Called on the same object from members of several classes, so it "
+                         "is probably a method of a base class they share:")
+            for c in cs[:6]:
+                lines.append(f"- **{idx.name(c)}** (vtable 0x{c:08x}), via 0x{g.via[(addr, c)]:08x}")
+            lines.append("")
+    group = g.group_of.get(addr)
+    if group:
+        votes = Counter()
+        for m in group:
+            n = idx.class_from_symbol(idx.symbols_by_addr.get(m, ""))
+            if n:
+                votes[n] += 1
+        if not lines:
+            lines += ["## Related methods", ""]
+        n = len(group) - 1
+        lines.append(f"{'This function' if n == 1 else f'These {n} functions'} work on the same "
+                     "object as this one (one calls the other with `this` passed along in ecx), so "
+                     f"{'it is' if n == 1 else 'they are'} most likely methods of the same class "
+                     "(or its bases). Matched ones show the names and layout to reuse.")
+        if votes:
+            name = votes.most_common(1)[0][0]
+            lines.append(f"Matched ones are declared as members of **{name}**; make this one a "
+                         f"member of it too unless the code says otherwise.")
+            h = idx.header_for_name(name)
+            if h and h != named_header:
+                lines += [""] + _layout_lines(idx, name, h, "")
+        lines += ["", "| address | relation | status | symbol |", "|---|---|---|---|"]
+        rows = []
+        for m in group:
+            if m == addr:
+                continue
+            rel = ("calls it" if m in g.callers.get(addr, ()) else
+                   "called by it" if m in g.calls.get(addr, ()) else "same group")
+            st = status_of(m)
+            rows.append((st != "MATCH", rel == "same group", m, rel, st,
+                         idx.symbols_by_addr.get(m, "")))
+        for _a, _b, m, rel, st, sym in sorted(rows):
+            lines.append(f"| 0x{m:08x} | {rel} | {st} | {sym} |")
+        lines.append("")
+    return lines
+
+
 # ---------------------------------------------------------------- bundles
 def bundle_section(idx, addr, queue_by_addr, status_of=None, max_rows=30):
-    """Markdown lines for a task bundle, or [] when the function has no known class."""
+    """Markdown lines for a task bundle: the function's class from vtables, else (for
+    a thiscall function) the class and related methods found through same-object
+    calls, else []."""
     status_of = status_of or (lambda a: (queue_by_addr.get(a) or {}).get("status", "?"))
     cs = idx.classes_of(addr)
     if idx.is_shared(addr):
@@ -316,7 +526,9 @@ def bundle_section(idx, addr, queue_by_addr, status_of=None, max_rows=30):
                 "virtual). Name it for what it does; no single class owns it.", ""]
     owners = idx.owning_classes(addr)
     if not owners:
-        return []
+        if (queue_by_addr.get(addr) or {}).get("conv") != "thiscall":
+            return []
+        return _object_lines(idx, addr, queue_by_addr, status_of)
     c = owners[0]
     name, source = idx.name_source[c]
     lines = ["## Class", ""]
@@ -339,20 +551,9 @@ def bundle_section(idx, addr, queue_by_addr, status_of=None, max_rows=30):
         lines.append("It doesn't read `this` (ecx) on entry. Write it as a member anyway; "
                      "a method that ignores `this` compiles the same.")
     lines.append("")
-    h = idx.header(c)
     vts = ", ".join(f"0x{v:08x}" for v in idx.vtables_of(c))
-    if h:
-        text = h.read_text(errors="replace")
-        lines += [f"Its layout so far is in `{h.relative_to(ROOT).as_posix()}`. Use and extend that "
-                  "header (add fields, methods) instead of declaring a new struct:", "",
-                  "```cpp", text[:HEADER_CHARS].rstrip(), "```" if len(text) <= HEADER_CHARS
-                  else "// ... (truncated; read the file)\n```", ""]
-    else:
-        lines += [f"No header claims this class yet. If you work out any of its layout, put it "
-                  f"in `include/{name if not name.startswith('Vtbl_') else 'Unk_' + name[5:]}.h` "
-                  f"with the line `// c5d-vtable: {vts.split(', ')[0]}` near the top, so later "
-                  "tasks on this class get it. Keep the vtable pointer as the first member "
-                  "(declare the virtuals you know, in slot order).", ""]
+    lines += _layout_lines(idx, name, idx.header(c),
+                           f" with the line `// c5d-vtable: {vts.split(', ')[0]}` near the top")
     rows = [(-1, f, "ctor/dtor") for f in sorted(idx.ctors.get(c, set()))]
     for n, vt in enumerate(idx.vtables_of(c)):
         for k, t in enumerate(idx.vtables[vt]):
