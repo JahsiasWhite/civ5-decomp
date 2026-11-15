@@ -57,3 +57,6 @@
 0x0078dfd0 0x0078dfd9 new  # not listed
 0x0078dfe0 0x0078e09d  # 2-range row; one contiguous function
 0x0078e0a0 0x0078e75c  # absorbs 0x0078e0da, 0x0078e188
+0x00617350 0x006173a3  # auto (c5d boundaries), checked by hand: entries inside it: 0x0061735c
+0x0064d890 0x0064dd60  # auto (c5d boundaries), checked by hand: switch; table at 0x0064dd48 ends it; entries inside it: 0x0064d91f
+0x008fe9c0 0x008fecae new  # auto (c5d boundaries), checked by hand: early ret at 0x008fea64; start not listed; entries inside it: 0x008fea65

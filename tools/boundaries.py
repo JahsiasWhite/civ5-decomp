@@ -105,10 +105,34 @@ def _read_upto(img, va, size):
     return b""
 
 
-def _flow_end(md, img, entry, stops, limit=0x10000):
+def _jump_tables(img):
+    """{table VA: [case targets]} for MSVC switch tables: `jmp dword ptr [reg*4 + table]`
+    (ff 24 xx with a disp32-only SIB) where the disp32 is relocated, and the table is the
+    run of relocated 4-byte slots from there. The table and its case labels are pointed to
+    from the exe, but neither is a function start."""
+    base, text = _text(img)
+    relocs = img.base_relocs()
+    out = {}
+    for i in range(len(text) - 7):
+        if text[i] == 0xFF and text[i + 1] == 0x24 and (text[i + 2] & 0xC7) == 0x85                 and base + i + 3 in relocs:
+            t, = struct.unpack_from("<I", text, i + 3)
+            targets, slot = [], t
+            while slot in relocs:
+                try:
+                    targets.append(struct.unpack("<I", img.read(slot, 4))[0])
+                except ValueError:
+                    break
+                slot += 4
+            if targets:
+                out[t] = targets
+    return out
+
+
+def _flow_end(md, img, entry, stops, limit=0x10000, tables=None):
     """End (exclusive) of the code reached from entry by recursive descent: follows jcc/jmp
     targets inside [entry, entry+limit) that are not in `stops` (a jump to another
-    function's start is a tail call), and stops at ret, int3 and jmp. None if unreadable."""
+    function's start is a tail call) and the cases of switch tables ({table: [targets]}),
+    and stops at ret, int3 and jmp. A table right after the code counts toward the end."""
     seen, work, end = set(), [entry], entry
     while work:
         a = work.pop()
@@ -126,6 +150,12 @@ def _flow_end(md, img, entry, stops, limit=0x10000):
                     t = op.imm & 0xFFFFFFFF
                     if entry <= t < entry + limit and t not in stops:
                         work.append(t)
+                elif op is not None and op.type == x86.X86_OP_MEM and tables:
+                    t = op.mem.disp & 0xFFFFFFFF
+                    cases = tables.get(t, ())
+                    work.extend(c for c in cases if entry <= c < entry + limit)
+                    if cases and entry <= t < entry + limit:
+                        end = max(end, t + 4 * len(cases))
                 if ins.mnemonic == "jmp":
                     break
             a += ins.size
@@ -139,6 +169,7 @@ def find_misplaced(img, rows, protected=()):
     inside the code reached from the start before it is not a real one (a 0xcc byte in an
     operand, a jump-table target). A FUN_ entry B that is not a start and not called is
     reported when the code reached from the nearest real start A before it runs past B.
+    Switch tables and their case labels are not starts; the flow follows the cases.
     -> [(A, end, [B...], A_is_listed)], for `<A> <end> [new]` overrides."""
     import bisect
     base, text = _text(img)
@@ -146,8 +177,10 @@ def find_misplaced(img, rows, protected=()):
     listed = {int(r["entry"], 16): r["name"] for r in rows}
     padded = {base + i for i in range(1, len(text))
               if text[i - 1] == 0xCC and text[i] != 0xCC and (base + i) % 16 == 0}
-    starts = sorted(padded | {a for a in pointers | set(img.exports().values()) | set(protected)
-                              if base <= a < base + len(text)})
+    tables = _jump_tables(img)
+    not_starts = set(tables) | {c for cs in tables.values() for c in cs}
+    starts = sorted(padded | {a for a in (pointers - not_starts) | set(img.exports().values())
+                              | set(protected) if base <= a < base + len(text)})
     stops = set(starts) | calls
     md = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_32)
     md.detail = True
@@ -155,7 +188,7 @@ def find_misplaced(img, rows, protected=()):
 
     def end_of(a):
         if a not in ends:
-            ends[a] = _flow_end(md, img, a, stops)
+            ends[a] = _flow_end(md, img, a, stops, tables=tables)
         return ends[a]
 
     groups = {}

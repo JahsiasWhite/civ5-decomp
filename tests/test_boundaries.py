@@ -76,17 +76,20 @@ def test_load_functions_adds_new_entry(fcsv):
 class FakeImage:
     image_base = 0x400000
 
-    def __init__(self, code, pointers=()):
+    def __init__(self, code, pointers=(), code_relocs=()):
+        """pointers: addresses stored in data; code_relocs: VAs inside the code that are
+        relocated (a jump table's disp32 and slots)."""
         self.data = bytes(code)
         self.sections = [(".text", 0x1000, len(code), 0, len(code))]
         self._ptr_slots = {}
         self._pointers = list(pointers)
+        self._code_relocs = set(code_relocs)
 
     def exports(self):
         return {}
 
     def base_relocs(self):
-        return {0x10000000 + 4 * i for i in range(len(self._pointers))}
+        return {0x10000000 + 4 * i for i in range(len(self._pointers))} | self._code_relocs
 
     def read(self, va, size):
         if va >= 0x10000000:
@@ -154,3 +157,23 @@ FAKE_PAD = bytes.fromhex("cc" * 16 + "85c9740f" + "90" * 7 + "b8000000cc" "c3" "
 def test_find_misplaced_skips_false_padding_inside_a_function():
     rows = rows_of([(0x401023, 3), (0x401030, 1)])
     assert boundaries.find_misplaced(FakeImage(FAKE_PAD), rows) == [(0x401010, 0x401026, [0x401023], False)]
+
+
+# A switch: the jump table and its case labels are pointed to (relocated), but they are
+# not functions, and the cases are part of the function.
+#   0x401010: jmp dword ptr [eax*4 + 0x40101c]
+#   0x401017: xor eax,eax; ret                          (case 0)
+#   0x40101a: inc eax; ret                              (case 1; listed by Ghidra)
+#   0x40101c: dd 0x401017, 0x40101a                     (the table)
+#   0x401030: ret                                       (the next function)
+SWITCH = (bytes.fromhex("cc" * 16 + "ff2485" "1c104000" "31c0c3" "40c3")
+          + (0x401017).to_bytes(4, "little") + (0x40101a).to_bytes(4, "little")
+          + bytes.fromhex("cc" * 12 + "c3"))
+
+
+def test_find_misplaced_follows_switch_tables():
+    img = FakeImage(SWITCH, code_relocs={0x401013, 0x40101c, 0x401020})
+    rows = rows_of([(0x401010, 7), (0x40101a, 2), (0x401030, 1)])
+    assert boundaries.find_misplaced(img, rows) == [(0x401010, 0x401024, [0x40101a], True)]
+    rows = rows_of([(0x40101c, 8), (0x401030, 1)])      # Ghidra listed the table itself
+    assert boundaries.find_misplaced(img, rows) == [(0x401010, 0x401024, [0x40101c], False)]
