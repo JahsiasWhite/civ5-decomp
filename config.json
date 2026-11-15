@@ -1,0 +1,9 @@
+{
+  "game_dir": "D:/Steam/steamapps/common/Sid Meier's Civilization V",
+  "target_exe": "CivilizationV_DX11.exe",
+  "ghidra_dir": "C:/Users/<you>/Desktop/ghidra_10.3.2_PUBLIC",
+  "msvc_bin": "C:/Users/<you>/AppData/Local/Programs/Common/Microsoft/Visual C++ for Python/9.0/VC/bin",
+  "cflags": ["/nologo", "/c", "/O2", "/Gy", "/MD", "/EHsc", "/GR", "/Zc:wchar_t"],
+  "ghidra_project_dir": "ghidra_proj",
+  "ghidra_project_name": "civ5"
+}

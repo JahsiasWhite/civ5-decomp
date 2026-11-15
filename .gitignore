@@ -1,0 +1,21 @@
+# Never commit game binaries or derived data
+*.exe
+*.dll
+*.pdb
+*.dmp
+*.mdmp
+*.gpr
+*.rep/
+game/
+ghidra_proj/
+build/
+build_*.txt
+
+# Build artefacts
+*.obj
+*.lib
+*.ilk
+
+# Python
+__pycache__/
+*.pyc

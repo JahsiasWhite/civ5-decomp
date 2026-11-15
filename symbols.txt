@@ -1,0 +1,16 @@
+# Symbol map: <address> <linker symbol name>
+# Functions listed here are matched by `c5d match`; data and callee entries
+# let the matcher check that relocations point at the right place.
+# Names are the decorated names the compiler emits (extern "C" cdecl = _Name).
+
+# --- FSBA (Firaxis small-block allocator) ---
+0x00813750 _GetSmallObjectAllocator
+0x00813920 _FSBADisable
+0x00813940 _FSBAIsDisabled
+0x00813960 _FSBAIsSmallBlock
+0x00813a00 _FSBAGetMaxAllocatorSize
+0x00813a20 _FSBAPreventCreation
+0x06196937 _s_bPreventCreation
+
+# --- Log file manager ---
+0x0081cd50 _PeekLogFileMgr
