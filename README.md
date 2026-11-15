@@ -108,16 +108,25 @@ Then open `http://127.0.0.1:8765/dev-login?login=you`. Tests: `python -m pytest 
    `POST /api/admin/verify` (only logins listed in `C5D_ADMINS`, bearer token only). That way
    functions whose callees just matched start being handed out. Reported matches that
    aren't verified within 14 days (no PR, or the PR wasn't merged) go back to the pool.
-6. Backups: `c5d-backup.timer` runs `manage.py backup` nightly (SQLite online backup into
+6. Automatic deploys: `.github/workflows/tests.yml` runs the server tests on every push.
+   On the VPS, `c5d-deploy.timer` runs `deploy/autodeploy.py` every 2 minutes as root: when
+   `origin/main` has moved and its `server-tests` check passed, it fast-forwards
+   `/opt/civ5-decomp`, restarts `c5d` if anything under `server/` changed, and rolls back if
+   `/healthz` doesn't answer. Nothing on GitHub can reach the server. Install once:
+   `sudo cp deploy/c5d-deploy.service deploy/c5d-deploy.timer /etc/systemd/system/ &&
+   sudo systemctl daemon-reload && sudo systemctl enable --now c5d-deploy.timer`.
+   Logs: `journalctl -u c5d-deploy`. Changes to the systemd units, the Caddyfile or
+   `/etc/c5d.env` still need installing by hand.
+7. Backups: `c5d-backup.timer` runs `manage.py backup` nightly (SQLite online backup into
    `/var/backups/c5d`, keeps 14). Copy that folder off the VPS now and then.
-7. Monitoring: `GET /healthz` returns `{"ok": true}` when the server and DB respond. Point
+8. Monitoring: `GET /healthz` returns `{"ok": true}` when the server and DB respond. Point
    an uptime checker at it. `/api/stats` is computed at most every 30 s (sooner after any
    write), so dashboard traffic doesn't rerun the aggregate queries.
    Sessions: users can "Sign out everywhere" on `/account`. To lock someone out, run
    `python server/manage.py revoke <login>` on the server; it ends their browser sessions and
    deletes their CLI token (`--keep-token` leaves the token working). Changing
    `C5D_SESSION_SECRET` signs everyone out.
-8. Before launch: fill in the contact address and get the draft terms in
+9. Before launch: fill in the contact address and get the draft terms in
    `server/static/legal.html` reviewed.
 
 ## Configuration

@@ -1,9 +1,9 @@
 # systemd unit for the coordination server.
 #   sudo useradd --system --home /opt/civ5-decomp --shell /usr/sbin/nologin c5d
 #   sudo install -d -o c5d -g c5d /var/lib/c5d /var/backups/c5d
-#   sudo cp deploy/c5d.service deploy/c5d-backup.service deploy/c5d-backup.timer /etc/systemd/system/
+#   sudo cp deploy/c5d.service deploy/c5d-backup.service deploy/c5d-backup.timer \n#           deploy/c5d-deploy.service deploy/c5d-deploy.timer /etc/systemd/system/
 #   sudo install -m 600 -o root deploy/c5d.env.example /etc/c5d.env   # then edit it
-#   sudo systemctl daemon-reload && sudo systemctl enable --now c5d c5d-backup.timer
+#   sudo systemctl daemon-reload && sudo systemctl enable --now c5d c5d-backup.timer c5d-deploy.timer
 
 [Unit]
 Description=civ5-decomp coordination server

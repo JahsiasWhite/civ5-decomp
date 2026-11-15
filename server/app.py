@@ -356,7 +356,14 @@ def make_handler(cfg, db):
             ctype = {".js": "text/javascript", ".css": "text/css", ".html": "text/html",
                      ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon"}.get(
                 p.suffix.lower()) or mimetypes.guess_type(p.name)[0] or "application/octet-stream"
-            self.send(200, p.read_bytes(), ctype, {"Cache-Control": "max-age=300"})
+            # no-cache = revalidate every load, so a deploy never leaves new HTML talking to
+            # stale JS; unchanged files cost only a 304
+            st = p.stat()
+            etag = f'"{st.st_mtime_ns:x}-{st.st_size:x}"'
+            hdrs = {"Cache-Control": "no-cache", "ETag": etag}
+            if etag in (self.headers.get("If-None-Match") or ""):
+                return self.send(304, b"", ctype, hdrs)
+            self.send(200, p.read_bytes(), ctype, hdrs)
 
         # ---------------------------------------------------- auth
         def start_session(self, user_id):

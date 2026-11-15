@@ -40,8 +40,14 @@
     <h2>API token</h2>
     <p>The <code>c5d</code> command-line tool uses this token to claim and report. Creating a new one replaces the old one.</p>
     <button class="btn ghost" id="new-token">Create token</button>
-    <p id="token-box" class="hidden"><span class="token" id="token"></span><br><span class="sub">Copy it now; it won't be shown again.
-      Then run <code>python tools/c5d.py remote login --server <span id="origin"></span> --token …</code></span></p>
+    <div id="token-box" class="hidden">
+      <p class="sub">Copy it now; it won't be shown again.</p>
+      <div class="copy-row"><span class="token" id="token"></span>
+        <button class="btn ghost copy" type="button" data-copy="token">Copy token</button></div>
+      <p class="sub">Then run this in your civ5-decomp folder:</p>
+      <div class="copy-row"><code class="token" id="login-cmd"></code>
+        <button class="btn ghost copy" type="button" data-copy="login-cmd">Copy command</button></div>
+    </div>
 
     <h2>Your claims</h2>
     <table><thead><tr><th>Address</th><th>Worker</th><th class="num">Bytes</th><th>Expires</th></tr></thead>

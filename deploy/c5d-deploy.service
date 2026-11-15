@@ -1,0 +1,11 @@
+[Unit]
+Description=Deploy new civ5-decomp commits that passed CI
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# root: it fast-forwards /opt/civ5-decomp and restarts c5d.service
+ExecStart=/usr/bin/python3 /opt/civ5-decomp/deploy/autodeploy.py
+StateDirectory=c5d-deploy
+TimeoutStartSec=5min

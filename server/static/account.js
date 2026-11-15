@@ -16,7 +16,6 @@ function show(me) {
   $("display").value = me.display;
   $("terms-todo").classList.toggle("hidden", me.accepted_terms);
   $("terms-done").classList.toggle("hidden", !me.accepted_terms);
-  $("origin").textContent = location.origin;
   const tb = $("claims"); tb.textContent = "";
   if (!me.claims.length) {
     const tr = document.createElement("tr"); const td = document.createElement("td");
@@ -48,8 +47,42 @@ $("save-display").addEventListener("click", () =>
 $("new-token").addEventListener("click", () =>
   post("/api/token").then((j) => {
     $("token").textContent = j.token;
+    $("login-cmd").textContent =
+      `python tools/c5d.py remote login --server ${location.origin} --token ${j.token}`;
     $("token-box").classList.remove("hidden");
   }));
+
+function legacyCopy(text) {
+  const ta = document.createElement("textarea");
+  ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta); ta.select();
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+  ta.remove();
+  return ok;
+}
+
+function copyText(text) {
+  const viaApi = navigator.clipboard && window.isSecureContext
+    ? navigator.clipboard.writeText(text) : Promise.reject(new Error("no clipboard API"));
+  return viaApi.catch(() => (legacyCopy(text) ? undefined : Promise.reject(new Error("copy failed"))));
+}
+
+function selectContents(el) {
+  const r = document.createRange(); r.selectNodeContents(el);
+  const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+}
+
+for (const b of document.querySelectorAll("button.copy")) {
+  const label = b.textContent;
+  b.addEventListener("click", () => {
+    copyText($(b.dataset.copy).textContent).then(
+      () => { b.textContent = "Copied ✓"; },
+      () => { selectContents($(b.dataset.copy)); b.textContent = "Press Ctrl+C"; });
+    clearTimeout(b._t);
+    b._t = setTimeout(() => { b.textContent = label; }, 2000);
+  });
+}
 $("logout").addEventListener("click", () => post("/api/logout").then(() => location.assign("/")));
 $("logout-all").addEventListener("click", () => {
   if (confirm("Sign out of every browser where you're signed in? Your CLI token keeps working."))
