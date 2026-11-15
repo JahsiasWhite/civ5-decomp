@@ -77,8 +77,10 @@ jobs:
         run: |
           echo "WINEPREFIX=$RUNNER_TEMP/wine" >> "$GITHUB_ENV"
           export WINEPREFIX=$RUNNER_TEMP/wine WINEDEBUG=-all WINEDLLOVERRIDES="mscoree,mshtml="
+          # keep one Wine server alive for the many cl/link calls (it exits 2 if one is
+          # already running, which is fine), then create the prefix
+          wineserver -p || true
           wineboot -i >/dev/null 2>&1 || true
-          wineserver -p                     # keep Wine running between the many cl/link calls
           banner=$(wine msvc/VC/bin/cl.exe 2>&1 | head -1 | tr -d '\r')
           echo "$banner"
           case "$banner" in *15.00.30729.01*) ;; *) echo "::error::wrong or broken compiler: $banner"; exit 1;; esac
