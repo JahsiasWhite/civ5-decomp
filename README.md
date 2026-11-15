@@ -115,6 +115,8 @@ Then open `http://127.0.0.1:8765/dev-login?login=you`. Tests: `python -m pytest 
    `/healthz` doesn't answer. Nothing on GitHub can reach the server. Install once:
    `sudo cp deploy/c5d-deploy.service deploy/c5d-deploy.timer /etc/systemd/system/ &&
    sudo systemctl daemon-reload && sudo systemctl enable --now c5d-deploy.timer`.
+   If the repo is private, also create `/etc/c5d-deploy.env` (root, chmod 600) with
+   `C5D_GITHUB_TOKEN=` a fine-grained token for this repo with Contents: read and Checks: read.
    Logs: `journalctl -u c5d-deploy`. Changes to the systemd units, the Caddyfile or
    `/etc/c5d.env` still need installing by hand.
 7. Backups: `c5d-backup.timer` runs `manage.py backup` nightly (SQLite online backup into

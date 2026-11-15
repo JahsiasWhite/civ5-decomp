@@ -4,9 +4,10 @@ Every few minutes: fetch origin/main. If it moved, wait until GitHub's "server-t
 check for that commit has passed, fast-forward the checkout, and restart c5d if anything
 under server/ changed. If /healthz doesn't come back, roll back to the previous commit.
 
-Pull rather than push, so GitHub never holds a key to this machine. The repo is public,
-so the check lookup needs no token (unauthenticated limit: 60 requests/hour; this makes
-at most one per run, and only while a new commit is waiting).
+Pull rather than push, so GitHub never holds a key to this machine. For a private repo,
+put a read-only token in /etc/c5d-deploy.env as C5D_GITHUB_TOKEN (fine-grained, this repo
+only, permissions Contents: read and Checks: read). A public repo needs none (60 requests/hour
+unauthenticated; this makes at most one per run, only while a new commit is waiting).
 Standard library only. Logs go to the journal: journalctl -u c5d-deploy
 """
 import json
@@ -14,6 +15,7 @@ import os
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -21,6 +23,7 @@ REPO = Path(os.environ.get("C5D_REPO", "/opt/civ5-decomp"))
 BRANCH = os.environ.get("C5D_BRANCH", "main")
 SLUG = os.environ.get("C5D_GITHUB_REPO", "JahsiasWhite/civ5-decomp")
 CHECK = os.environ.get("C5D_CHECK_NAME", "server-tests")
+TOKEN = os.environ.get("C5D_GITHUB_TOKEN", "")
 SERVICE = os.environ.get("C5D_SERVICE", "c5d")
 HEALTH = f"http://127.0.0.1:{os.environ.get('C5D_PORT', '8765')}/healthz"
 STATE = Path(os.environ.get("STATE_DIRECTORY", "/var/lib/c5d-deploy")) / "last_rejected"
@@ -39,7 +42,8 @@ def check_state(sha):
     """'success', 'pending' or 'failed' for the CI check on this commit."""
     req = urllib.request.Request(
         f"https://api.github.com/repos/{SLUG}/commits/{sha}/check-runs?check_name={CHECK}",
-        headers={"Accept": "application/vnd.github+json", "User-Agent": "c5d-autodeploy"})
+        headers={"Accept": "application/vnd.github+json", "User-Agent": "c5d-autodeploy",
+                 **({"Authorization": f"Bearer {TOKEN}"} if TOKEN else {})})
     with urllib.request.urlopen(req, timeout=20) as r:
         runs = json.load(r).get("check_runs", [])
     if not runs or any(x["status"] != "completed" for x in runs):
@@ -80,7 +84,15 @@ def main():
         log(f"origin/{BRANCH} {new[:8]} is not a fast-forward of {cur[:8]}; fix the checkout by hand")
         return 1
 
-    state = check_state(new)
+    try:
+        state = check_state(new)
+    except urllib.error.HTTPError as e:
+        hint = " (private repo? set C5D_GITHUB_TOKEN in /etc/c5d-deploy.env)" if e.code == 404 else ""
+        log(f"GitHub check lookup for {new[:8]} failed: HTTP {e.code}{hint}")
+        return 1
+    except OSError as e:
+        log(f"GitHub check lookup for {new[:8]} failed: {e}")
+        return 1
     if state == "pending":
         return 0                                   # CI still running; next tick
     if state == "failed":
