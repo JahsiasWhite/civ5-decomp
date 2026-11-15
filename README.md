@@ -33,14 +33,32 @@ starting point for the exe <-> DLL interface classes.
   ATL code is statically linked and will be identified and excluded.
 - **Exports give us free names:** the exe exports Firaxis engine functions
   (`FSBA*`, `FJobSet*`, `GetLogFileMgr`, ...) for the gameplay DLL to call.
-- **Probably LTCG:** `FSBAIsSmallBlock` calls an internal function with
-  arguments in EAX/EDI instead of on the stack. Only whole-program optimisation
-  produces that. Leaf functions should still match one at a time; functions
-  calling LTCG-optimised callees will need those callees in the same `/GL` build.
-- **Code style:** `/O2`-style output (no frame pointer), cdecl exports.
-- **First matches (2026-11-14):** 4 FSBA functions match byte for byte with
-  `cl 15.00.30729.01 /O2 /Gy /MD /EHsc /GR`, with all relocation targets checked.
-  So the compiler and baseline flags are right, at least for leaf functions.
+- **Confirmed LTCG + `/Ob1`:** the exe was built with `/GL` + `/LTCG`, and inlining
+  limited to functions marked `inline` (`/Ob1`). Evidence: `FSmallObjectAllocator::IsSmallBlock`
+  (`this` in EDI, `p` in EAX, `ret 4`) matches only when linked with `/LTCG`,
+  and only with `/Ob1`. With `/Ob2` the linker inlines it into its single caller.
+- **Compiler/flags:** `cl 15.00.30729.01 /O2 /Ob1 /Gy /MD /EHsc /GR` (see `config.json`).
+- **Inline helpers live in headers:** `FSBAHasAllocatorForSize` contains an
+  inlined copy of the lookup that `0x81c360` performs out of line. Under `/Ob1`, that
+  means an `inline` header helper (`FindAllocatorForSize`) used by both.
+- **Open problem: LTCG register choice.** In the allocator cluster, our link passes
+  `this` in ECX where the original uses EDI. LTCG picks these registers by looking at all
+  callers, so functions that share callees must be decompiled together (here that
+  needs `GetSmallObjectAllocator`, `FSBADeallocate` and the `0x81be80`/`0x81c2f0` pools).
+
+## Progress
+
+| Date | Functions | Matched | Notes |
+|---|---|---|---|
+| 2026-11-14 | 19 | 15 | 9 of 13 in the second batch matched on the first attempt. All 4 misses are in the allocator cluster (LTCG register choice). |
+
+Matched: `FSBADisable`, `FSBAIsDisabled`, `FSBAGetMaxAllocatorSize`,
+`FSBAPreventCreation`, `FSBAIsSmallBlock`, `FSmallObjectAllocator::IsSmallBlock`,
+`GetSmallObjectAllocatorInitParams`, `FStringA/W_GetStringInitData`,
+`PeekLogFileMgr`, `GetTempHeap`, `GetMemTrackerForDLL`, `FJobSetInitImpl`,
+`FJobSetWaitImpl`, `FJobSetAddJobImpl`.
+Not yet: `FSBAAllocate`, `FSBAHasAllocatorForSize` (1 byte off),
+`FSmallObjectAllocator::Allocate`, `FSmallObjectAllocator::GetAllocatorForSize`.
 
 ## Phases
 
@@ -56,7 +74,9 @@ starting point for the exe <-> DLL interface classes.
 config.json        local paths (game, Ghidra, MSVC) + compiler flags
 symbols.txt        address <-> symbol map (drives `match`)
 tools/c5d.py       CLI: `env`, `analyze`, `dump`, `match`
-tools/binfmt.py    PE / COFF readers
+tools/binfmt.py    PE / COFF readers (exports, imports, base relocations)
+tools/ltcg.py      /GL + /LTCG build, placeholders, linked comparison
+tools/xrefs.py     find callers of an address in the exe
 tools/ghidra/      Ghidra headless scripts
 include/           reconstructed class declarations ("blueprints")
 src/               matched function source
@@ -78,10 +98,15 @@ python tools/c5d.py match             # compile src/ and compare against the exe
    any functions or globals it references.
 2. Write it in a `.cpp` under `src/` (one area per folder), and put class
    layouts in `include/`.
-3. Run `python tools/c5d.py match src/area/File.cpp` (add `-v` for detail). The
-   tool compiles with the flags in `config.json`, takes the same bytes from the
-   exe, and compares them while masking relocations. Each relocation must point
-   where the original does (resolved via `symbols.txt`).
+3. Run `python tools/c5d.py match` (add `-v` for detail). By default this is
+   **LTCG mode**: every file in `src/` is compiled with `/GL` and linked together with
+   `/LTCG` into a throwaway DLL, so the linker makes the same whole-program
+   decisions as Firaxis's build. Anything not decompiled yet becomes a generated
+   placeholder. Each function is then compared with the exe. Every call, jump
+   and global address must point where the original does (resolved via
+   `symbols.txt`, the linker map and the import tables). `--obj` is a faster
+   per-file mode that is only reliable for simple leaf functions.
+   `python tools/xrefs.py <addr>` lists the exe's callers of a function.
    - `MATCH`: identical, and every relocation target is verified.
    - `MATCH?`: identical bytes, but some relocation targets are unknown (add them to `symbols.txt`).
    - `DIFF`: a side-by-side disassembly with `!!` on differing lines

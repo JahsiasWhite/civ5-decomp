@@ -22,6 +22,8 @@ class PEImage:
         opt_size, = struct.unpack_from("<H", d, pe + 20)
         opt = pe + 24
         self.image_base, = struct.unpack_from("<I", d, opt + 28)
+        ndirs, = struct.unpack_from("<I", d, opt + 92)
+        self.dirs = [struct.unpack_from("<II", d, opt + 96 + 8 * i) for i in range(ndirs)]
         self.sections = []
         s = opt + opt_size
         for i in range(nsec):
@@ -29,6 +31,77 @@ class PEImage:
             name = d[o:o + 8].rstrip(b"\0").decode("ascii", "replace")
             vsize, rva, rawsize, rawptr = struct.unpack_from("<IIII", d, o + 8)
             self.sections.append((name, rva, vsize, rawptr, rawsize))
+        self._imports = None
+        self._relocs = None
+        self._exports = None
+
+    def _off(self, rva):
+        for _n, srva, vsize, rawptr, rawsize in self.sections:
+            if srva <= rva < srva + max(vsize, rawsize):
+                return rawptr + rva - srva
+        raise ValueError(f"rva 0x{rva:x} not in any section")
+
+    def _cstr(self, rva):
+        o = self._off(rva)
+        return self.data[o:self.data.index(b"\0", o)].decode("latin-1")
+
+    def imports(self):
+        """{IAT slot VA: 'dll!name'} (dll lower-cased)."""
+        if self._imports is None:
+            self._imports = {}
+            rva, size = self.dirs[1] if len(self.dirs) > 1 else (0, 0)
+            if rva:
+                o = self._off(rva)
+                while True:
+                    oft, _t, _f, name_rva, ft = struct.unpack_from("<IIIII", self.data, o)
+                    if not (oft or name_rva or ft):
+                        break
+                    dll = self._cstr(name_rva).lower()
+                    thunks = oft or ft
+                    i = 0
+                    while True:
+                        v, = struct.unpack_from("<I", self.data, self._off(thunks + 4 * i))
+                        if v == 0:
+                            break
+                        name = f"#{v & 0xFFFF}" if v & 0x80000000 else self._cstr(v + 2)
+                        self._imports[self.image_base + ft + 4 * i] = f"{dll}!{name}"
+                        i += 1
+                    o += 20
+        return self._imports
+
+    def exports(self):
+        """{name: VA}"""
+        if self._exports is None:
+            self._exports = {}
+            rva, _size = self.dirs[0] if self.dirs else (0, 0)
+            if rva:
+                o = self._off(rva)
+                (_chars, _ts, _maj, _min, _name, _base, _nfuncs, nnames,
+                 funcs_rva, names_rva, ords_rva) = struct.unpack_from("<IIHHIIIIIII", self.data, o)
+                for i in range(nnames):
+                    name_rva, = struct.unpack_from("<I", self.data, self._off(names_rva + 4 * i))
+                    ordi, = struct.unpack_from("<H", self.data, self._off(ords_rva + 2 * i))
+                    func_rva, = struct.unpack_from("<I", self.data, self._off(funcs_rva + 4 * ordi))
+                    self._exports[self._cstr(name_rva)] = self.image_base + func_rva
+        return self._exports
+
+    def base_relocs(self):
+        """Set of VAs patched by HIGHLOW base relocations."""
+        if self._relocs is None:
+            self._relocs = set()
+            rva, size = self.dirs[5] if len(self.dirs) > 5 else (0, 0)
+            if rva:
+                o, end = self._off(rva), self._off(rva) + size
+                while o < end:
+                    page, blk = struct.unpack_from("<II", self.data, o)
+                    if blk == 0:
+                        break
+                    for k in range((blk - 8) // 2):
+                        e, = struct.unpack_from("<H", self.data, o + 8 + 2 * k)
+                        if e >> 12 == 3:
+                            self._relocs.add(self.image_base + page + (e & 0xFFF))
+                    o += blk
+        return self._relocs
 
     def read(self, va, size):
         rva = va - self.image_base

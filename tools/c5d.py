@@ -251,8 +251,29 @@ def cmd_match(args):
     image = PEImage(GAME_EXE)
     sources = [Path(s) for s in args.sources] or sorted((ROOT / "src").rglob("*.cpp"))
     totals = {"MATCH": 0, "MATCH?": 0, "DIFF": 0, "ERROR": 0}
+
+    # Compile each file normally once: gives us the list of functions it defines
+    # (and is the whole comparison in --obj mode).
+    per_file = []
     for src in sources:
         obj = CoffObject(compile_cpp(src, args.flag or ()))
+        per_file.append((src, obj))
+
+    test_img = lmap = None
+    if not args.obj:
+        import ltcg
+        exports = image.exports()
+        defined = {s.name for _src, o in per_file for s, *_ in o.functions()}
+        keep = sorted(n for n in defined
+                      if n in exports or (n.startswith("_") and n[1:] in exports))
+        ctx = LinkCtx(args.flag or ())
+        try:
+            dll, mapf = ltcg.build(ctx, sources, keep)
+        except RuntimeError as e:
+            sys.exit(str(e))
+        test_img, lmap = PEImage(dll), ltcg.LinkMap(mapf)
+
+    for src, obj in per_file:
         try:
             print(src.resolve().relative_to(ROOT))
         except ValueError:
@@ -263,21 +284,45 @@ def cmd_match(args):
                 continue
             if args.only and not any(o in sym.name for o in args.only):
                 continue
-            res = compare_function(image, syms, sym, sec, start, end)
+            va = syms[sym.name]
+            if args.obj:
+                res = compare_function(image, syms, sym, sec, start, end)
+            else:
+                size = FUNC_SIZES.get(va, end - start)
+                obj_refs = {r.offset - start: (r.symbol.name, int.from_bytes(
+                                sec.data[r.offset:r.offset + 4], "little", signed=True))
+                            for r in sec.relocs if start <= r.offset < end}
+                res = ltcg.compare(sym.name, image, va, size, test_img, lmap, syms, obj_refs)
             totals[res["status"]] += 1
-            print(f"  {res['status']:<6} {sym.name}  @0x{syms[sym.name]:08x}  {end - start} bytes")
+            nbytes = len(res["ours"]) if "ours" in res else end - start
+            print(f"  {res['status']:<6} {sym.name}  @0x{va:08x}  {nbytes} bytes")
             if res["status"] == "ERROR":
                 print(f"         {res['detail']}")
                 continue
             for state, off, name, note in res["relocs"]:
                 if state != "ok" or args.verbose:
-                    print(f"         reloc +0x{off:03x} {name}: {note}")
+                    print(f"         ref +0x{off:03x} {name}: {note}")
             if res["size_note"]:
                 print(f"         {res['size_note']}")
             if res["status"] == "DIFF" or args.verbose:
                 print_diff(res)
-    print("\n" + "  ".join(f"{k}: {v}" for k, v in totals.items()))
+    print(f"\n[{'obj' if args.obj else 'ltcg'} mode]  "
+          + "  ".join(f"{k}: {v}" for k, v in totals.items()))
     return 0 if totals["DIFF"] == 0 and totals["ERROR"] == 0 else 1
+
+
+class LinkCtx:
+    """Tool paths and flags for the LTCG build."""
+
+    def __init__(self, extra_flags=()):
+        vc = Path(CFG["msvc_bin"]).parent
+        self.cl = MSVC_CL
+        self.link = vc / "bin" / "link.exe"
+        self.ml = vc / "bin" / "ml.exe"
+        self.cflags = [f for f in CFG["cflags"] if f != "/c"] + ["/c", *extra_flags]
+        self.env = msvc_env()
+        self.libpaths = [vc / "lib", vc.parent / "WinSDK" / "Lib"]
+        self.build = BUILD
 
 
 def main():
@@ -296,6 +341,8 @@ def main():
     m.add_argument("--only", action="append", help="only functions whose name contains this")
     m.add_argument("--flag", action="append", help="extra cl.exe flag for this run (repeatable)")
     m.add_argument("-v", "--verbose", action="store_true", help="always show disassembly and relocations")
+    m.add_argument("--obj", action="store_true",
+                   help="fast per-file mode (no /GL + /LTCG link); fine for simple leaf functions")
     m.set_defaults(fn=cmd_match)
     args = p.parse_args()
     sys.exit(args.fn(args))

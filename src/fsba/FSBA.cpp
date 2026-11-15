@@ -5,6 +5,24 @@
 
 static bool s_bPreventCreation;   // 0x06196937
 
+// 0x00813870, 57 bytes
+extern "C" void* FSBAAllocate(unsigned int uiSize)
+{
+    FSmallObjectAllocator* pAlloc = GetSmallObjectAllocator(1);
+    if (pAlloc && !pAlloc->m_bDisabled && pAlloc->GetAllocatorForSize(uiSize))
+        return pAlloc->Allocate(uiSize);
+    return NULL;
+}
+
+// 0x00813990, 111 bytes
+extern "C" bool FSBAHasAllocatorForSize(unsigned int uiSize)
+{
+    FSmallObjectAllocator* pAlloc = GetSmallObjectAllocator(1);
+    if (pAlloc)
+        return pAlloc->FindAllocatorForSize(uiSize) != NULL;
+    return false;
+}
+
 // 0x00813920, 25 bytes
 extern "C" void FSBADisable(bool bDisable)
 {
@@ -39,7 +57,12 @@ extern "C" bool FSBAPreventCreation(bool bPrevent)
     return bOld;
 }
 
-// TODO 0x00813960 FSBAIsSmallBlock (37 bytes). It calls 0x0081c2a0 with one
-// argument in EAX, one on the stack, and the allocator left in EDI. That
-// non-standard convention suggests the exe was built with whole-program
-// optimisation (/GL + /LTCG). See README "Findings".
+// 0x00813960, 37 bytes. Calls IsSmallBlock with `this` in EDI and `p` in
+// EAX: an LTCG custom calling convention, so this only matches in ltcg mode.
+extern "C" bool FSBAIsSmallBlock(const void* p, unsigned int* pSize)
+{
+    FSmallObjectAllocator* pAlloc = GetSmallObjectAllocator(1);
+    if (pAlloc)
+        return pAlloc->IsSmallBlock(p, pSize);
+    return false;
+}

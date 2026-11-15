@@ -11,6 +11,34 @@
 0x00813a00 _FSBAGetMaxAllocatorSize
 0x00813a20 _FSBAPreventCreation
 0x06196937 _s_bPreventCreation
+0x0081c2a0 ?IsSmallBlock@FSmallObjectAllocator@@QAE_NPBXPAI@Z
+0x0081c250 ?Allocate@FSmallObjectAllocator@@QAEPAXI@Z
+0x0081c360 ?GetAllocatorForSize@FSmallObjectAllocator@@QAEPAVFSmallBlockAllocator@@I@Z
+0x0081be80 ?Allocate@FSmallBlockAllocator@@QAEPAXXZ
+0x06196fa4 _s_bAllocationFailed
+0x00813870 _FSBAAllocate
+0x00813990 _FSBAHasAllocatorForSize
+0x006f8d70 _GetSmallObjectAllocatorInitParams
+0x0081ba00 ??0FSmallObjectAllocatorInitParams@@QAE@IIIIII_NHH@Z
+0x00cc8eb8 ?s_params@?1??GetSmallObjectAllocatorInitParams@@9@4UFSmallObjectAllocatorInitParams@@A
+0x00cc8ef4 ?$S1@?1??GetSmallObjectAllocatorInitParams@@9@4IA
 
-# --- Log file manager ---
+# --- Core exports ---
+0x00813f70 _FStringA_GetStringInitData
+0x00815f10 _FStringW_GetStringInitData
+0x00829aa0 _GetTempHeap
+0x00824800 _GetMemTrackerForDLL
+0x00824750 ?GetMemTracker@@YAPAVFMemTracker@@XZ
+0x06196a1c _s_FStringAInitData
+0x06196a2c _s_FStringWInitData
+0x06196a54 _s_pLogFileMgr
+0x06196d70 _s_TempHeap
+
+# --- FJobSet ---
+0x0081d660 _FJobSetInitImpl
+0x0081d6a0 _FJobSetWaitImpl
+0x0081d6b0 _FJobSetAddJobImpl
+0x0081d790 ?Wait@FJobSetImpl@@QAEXXZ
+0x0081d950 ?AddJobToSet@@YAXPAXPAVFJobSetImpl@@0H@Z
+
 0x0081cd50 _PeekLogFileMgr
