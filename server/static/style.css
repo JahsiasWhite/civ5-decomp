@@ -54,11 +54,9 @@ a { color: var(--brass-2); text-underline-offset: 3px; }
 }
 .topbar .wrap { display: flex; align-items: center; gap: 18px; min-height: 60px; flex-wrap: wrap; padding-top: 6px; padding-bottom: 6px; }
 .brand { font: 600 19px/1 var(--serif); color: var(--ink); text-decoration: none; letter-spacing: .01em; white-space: nowrap; }
-.brand .mark { display: inline-block; width: 18px; height: 18px; margin-right: 8px; vertical-align: -3px;
-  border: 1.5px solid var(--brass); border-radius: 50%;
-  background: radial-gradient(circle at 50% 50%, var(--brass) 0 2px, transparent 3px),
-              linear-gradient(var(--brass), var(--brass)) center/1.5px 100% no-repeat,
-              linear-gradient(var(--brass), var(--brass)) center/100% 1.5px no-repeat; }
+.brand .mark { display: inline-block; width: 22px; height: 22px; margin-right: 8px; vertical-align: -5px;
+  background: var(--brass-2);
+  -webkit-mask: url(/static/logo.svg) center/contain no-repeat; mask: url(/static/logo.svg) center/contain no-repeat; }
 .brand b { color: var(--brass-2); font-weight: 600; }
 nav.sections, nav.pages { display: flex; gap: 4px; flex-wrap: wrap; }
 nav a { font: 500 12px/1 var(--mono); text-transform: uppercase; letter-spacing: .12em; color: var(--muted);
