@@ -1,14 +1,17 @@
-# Function boundary fixes: <entry> <end-exclusive>  # why
+# Function boundary fixes: <entry> <end-exclusive> [new]  # why
 #
 # Ghidra sometimes splits one function in two, usually at an early `ret` with more
 # code after it that is reached only by a jump from the first part. Neither piece
 # can match, because the compiler only emits whole functions. A line here makes
 # the function at <entry> span [entry, end) as one range, and drops every function
-# entry that starts inside it. All tools read data/functions.csv through this
+# entry that starts inside it (split-off pieces, or entries Ghidra misread from the
+# middle of it). `new` marks a function Ghidra did not list at all; it is added.
+# All tools read data/functions.csv through this
 # (tools/config.py load_functions), so scope, queue, task bundles, fingerprints and
 # `manage.py push` (which updates the server) all see the fixed boundaries.
 #
-# `python tools/c5d.py boundaries` finds candidates; `--write` appends them here.
+# `python tools/c5d.py boundaries` finds candidates (splits, and listed entries that
+# sit inside another function's code); `--write` appends them here.
 # After editing: `c5d scope`, `c5d queue`, `c5d fingerprint`, then push to main.
 
 0x00457a80 0x00457b36  # early ret at +0x1d; tail 0x00457a9e reached only by its je (found by hand)
@@ -32,3 +35,25 @@
 0x00970c30 0x00970d31  # auto (c5d boundaries): tail 0x00970c6a reached only by jumps from inside
 0x00977860 0x00977a01  # auto (c5d boundaries): tail 0x0097789b reached only by jumps from inside
 0x0097c310 0x0097c57d  # auto (c5d boundaries): tail 0x0097c382 reached only by jumps from inside
+
+# 0x0078bf20-0x0078e75c (found by hand, 2026-11-15): Ghidra's list here was mostly wrong.
+# Real functions start after int3 padding and are called or pointed to; Ghidra listed
+# entries mid-function (some mid-instruction, e.g. 0x0078d452, 0x0078d766), multi-range
+# rows overlapping their neighbours, and missed 9 functions entirely (`new`).
+0x0078bf20 0x0078c0e4 new  # not listed by Ghidra
+0x0078c0f0 0x0078c138 new  # not listed; pointer in data
+0x0078c140 0x0078c33d new  # not listed; pointer in data
+0x0078c380 0x0078c3c8 new  # not listed; pointer in data
+0x0078c6f0 0x0078c769 new  # not listed; called
+0x0078cc90 0x0078d0ee  # absorbs 0x0078d032 (row started at 0x0078ccad), 0x0078d078, 0x0078d0d4
+0x0078d110 0x0078d31f new  # not listed; absorbs 0x0078d120 .. 0x0078d304 (9 misaligned rows)
+0x0078d320 0x0078d394  # 3-range row; one contiguous function
+0x0078d3a0 0x0078d40e new  # not listed; absorbs 0x0078d3b0
+0x0078d410 0x0078d455 new  # not listed; absorbs 0x0078d452 (mid-instruction)
+0x0078d460 0x0078d557  # absorbs 0x0078d550
+0x0078d5c0 0x0078d642  # absorbs 0x0078d606
+0x0078d650 0x0078d9ff  # std::sort-style partition; absorbs 0x0078d6be .. 0x0078d972 (8 rows, incl. 0x0078d766)
+0x0078da00 0x0078dfc3  # absorbs 0x0078da10, 0x0078da44, 0x0078dc94, 0x0078dce2, 0x0078de32, 0x0078de8a, 0x0078ded6
+0x0078dfd0 0x0078dfd9 new  # not listed
+0x0078dfe0 0x0078e09d  # 2-range row; one contiguous function
+0x0078e0a0 0x0078e75c  # absorbs 0x0078e0da, 0x0078e188

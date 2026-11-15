@@ -412,16 +412,17 @@ class DB:
         """Boundary fixes (boundary_overrides.txt): [{"addr", "size", "absorbed": [addr]}].
         The function at addr now spans `size` bytes; each absorbed entry was a piece
         Ghidra split off it, so it leaves the pool along with any claim on it. A piece
-        already matched is kept (that would need a closer look). Unknown addresses are
-        ignored. Returns (resized, removed)."""
+        already matched is kept (that would need a closer look). An addr the server does
+        not have (a `new` function Ghidra missed; `manage.py import` adds it) is not
+        resized, but its absorbed pieces still leave the pool. Returns (resized, removed)."""
         resized = removed = 0
         with self.tx():
             for m in merges:
                 addr = m["addr"]
-                if not self.one("SELECT 1 FROM functions WHERE addr=?", (addr,)):
-                    continue
-                resized += self.conn.execute("UPDATE functions SET size=?, updated=? WHERE addr=? AND size<>?",
-                                             (m["size"], time.time(), addr, m["size"])).rowcount
+                if self.one("SELECT 1 FROM functions WHERE addr=?", (addr,)):
+                    resized += self.conn.execute(
+                        "UPDATE functions SET size=?, updated=? WHERE addr=? AND size<>?",
+                        (m["size"], time.time(), addr, m["size"])).rowcount
                 for a in m["absorbed"]:
                     f = self.one("SELECT status FROM functions WHERE addr=?", (a,))
                     if not f or f["status"] == "matched":

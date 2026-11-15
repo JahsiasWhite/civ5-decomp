@@ -72,7 +72,8 @@ BOUNDARY_OVERRIDES = ROOT / "boundary_overrides.txt"
 
 
 def read_boundary_overrides(path=None):
-    """[(entry, end_exclusive, note)] from boundary_overrides.txt (see that file)."""
+    """[(entry, end_exclusive, note, new)] from boundary_overrides.txt (see that file).
+    `new` is True for a line `<entry> <end> new`: a function Ghidra did not list at all."""
     path = Path(path) if path else BOUNDARY_OVERRIDES
     out = []
     if not path.exists():
@@ -82,12 +83,12 @@ def read_boundary_overrides(path=None):
         if not body.strip():
             continue
         parts = body.split()
-        if len(parts) != 2:
-            raise ValueError(f"{path.name}:{n}: expected `<entry> <end-exclusive>`")
+        if len(parts) not in (2, 3) or (len(parts) == 3 and parts[2] != "new"):
+            raise ValueError(f"{path.name}:{n}: expected `<entry> <end-exclusive> [new]`")
         entry, end = int(parts[0], 16), int(parts[1], 16)
         if end <= entry:
             raise ValueError(f"{path.name}:{n}: end 0x{end:08x} is not after entry 0x{entry:08x}")
-        out.append((entry, end, note.strip()))
+        out.append((entry, end, note.strip(), len(parts) == 3))
     return out
 
 
@@ -102,16 +103,22 @@ def _read_function_rows(csv_path=None):
 
 def boundary_merges(rows=None, overrides=None):
     """Each override resolved against the raw function list:
-    [{"entry", "end", "size", "absorbed": [entries starting inside it], "note"}]."""
+    [{"entry", "end", "size", "absorbed": [entries starting inside it], "note", "new"}].
+    A plain override must name an entry Ghidra listed; a `new` one must not (both catch
+    typos). Overrides are (entry, end, note) or (entry, end, note, new) tuples."""
     rows = _read_function_rows() if rows is None else rows
     overrides = read_boundary_overrides() if overrides is None else overrides
     entries = sorted(int(r["entry"], 16) for r in rows)
     known = set(entries)
     out = []
-    for entry, end, note in overrides:
-        if entry not in known:
-            raise ValueError(f"boundary_overrides.txt: no function starts at 0x{entry:08x}")
-        out.append({"entry": entry, "end": end, "size": end - entry, "note": note,
+    for entry, end, note, *rest in overrides:
+        new = bool(rest and rest[0])
+        if new and entry in known:
+            raise ValueError(f"boundary_overrides.txt: 0x{entry:08x} is already listed; drop `new`")
+        if not new and entry not in known:
+            raise ValueError(f"boundary_overrides.txt: no function starts at 0x{entry:08x} "
+                             "(add `new` if Ghidra missed it)")
+        out.append({"entry": entry, "end": end, "size": end - entry, "note": note, "new": new,
                     "absorbed": [a for a in entries if entry < a < end]})
     return out
 
@@ -120,13 +127,15 @@ def load_functions(csv_path=None, overrides=None):
     """The function list (rows as csv.DictReader gives them) with boundary_overrides.txt
     applied: an override `<entry> <end>` makes the function at <entry> one range
     [entry, end) and drops every entry that starts inside it (the pieces Ghidra split
-    off). Every tool reads functions through this, so a fix applies everywhere."""
+    off, or misread from the middle of it); `<entry> <end> new` also adds the function
+    if Ghidra did not list it. Every tool reads functions through this, so a fix
+    applies everywhere."""
     rows = _read_function_rows(csv_path)
     merges = boundary_merges(rows, overrides)
     if not merges:
         return rows
     fixed = {m["entry"]: m for m in merges}
-    drop = {a for m in merges for a in m["absorbed"]}
+    drop = {a for m in merges for a in m["absorbed"]} - set(fixed)
     out = []
     for r in rows:
         a = int(r["entry"], 16)
@@ -136,4 +145,15 @@ def load_functions(csv_path=None, overrides=None):
         if m:
             r = dict(r, size=str(m["size"]), min=f"0x{a:08x}", max=f"0x{m['end'] - 1:08x}", ranges="1")
         out.append(r)
+    fields = list(rows[0].keys()) if rows else ["entry", "size", "min", "max", "ranges", "block",
+                                                 "name", "thunk", "external"]
+    for m in merges:
+        if m["new"] and m["entry"] not in drop:
+            a = m["entry"]
+            r = dict.fromkeys(fields, "")
+            r.update(entry=f"0x{a:08x}", size=str(m["size"]), min=f"0x{a:08x}",
+                     max=f"0x{m['end'] - 1:08x}", ranges="1", block=".text", name=f"FUN_{a:08x}",
+                     thunk="0", external="0")
+            out.append(r)
+    out.sort(key=lambda r: int(r["entry"], 16))
     return out

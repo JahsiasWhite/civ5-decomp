@@ -410,6 +410,18 @@ def test_admin_verify_boundary_merges(srv):
         assert req(base, "POST", "/api/admin/verify", {"statuses": {}, "merges": bad}, token=boss)[0] == 400
 
 
+def test_admin_verify_merge_into_unknown_function_still_drops_pieces(srv):
+    # a `new` function (Ghidra missed it) reaches the server only with the next import,
+    # but the bogus entries inside it should stop being handed out on push
+    base, db = srv
+    boss = make_user(db, "boss")
+    merges = [{"addr": "0x00401038", "size": 40, "absorbed": ["0x00401040", "0x00401050"]}]
+    code, j = req(base, "POST", "/api/admin/verify", {"statuses": {}, "merges": merges}, token=boss)
+    assert code == 200 and j["resized"] == 0 and j["merged_away"] == 2
+    f = {r["addr"] for r in db.q("SELECT addr FROM functions")}
+    assert 0x401038 not in f and 0x401040 not in f and 0x401050 not in f and 0x401060 in f
+
+
 def test_admin_verify_accepts_large_body_others_dont(srv):
     base, db = srv
     boss, alice = make_user(db, "boss"), make_user(db, "alice")

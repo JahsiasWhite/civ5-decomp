@@ -93,3 +93,82 @@ def find_splits(img, rows, protected=()):
             out.append((a, end, absorbed))
         i = j
     return out
+
+
+def _read_upto(img, va, size):
+    """Up to `size` bytes at va (fewer at the end of the section)."""
+    while size:
+        try:
+            return img.read(va, size)
+        except ValueError:
+            size -= 1
+    return b""
+
+
+def _flow_end(md, img, entry, stops, limit=0x10000):
+    """End (exclusive) of the code reached from entry by recursive descent: follows jcc/jmp
+    targets inside [entry, entry+limit) that are not in `stops` (a jump to another
+    function's start is a tail call), and stops at ret, int3 and jmp. None if unreadable."""
+    seen, work, end = set(), [entry], entry
+    while work:
+        a = work.pop()
+        while a not in seen:
+            ins = next(md.disasm(_read_upto(img, a, 16), a), None)
+            if ins is None:
+                return None
+            seen.add(a)
+            end = max(end, a + ins.size)
+            if ins.mnemonic in ("ret", "retf", "int3"):
+                break
+            if ins.group(capstone.CS_GRP_JUMP):
+                op = ins.operands[0] if ins.operands else None
+                if op is not None and op.type == x86.X86_OP_IMM:
+                    t = op.imm & 0xFFFFFFFF
+                    if entry <= t < entry + limit and t not in stops:
+                        work.append(t)
+                if ins.mnemonic == "jmp":
+                    break
+            a += ins.size
+    return end
+
+
+def find_misplaced(img, rows, protected=()):
+    """Entries Ghidra listed in the middle of another function (often mid-instruction),
+    the damage a misread stretch of code leaves behind. A start is an address after int3
+    padding on a 16-byte boundary, or one pointed to from data, exported or named; a start
+    inside the code reached from the start before it is not a real one (a 0xcc byte in an
+    operand, a jump-table target). A FUN_ entry B that is not a start and not called is
+    reported when the code reached from the nearest real start A before it runs past B.
+    -> [(A, end, [B...], A_is_listed)], for `<A> <end> [new]` overrides."""
+    import bisect
+    base, text = _text(img)
+    calls, jumps, pointers = _incoming(img)
+    listed = {int(r["entry"], 16): r["name"] for r in rows}
+    padded = {base + i for i in range(1, len(text))
+              if text[i - 1] == 0xCC and text[i] != 0xCC and (base + i) % 16 == 0}
+    starts = sorted(padded | {a for a in pointers | set(img.exports().values()) | set(protected)
+                              if base <= a < base + len(text)})
+    stops = set(starts) | calls
+    md = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_32)
+    md.detail = True
+    ends = {}
+
+    def end_of(a):
+        if a not in ends:
+            ends[a] = _flow_end(md, img, a, stops)
+        return ends[a]
+
+    groups = {}
+    for b, name in sorted(listed.items()):
+        if b in stops or not name.startswith("FUN_"):
+            continue
+        k = bisect.bisect_left(starts, b) - 1
+        while k > 0 and (end_of(starts[k - 1]) or 0) > starts[k]:
+            k -= 1                                  # starts[k] is inside the function before it
+        if k < 0:
+            continue
+        a = starts[k]
+        end = end_of(a)
+        if end is not None and b < end:
+            groups.setdefault(a, []).append(b)
+    return [(a, ends[a], bs, a in listed) for a, bs in sorted(groups.items())]

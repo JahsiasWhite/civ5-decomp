@@ -21,6 +21,11 @@ for a in args[1:]:
     addr = toAddr(a)
     f = fm.getFunctionAt(addr)
     if f is None:
+        # a function Ghidra missed (`new` in boundary_overrides.txt): create it in memory
+        # (the project is opened -readOnly, so nothing is saved)
+        disassemble(addr)
+        f = createFunction(addr, None)
+    if f is None:
         print("DumpFunctions: no function at %s" % a)
         continue
     lines = ["// %s @ %s, %d bytes" % (f.getName(True), addr, f.getBody().getNumAddresses()),

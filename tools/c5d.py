@@ -828,20 +828,29 @@ def cmd_scope(_args):
 
 
 def cmd_boundaries(args):
-    """Find functions Ghidra split in two; --write adds them to boundary_overrides.txt."""
+    """Find functions Ghidra split in two, or misread so that entries sit inside another
+    function; --write adds them to boundary_overrides.txt."""
     import boundaries
     from binfmt import PEImage
     rows = config.load_functions()          # already-fixed ones aren't reported again
-    found = boundaries.find_splits(PEImage(GAME_EXE), rows, protected=set(load_symbols().values()))
-    for entry, end, absorbed in found:
-        print(f"  0x{entry:08x} 0x{end:08x}  absorbs " + ", ".join(f"0x{a:08x}" for a in absorbed))
-    print(f"{len(found)} split function(s) found")
+    img, protected = PEImage(GAME_EXE), set(load_symbols().values())
+    found = [(e, x, ab, True, "tail " + ", ".join(f"0x{a:08x}" for a in ab)
+              + " reached only by jumps from inside")
+             for e, x, ab in boundaries.find_splits(img, rows, protected=protected)]
+    done = {a for f in found for a in f[2]}
+    for e, x, ab, listed in boundaries.find_misplaced(img, rows, protected=protected):
+        ab = [a for a in ab if a not in done]
+        if ab:
+            found.append((e, x, ab, listed, ("" if listed else "start not listed; ")
+                          + "entries inside it: " + ", ".join(f"0x{a:08x}" for a in ab)))
+    for entry, end, absorbed, listed, why in found:
+        print(f"  0x{entry:08x} 0x{end:08x}{'' if listed else ' new'}  {why}")
+    print(f"{len(found)} function(s) with wrong boundaries found")
     if args.write and found:
         path = config.BOUNDARY_OVERRIDES
         text = path.read_text(encoding="utf-8") if path.exists() else ""
-        lines = [f"0x{e:08x} 0x{x:08x}  # auto (c5d boundaries): tail "
-                 + ", ".join(f"0x{a:08x}" for a in ab) + " reached only by jumps from inside\n"
-                 for e, x, ab in found]
+        lines = [f"0x{e:08x} 0x{x:08x}{'' if listed else ' new'}  # auto (c5d boundaries): {why}\n"
+                 for e, x, ab, listed, why in found]
         sep = "\n" if text and not text.endswith("\n") else ""
         path.write_text(text + sep + "".join(lines), encoding="utf-8")
         print(f"appended {len(found)} line(s) to {path.name}; now run `c5d scope`, `c5d queue` "
@@ -984,7 +993,7 @@ def main():
                    ).set_defaults(fn=cmd_fingerprint)
     sub.add_parser("scope", help="classify functions: game (in scope) vs library/generated"
                    ).set_defaults(fn=cmd_scope)
-    bd = sub.add_parser("boundaries", help="find functions Ghidra split in two "
+    bd = sub.add_parser("boundaries", help="find functions Ghidra split in two or misread "
                         "(see boundary_overrides.txt)")
     bd.add_argument("--write", action="store_true", help="append what's found to boundary_overrides.txt")
     bd.set_defaults(fn=cmd_boundaries)
