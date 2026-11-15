@@ -1,4 +1,4 @@
-"""civ5-decomp command-line tool.
+﻿"""civ5-decomp command-line tool.
 
     python tools/c5d.py env       check the toolchain
     python tools/c5d.py analyze   import and analyze the exe in Ghidra headless,
@@ -251,6 +251,7 @@ def cmd_match(args):
     image = PEImage(GAME_EXE)
     sources = [Path(s) for s in args.sources] or sorted((ROOT / "src").rglob("*.cpp"))
     totals = {"MATCH": 0, "MATCH?": 0, "DIFF": 0, "ERROR": 0}
+    results = {}
 
     # Compile each file normally once: gives us the list of functions it defines
     # (and is the whole comparison in --obj mode).
@@ -293,6 +294,8 @@ def cmd_match(args):
             if args.only and not any(o in sym.name for o in args.only):
                 continue
             va = syms[sym.name]
+            if args.addr and va not in args.addr:
+                continue
             if args.obj:
                 res = compare_function(image, syms, sym, sec, start, end)
             else:
@@ -303,6 +306,8 @@ def cmd_match(args):
                 res = ltcg.compare(sym.name, image, va, size, test_img, lmap, syms, obj_refs)
             totals[res["status"]] += 1
             nbytes = len(res["ours"]) if "ours" in res else end - start
+            results[va] = (sym.name, res["status"], FUNC_SIZES.get(va, nbytes),
+                           str(src.resolve().relative_to(ROOT)) if src.resolve().is_relative_to(ROOT) else str(src))
             print(f"  {res['status']:<6} {sym.name}  @0x{va:08x}  {nbytes} bytes")
             if res["status"] == "ERROR":
                 print(f"         {res['detail']}")
@@ -314,9 +319,217 @@ def cmd_match(args):
                 print(f"         {res['size_note']}")
             if res["status"] == "DIFF" or args.verbose:
                 print_diff(res)
+    if not args.obj and not args.only and not args.addr:
+        record_status(results)
     print(f"\n[{'obj' if args.obj else 'ltcg'} mode]  "
           + "  ".join(f"{k}: {v}" for k, v in totals.items()))
     return 0 if totals["DIFF"] == 0 and totals["ERROR"] == 0 else 1
+
+
+STATUS_CSV = ROOT / "progress" / "status.csv"
+
+
+def load_status():
+    """{address: status} from progress/status.csv."""
+    import csv
+    out = {}
+    if STATUS_CSV.exists():
+        with open(STATUS_CSV, newline="") as fh:
+            for r in csv.DictReader(fh):
+                out[int(r["address"], 16)] = r["status"]
+    return out
+
+
+def record_status(results):
+    """Replace progress/status.csv with the results of a full match run."""
+    import csv
+    import datetime
+    STATUS_CSV.parent.mkdir(exist_ok=True)
+    old = {}
+    if STATUS_CSV.exists():
+        with open(STATUS_CSV, newline="") as fh:
+            old = {int(r["address"], 16): r for r in csv.DictReader(fh)}
+    today = datetime.date.today().isoformat()
+    with open(STATUS_CSV, "w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(["address", "symbol", "status", "bytes", "source", "since"])
+        for va in sorted(results):
+            name, status, nbytes, src = results[va]
+            since = old[va]["since"] if va in old and old[va]["status"] == status else today
+            w.writerow([f"0x{va:08x}", name, status, nbytes, src.replace("\\", "/"), since])
+
+
+def load_names():
+    """{address: best-known readable name} from all name sources."""
+    import csv
+    names = {}
+    fcsv = BUILD / "functions.csv"
+    if fcsv.exists():
+        with open(fcsv, newline="") as fh:
+            for r in csv.DictReader(fh):
+                if not r["name"].startswith("FUN_"):
+                    names[int(r["entry"], 16)] = r["name"]
+    for f in sorted((ROOT / "names").glob("*.csv")):
+        with open(f, newline="") as fh:
+            for r in csv.DictReader(fh):
+                names.setdefault(int(r["address"], 16), r["name"])
+    for sym, va in load_symbols().items():
+        names[va] = sym
+    return names
+
+
+def cmd_queue(args):
+    import workqueue
+    from binfmt import PEImage
+    if not (BUILD / "scope.csv").exists():
+        sys.exit("run `c5d scope` first")
+    rows = workqueue.build(PEImage(GAME_EXE), BUILD / "scope.csv", load_status(), load_names(),
+                           BUILD / "queue.csv")
+    todo = [r for r in rows if r["status"] != "MATCH"]
+    ready = [r for r in todo if r["pending_callees"] == 0]
+    from collections import Counter
+    conv = Counter(r["conv"] for r in rows)
+    print(f"{len(rows)} in-scope functions, {len(rows) - len(todo)} matched, {len(todo)} to do, "
+          f"{len(ready)} ready now (all callees done or none)")
+    print("conventions: " + ", ".join(f"{k} {v}" for k, v in conv.most_common()))
+    print(f"\nnext {args.top}:")
+    for r in todo[:args.top]:
+        print(f"  {r['entry']} {r['size']:>5}b {r['conv']:<8} depth {r['depth']:<3} "
+              f"cluster {r['cluster_size']:<4} {r['name']}")
+    return 0
+
+
+def task_context():
+    import csv
+    import types
+    from binfmt import PEImage
+    qcsv = BUILD / "queue.csv"
+    if not qcsv.exists():
+        sys.exit("run `c5d scope` and `c5d queue` first")
+    with open(qcsv, newline="") as fh:
+        rows = list(csv.DictReader(fh))
+    image = PEImage(GAME_EXE)
+    return types.SimpleNamespace(
+        root=ROOT, build=BUILD, image=image, rows=rows,
+        by_addr={int(r["entry"], 16): r for r in rows},
+        names=load_names(), imports=image.imports(),
+        symbols_by_addr={va: n for n, va in load_symbols().items()})
+
+
+def pick_tasks(ctx, n, tries, min_size=5):
+    import tasks
+    tried = tasks.attempts_by_addr(BUILD)
+    status = load_status()
+    out = []
+    for r in ctx.rows:
+        a = int(r["entry"], 16)
+        if status.get(a) == "MATCH" or int(r["pending_callees"]) or int(r["size"]) < min_size:
+            continue
+        if len(tried.get(a, [])) >= tries:
+            continue
+        out.append(r)
+        if len(out) >= n:
+            break
+    return out
+
+
+def prefetch_dumps(addrs):
+    missing = [f"0x{a:08x}" for a in addrs if not list((BUILD / "dump").glob(f"{a:08x}_*.txt"))]
+    if missing:
+        print(f"dumping {len(missing)} function(s) with Ghidra...", flush=True)
+        cmd_dump(type("A", (), {"addrs": missing})())
+
+
+def cmd_task(args):
+    import tasks
+    ctx = task_context()
+    if args.action == "next":
+        rows = pick_tasks(ctx, args.n, args.tries, args.min_size)
+        prefetch_dumps([int(r["entry"], 16) for r in rows])
+        for r in rows:
+            path, src = tasks.write_bundle(ctx, r, ctx.by_addr, ctx.names, ctx.symbols_by_addr, ctx.imports)
+            print(f"{r['entry']}  {r['size']:>5}b  {r['conv']:<8} -> {path.relative_to(ROOT)}")
+    else:                                   # check
+        a = int(args.addr, 16)
+        status, out = tasks.check(ctx, a)
+        tasks.log_attempt(BUILD, {"addr": f"0x{a:08x}", "status": status, "agent": "manual",
+                                  "time": __import__("time").time()})
+        print(out if args.verbose else status)
+    return 0
+
+
+def cmd_agent(args):
+    import tasks
+    import time
+    agent_cmd = CFG.get("agent_cmd")
+    if not agent_cmd:
+        sys.exit('set "agent_cmd" in config.json (a command that reads the task prompt on stdin), '
+                 "or use `c5d task next` / `c5d task check` with any agent")
+    ctx = task_context()
+    rows = pick_tasks(ctx, args.n, args.tries, args.min_size)
+    prefetch_dumps([int(r["entry"], 16) for r in rows])
+    summary = []
+    for r in rows:
+        a = int(r["entry"], 16)
+        diff = None
+        for t in range(args.tries):
+            path, _src = tasks.write_bundle(ctx, r, ctx.by_addr, ctx.names, ctx.symbols_by_addr,
+                                            ctx.imports, last_diff=diff)
+            t0 = time.time()
+            try:
+                p = subprocess.run(agent_cmd, input=path.read_text(encoding="utf-8"), text=True,
+                                   capture_output=True, cwd=ROOT, timeout=args.timeout)
+                (path.parent / f"agent_{t}.log").write_text(p.stdout + p.stderr, encoding="utf-8")
+            except subprocess.TimeoutExpired:
+                pass
+            status, diff = tasks.check(ctx, a)
+            tasks.log_attempt(BUILD, {"addr": r["entry"], "try": t, "status": status,
+                                      "agent": agent_cmd[0], "seconds": round(time.time() - t0),
+                                      "size": int(r["size"]), "time": time.time()})
+            print(f"{r['entry']} try {t + 1}: {status}", flush=True)
+            if status == "MATCH":
+                break
+        summary.append((r["entry"], status))
+    ok = sum(1 for _a, s in summary if s == "MATCH")
+    print(f"\nagent run: {ok}/{len(summary)} matched")
+    return 0
+
+
+def cmd_status(_args):
+    """Write PROGRESS.md from scope, status and attempts."""
+    import csv
+    import tasks
+    from collections import Counter
+    scope_rows = list(csv.DictReader(open(BUILD / "scope.csv", newline="")))
+    game = {int(r["entry"], 16): int(r["size"]) for r in scope_rows if r["category"] == "game"}
+    status = load_status()
+    matched = {a for a, s in status.items() if s == "MATCH" and a in game}
+    mb, tb = sum(game[a] for a in matched), sum(game.values())
+    att = [x for v in tasks.attempts_by_addr(BUILD).values() for x in v]
+    by_status = Counter(s for a, s in status.items() if a in game)
+    lines = [
+        "# Progress", "",
+        "Generated by `python tools/c5d.py status`. Do not edit by hand.", "",
+        f"- **Matched:** {len(matched):,} / {len(game):,} in-scope functions "
+        f"({100 * len(matched) / len(game):.2f}%)",
+        f"- **Bytes:** {mb:,} / {tb:,} ({100 * mb / tb:.3f}%)",
+        f"- **Attempted, not matched:** {by_status.get('DIFF', 0) + by_status.get('MATCH?', 0)}",
+    ]
+    if att:
+        ok = sum(1 for x in att if x["status"] == "MATCH")
+        lines.append(f"- **Agent attempts logged locally:** {len(att)}, {ok} matched "
+                     f"({100 * ok / len(att):.0f}%)")
+    lines += ["", "Scope: see `python tools/c5d.py scope` (library, linker and compiler "
+              "generated code are excluded).", ""]
+    (ROOT / "PROGRESS.md").write_text("\n".join(lines), encoding="utf-8")
+    print("\n".join(lines))
+    return 0
+
+
+def cmd_scope(_args):
+    import scope
+    scope.run(LinkCtx(), ROOT, BUILD, GAME_EXE)
+    return 0
 
 
 class LinkCtx:
@@ -325,6 +538,7 @@ class LinkCtx:
     def __init__(self, extra_flags=()):
         vc = Path(CFG["msvc_bin"]).parent
         self.cl = MSVC_CL
+        self.lib = vc / "bin" / "lib.exe"
         self.link = vc / "bin" / "link.exe"
         self.ml = vc / "bin" / "ml.exe"
         self.cflags = [f for f in CFG["cflags"] if f != "/c"] + ["/c", *extra_flags]
@@ -347,11 +561,33 @@ def main():
     m = sub.add_parser("match", help="compile sources and compare against the original exe")
     m.add_argument("sources", nargs="*", help=".cpp files (default: all of src/)")
     m.add_argument("--only", action="append", help="only functions whose name contains this")
+    m.add_argument("--addr", action="append", type=lambda s: int(s, 16),
+                   help="only the function at this address (repeatable)")
     m.add_argument("--flag", action="append", help="extra cl.exe flag for this run (repeatable)")
     m.add_argument("-v", "--verbose", action="store_true", help="always show disassembly and relocations")
     m.add_argument("--obj", action="store_true",
                    help="fast per-file mode (no /GL + /LTCG link); fine for simple leaf functions")
     m.set_defaults(fn=cmd_match)
+    sub.add_parser("scope", help="classify functions: game (in scope) vs library/generated"
+                   ).set_defaults(fn=cmd_scope)
+    q = sub.add_parser("queue", help="build the leaves-first work queue (build/queue.csv)")
+    q.add_argument("--top", type=int, default=20)
+    q.set_defaults(fn=cmd_queue)
+    t = sub.add_parser("task", help="task bundles: `next` writes them, `check <addr>` verifies one")
+    t.add_argument("action", choices=["next", "check"])
+    t.add_argument("addr", nargs="?")
+    t.add_argument("--n", type=int, default=5)
+    t.add_argument("--tries", type=int, default=3)
+    t.add_argument("--min-size", type=int, default=5)
+    t.add_argument("-v", "--verbose", action="store_true")
+    t.set_defaults(fn=cmd_task)
+    ag = sub.add_parser("agent", help="run config.json agent_cmd over the next N tasks")
+    ag.add_argument("--n", type=int, default=5)
+    ag.add_argument("--tries", type=int, default=3)
+    ag.add_argument("--min-size", type=int, default=5)
+    ag.add_argument("--timeout", type=int, default=1800)
+    ag.set_defaults(fn=cmd_agent)
+    sub.add_parser("status", help="write PROGRESS.md").set_defaults(fn=cmd_status)
     args = p.parse_args()
     sys.exit(args.fn(args))
 

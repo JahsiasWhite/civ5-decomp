@@ -1,0 +1,4 @@
+# Manual scope overrides: <start> <end-exclusive> <category>
+# Use for library code the automatic rules miss (e.g. a statically linked
+# third-party library once identified). Categories other than "game" are
+# out of scope.

@@ -25,12 +25,52 @@ starting point for the exe <-> DLL interface classes.
 | DRM wrapper | none |
 | Rich header | absent (so the exact compiler build has to be found from the CRT) |
 
+## Pipeline
+
+```
+analyze ──► scope ──► queue ──► task next / agent ──► match ──► status
+(Ghidra)   (what's    (leaves-   (bundles for one     (LTCG      (PROGRESS.md)
+           in scope)   first)     function each)       verify)
+```
+
+| Command | What it does | Output |
+|---|---|---|
+| `c5d analyze` | Ghidra headless import, then function export | `build/functions.csv` |
+| `c5d scope` | Classifies every function: game code vs import stubs, thunks, CRT (byte signatures from the compiler's static libs), ATL/MFC names, compiler EH funclets. Manual ranges go in `scope_overrides.txt`. | `build/scope.csv` |
+| `tools/sdk_vtables.py` | Names engine functions from the SDK interface headers: finds each interface's `QueryInterface` through its GUID, then its vtable | `names/sdk_vtables.csv` |
+| `c5d queue` | Call graph, calling-convention guess (stack / thiscall / custom LTCG registers), call depth, LTCG clusters. Leaves first. | `build/queue.csv` |
+| `c5d task next --n N` | Writes a self-contained bundle per ready function: rules, disassembly, Ghidra C, references with names/conventions/status | `build/tasks/<addr>/TASK.md` |
+| `c5d task check <addr>` | Verifies one function and logs the attempt | `build/attempts.jsonl` |
+| `c5d agent --n N --tries T` | Runs `agent_cmd` from `config.json` on each bundle (prompt on stdin), checks, retries with the diff. Any CLI agent works, e.g. `["claude", "-p", "--permission-mode", "acceptEdits"]`. Runs one function at a time. | as above |
+| `c5d match` | LTCG build of all `src/` + verification; a full run updates `progress/status.csv` | |
+| `c5d status` | Progress summary | `PROGRESS.md` |
+
+The SDK headers come from the public Community Patch repo (sparse checkout of
+`CvGameCoreDLLUtil/` into the git-ignored `third_party/`):
+
+```bash
+git clone --depth 1 --filter=blob:none --sparse https://github.com/LoneGazebo/Community-Patch-DLL.git third_party/Community-Patch-DLL
+git -C third_party/Community-Patch-DLL sparse-checkout set CvGameCoreDLLUtil
+```
+
+Automated work goes in `src/auto/f_<address>.cpp`. Move it into a proper area
+folder once the class it belongs to is known.
+
 ## Findings so far
 
-- **Scope:** Ghidra finds 20,152 functions (about 4.6 MB). Roughly 11k of them are
-  64 to 255 bytes. The CRT is dynamic (`MSVCR90.DLL`, which confirms VC++ 2008),
-  and Lua lives in `lua51_Win32.dll`, so neither needs to be decompiled. MFC and
-  ATL code is statically linked and will be identified and excluded.
+- **Scope:** Ghidra finds 20,152 functions. **19,562 (4.60 MB) are game code
+  and in scope.** Out of scope: 231 compiler EH funclets, 211 import stubs,
+  84 thunks, 43 CRT objects and 21 other library functions. The CRT (`msvcr90`), C++
+  library (`msvcp90`), Lua, Miles, zlib, Steam and the game database and
+  localisation code are all separate DLLs. ATL string templates are header code,
+  so they stay in scope.
+- **SDK names:** the GUID → `QueryInterface` → vtable method gives 390 functions
+  their real interface names (`CvEngineUtilityImpl::*` via `ICvEngineUtility4` at
+  `0x9ea718`, and `CvUserInterfaceImpl::*` via `ICvUserInterface2` at `0xa04240`).
+- **Conventions:** 9,438 thiscall, 8,487 stack and 1,637 custom LTCG register
+  conventions. About 4,980 functions are "ready" (no undecompiled callees).
+- **Function sizes:** Ghidra's size counts addresses across disjoint ranges
+  (switch tables). The scope step uses the real extent instead.
 - **Exports give us free names:** the exe exports Firaxis engine functions
   (`FSBA*`, `FJobSet*`, `GetLogFileMgr`, ...) for the gameplay DLL to call.
 - **Confirmed LTCG + `/Ob1`:** the exe was built with `/GL` + `/LTCG`, and inlining
@@ -89,8 +129,17 @@ Not yet: `FSBAAllocate`, `FSBAHasAllocatorForSize` (1 byte off),
 ## Layout
 
 ```
-config.json        local paths (game, Ghidra, MSVC) + compiler flags
+config.json        local paths (game, Ghidra, MSVC), compiler flags, agent_cmd
 symbols.txt        address <-> symbol map (drives `match`)
+names/             readable names from other sources (SDK vtables)
+progress/          status.csv: per-function match status (committed)
+PROGRESS.md        generated summary
+scope_overrides.txt manual scope ranges
+tools/scope.py     scope classification
+tools/workqueue.py call graph, conventions, leaves-first queue
+tools/tasks.py     task bundles + agent loop
+tools/sdk_vtables.py SDK interface names
+src/auto/          agent-written functions (f_<address>.cpp)
 tools/c5d.py       CLI: `env`, `analyze`, `dump`, `match`
 tools/binfmt.py    PE / COFF readers (exports, imports, base relocations)
 tools/ltcg.py      /GL + /LTCG build, placeholders, linked comparison

@@ -5,5 +5,6 @@
   "msvc_bin": "C:/Users/<you>/AppData/Local/Programs/Common/Microsoft/Visual C++ for Python/9.0/VC/bin",
   "cflags": ["/nologo", "/c", "/O2", "/Ob1", "/Gy", "/MD", "/EHsc", "/GR", "/Zc:wchar_t"],
   "ghidra_project_dir": "ghidra_proj",
-  "ghidra_project_name": "civ5"
+  "ghidra_project_name": "civ5",
+  "agent_cmd": []
 }

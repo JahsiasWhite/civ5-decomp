@@ -19,3 +19,4 @@ build_*.txt
 # Python
 __pycache__/
 *.pyc
+third_party/

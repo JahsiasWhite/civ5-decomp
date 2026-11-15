@@ -46,3 +46,9 @@
 0x0081d950 ?AddJobToSet@@YAXPAXPAVFJobSetImpl@@0H@Z
 
 0x0081cd50 _PeekLogFileMgr
+
+# --- Lua bindings ---
+0x00540240 ?PushUIntValueToLua@@YAXPAUlua_State@@PBUUIntHolder@@@Z
+0x00923958 _lua_pushnumber
+0x009dc7b0 __real@41f0000000000000
+0x005faa60 ?GetKindFlags@KindQueryObject@@QAEHXZ
