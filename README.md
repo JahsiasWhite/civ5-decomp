@@ -307,6 +307,10 @@ What the trial found and fixed:
   (`GetSmallObjectAllocator`, then `GetAllocatorForSize`, then `Allocate`, falling back to `malloc`) is an
   inline helper. `GetSmallObjectAllocator` has 329 call sites, `GetAllocatorForSize` 187
   and `Allocate` 200. Reconstructed in `include/FMemory.h`.
+- **STL built with `_SECURE_SCL=0` and `_HAS_EXCEPTIONS=0`** (2026-11-15), now in
+  `config.json`. Found on `vector::_Umove` (`0x626aa0`), which only matches without the
+  checked-iterator code and the try/catch in `_Uninit_copy`. Adding both project-wide
+  changed no other match.
 - **`new` has no EH cleanup:** the exe's `new T` sites have no unwind frame. A class
   `operator new` or std placement new adds one under `/EHsc`; a tagged placement
   new with no matching delete (`FNEW(T)` in `FMemory.h`) reproduces the original shape.

@@ -15,7 +15,9 @@
     "/GR",
     "/Zc:wchar_t",
     "/arch:SSE2",
-    "/fp:fast"
+    "/fp:fast",
+    "/D_SECURE_SCL=0",
+    "/D_HAS_EXCEPTIONS=0"
   ],
   "ghidra_project_dir": "ghidra_proj",
   "ghidra_project_name": "civ5",
