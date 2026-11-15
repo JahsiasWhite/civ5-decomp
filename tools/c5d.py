@@ -13,13 +13,15 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-CFG = json.loads((ROOT / "config.json").read_text())
+import config
 
-GAME_EXE = Path(CFG["game_dir"]) / CFG["target_exe"]
-GHIDRA = Path(CFG["ghidra_dir"])
+ROOT = config.ROOT
+CFG = config.load()        # config.json overlaid with config.local.json (see tools/config.py)
+
+GAME_EXE = Path(CFG.get("game_dir") or "<run c5d setup>") / CFG["target_exe"]
+GHIDRA = Path(CFG.get("ghidra_dir") or "<run c5d setup>")
 HEADLESS = GHIDRA / "support" / "analyzeHeadless.bat"
-MSVC_CL = Path(CFG["msvc_bin"]) / "cl.exe"
+MSVC_CL = Path(CFG.get("msvc_bin") or "<run c5d setup>") / "cl.exe"
 PROJ_DIR = ROOT / CFG["ghidra_project_dir"]
 PROJ_NAME = CFG["ghidra_project_name"]
 BUILD = ROOT / "build"
@@ -63,6 +65,8 @@ def cmd_analyze(args):
         sys.exit(f"Ghidra not found: {HEADLESS}")
     PROJ_DIR.mkdir(exist_ok=True)
     BUILD.mkdir(exist_ok=True)
+    # Ghidra's own export. Everyone works from the committed data/functions.csv so
+    # addresses agree across Ghidra versions; maintainers refresh it from this file.
     out_csv = BUILD / "functions.csv"
     have_project = (PROJ_DIR / f"{PROJ_NAME}.gpr").exists()
 
@@ -162,13 +166,20 @@ def default_sources():
     return out
 
 
+def winsdk_dir():
+    """Windows SDK headers/libs: next to the compiler in the Visual C++ for Python
+    layout, or wherever `c5d setup` found one (config.local.json "winsdk_dir")."""
+    if CFG.get("winsdk_dir"):
+        return Path(CFG["winsdk_dir"])
+    return Path(CFG["msvc_bin"]).parent.parent / "WinSDK"
+
+
 def msvc_env():
     vc = Path(CFG["msvc_bin"]).parent            # .../VC
-    root = vc.parent                             # .../9.0
     env = dict(os.environ)
     env["PATH"] = str(vc / "bin") + os.pathsep + env.get("PATH", "")
     env["INCLUDE"] = os.pathsep.join(
-        [str(ROOT / "include"), str(vc / "include"), str(root / "WinSDK" / "Include")])
+        [str(ROOT / "include"), str(vc / "include"), str(winsdk_dir() / "Include")])
     return env
 
 
@@ -280,7 +291,7 @@ FUNC_SIZES = {}
 
 
 def load_func_sizes():
-    csv_path = BUILD / "functions.csv"
+    csv_path = config.functions_csv()
     if csv_path.exists():
         import csv
         with open(csv_path, newline="") as fh:
@@ -317,8 +328,46 @@ def print_diff(res):
         print(f"   {mark} {left:<{width + 10}}{right}")
 
 
+def compile_all(sources, flags):
+    """Compile each file normally once: gives the list of functions it defines
+    (and is the whole comparison in --obj mode)."""
+    from binfmt import CoffObject
+    return [(src, CoffObject(compile_cpp(src, flags))) for src in sources]
+
+
+def ltcg_link(image, syms, sources, per_file, flags):
+    """/GL + /LTCG link of `sources` into a throwaway DLL. Returns (test_img, lmap)."""
+    import ltcg
+    from binfmt import PEImage
+    exports = image.exports()
+    defined = {s.name for _src, o in per_file for s, *_ in o.functions()}
+    keep = sorted(n for n in defined
+                  if n in exports or (n.startswith("_") and n[1:] in exports))
+    ctx = LinkCtx(flags)
+    try:
+        dll, mapf = ltcg.build(ctx, sources, keep)
+        lmap = ltcg.LinkMap(mapf)
+        # Targets nothing in src/ calls yet get dropped by /OPT:REF. Re-link
+        # forcing just those; called functions keep their LTCG conventions.
+        orphans = sorted(n for n in defined
+                         if n in syms and n not in lmap.by_name and n not in keep)
+        if orphans:
+            dll, mapf = ltcg.build(ctx, sources, keep + orphans)
+            lmap = ltcg.LinkMap(mapf)
+    except RuntimeError as e:
+        sys.exit(str(e))
+    return PEImage(dll), lmap
+
+
+def obj_refs_of(sec, start, end):
+    """{function offset: (symbol, addend)} from a plain compile, for naming references."""
+    return {r.offset - start: (r.symbol.name, int.from_bytes(
+                sec.data[r.offset:r.offset + 4], "little", signed=True))
+            for r in sec.relocs if start <= r.offset < end}
+
+
 def cmd_match(args):
-    from binfmt import PEImage, CoffObject
+    from binfmt import PEImage
     load_func_sizes()
     syms = load_symbols()
     image = PEImage(GAME_EXE)
@@ -326,34 +375,11 @@ def cmd_match(args):
     totals = {"MATCH": 0, "MATCH?": 0, "DIFF": 0, "ERROR": 0}
     results = {}
 
-    # Compile each file normally once: gives us the list of functions it defines
-    # (and is the whole comparison in --obj mode).
-    per_file = []
-    for src in sources:
-        obj = CoffObject(compile_cpp(src, args.flag or ()))
-        per_file.append((src, obj))
-
+    per_file = compile_all(sources, args.flag or ())
     test_img = lmap = None
     if not args.obj:
         import ltcg
-        exports = image.exports()
-        defined = {s.name for _src, o in per_file for s, *_ in o.functions()}
-        keep = sorted(n for n in defined
-                      if n in exports or (n.startswith("_") and n[1:] in exports))
-        ctx = LinkCtx(args.flag or ())
-        try:
-            dll, mapf = ltcg.build(ctx, sources, keep)
-            lmap = ltcg.LinkMap(mapf)
-            # Targets nothing in src/ calls yet get dropped by /OPT:REF. Re-link
-            # forcing just those; called functions keep their LTCG conventions.
-            orphans = sorted(n for n in defined
-                             if n in syms and n not in lmap.by_name and n not in keep)
-            if orphans:
-                dll, mapf = ltcg.build(ctx, sources, keep + orphans)
-                lmap = ltcg.LinkMap(mapf)
-        except RuntimeError as e:
-            sys.exit(str(e))
-        test_img = PEImage(dll)
+        test_img, lmap = ltcg_link(image, syms, sources, per_file, args.flag or ())
 
     for src, obj in per_file:
         try:
@@ -373,10 +399,8 @@ def cmd_match(args):
                 res = compare_function(image, syms, sym, sec, start, end)
             else:
                 size = FUNC_SIZES.get(va, end - start)
-                obj_refs = {r.offset - start: (r.symbol.name, int.from_bytes(
-                                sec.data[r.offset:r.offset + 4], "little", signed=True))
-                            for r in sec.relocs if start <= r.offset < end}
-                res = ltcg.compare(sym.name, image, va, size, test_img, lmap, syms, obj_refs)
+                res = ltcg.compare(sym.name, image, va, size, test_img, lmap, syms,
+                                   obj_refs_of(sec, start, end))
             totals[res["status"]] += 1
             nbytes = len(res["ours"]) if "ours" in res else end - start
             results[va] = (sym.name, res["status"], FUNC_SIZES.get(va, nbytes),
@@ -436,7 +460,7 @@ def load_names():
     """{address: best-known readable name} from all name sources."""
     import csv
     names = {}
-    fcsv = BUILD / "functions.csv"
+    fcsv = config.functions_csv()
     if fcsv.exists():
         with open(fcsv, newline="") as fh:
             for r in csv.DictReader(fh):
@@ -545,7 +569,7 @@ def cmd_agent(args):
     import time
     agent_cmd = CFG.get("agent_cmd")
     if not agent_cmd:
-        sys.exit('set "agent_cmd" in config.json (a command that reads the task prompt on stdin), '
+        sys.exit('set "agent_cmd" in config.local.json (a command that reads the task prompt on stdin), '
                  "or use `c5d task next` / `c5d task check` with any agent")
     ctx = task_context()
     rows = pick_tasks(ctx, args.n, args.tries, args.min_size)
@@ -695,11 +719,74 @@ class LinkCtx:
         self.ml = vc / "bin" / "ml.exe"
         self.cflags = [f for f in CFG["cflags"] if f != "/c"] + ["/c", *extra_flags]
         self.env = msvc_env()
-        self.libpaths = [vc / "lib", vc.parent / "WinSDK" / "Lib"]
+        self.libpaths = [vc / "lib", winsdk_dir() / "Lib"]
         self.build = work_dir()
 
     def flags_for(self, src):
         return flags_for(src, self.cflags)
+
+
+def cmd_build(args):
+    """Hybrid exe: our code relocated into a copy of the game exe (tools/hybrid.py)."""
+    import csv
+    import hybrid
+    import ltcg
+    from binfmt import PEImage
+    state = BUILD / "hybrid"
+    if args.clean:
+        return hybrid.clean_game(CFG["game_dir"], CFG["target_exe"], state)
+    load_func_sizes()
+    syms = load_symbols()
+    image = PEImage(GAME_EXE)
+    sources = default_sources()
+    per_file = compile_all(sources, ())
+    test_img, lmap = ltcg_link(image, syms, sources, per_file, ())
+    convs = {}
+    if (BUILD / "queue.csv").exists():
+        with open(BUILD / "queue.csv", newline="") as fh:
+            convs = {int(r["entry"], 16): r["conv"] for r in csv.DictReader(fh)}
+    items = []
+    for src, obj in per_file:
+        for sym, sec, start, end in obj.functions():
+            if sym.name not in syms:
+                continue
+            va = syms[sym.name]
+            size = FUNC_SIZES.get(va, end - start)
+            refs = obj_refs_of(sec, start, end)
+            res = ltcg.compare(sym.name, image, va, size, test_img, lmap, syms, refs)
+            items.append(hybrid.Item(sym.name, va, size, res, refs, convs.get(va, ""), str(src)))
+    r = hybrid.build(GAME_EXE, image, test_img, lmap, syms, items, state / CFG["target_exe"],
+                     diff=args.diff, force=args.force)
+    text = hybrid.report(r, ROOT)
+    (state / "report.txt").write_text(text + "\n", encoding="utf-8")
+    print(text)
+    if r["errors"] or (not r["patched"] and not r["identical"]):
+        return 1
+    if args.run:
+        hybrid.run_in_game(r["out"], CFG["game_dir"], state)
+    return 0
+
+
+def cmd_setup(args):
+    import setup_env
+    return setup_env.run(args)
+
+
+# commands that need the game exe and the toolchain from `c5d setup`
+NEEDS_SETUP = {"env", "analyze", "dump", "match", "scope", "queue", "task", "agent", "build"}
+
+
+def require_setup(cmd):
+    if cmd not in NEEDS_SETUP:
+        return
+    missing = config.missing_machine_keys(CFG)
+    if missing:
+        sys.exit(f"not set up yet ({', '.join(missing)} missing): run `python tools/c5d.py setup`")
+    if cmd != "env":
+        import setup_env
+        if not setup_env.exe_is_target(GAME_EXE, CFG["target_sha256"]):
+            sys.exit(f"{GAME_EXE} is missing or is not the build this project targets "
+                     f"({CFG.get('target_build', '')}); run `python tools/c5d.py setup`")
 
 
 def main():
@@ -707,6 +794,23 @@ def main():
     p.add_argument("--worker", default=None,
                    help="worker id: isolated build dir (build/work/<id>) so workers can run in parallel")
     sub = p.add_subparsers(dest="cmd", required=True)
+    s = sub.add_parser("setup", help="find and check the game, Ghidra and VC++ 2008; write config.local.json")
+    s.add_argument("--game", help="folder containing CivilizationV_DX11.exe (default: search Steam libraries)")
+    s.add_argument("--ghidra", help="Ghidra install folder (default: search common places)")
+    s.add_argument("--msvc", help="folder containing the VC++ 2008 cl.exe (default: search common places)")
+    s.add_argument("--no-install", action="store_true", help="don't pip-install missing Python packages")
+    s.add_argument("--sdk-headers", action="store_true", help="also fetch the Civ V SDK headers (git)")
+    s.add_argument("--skip-test", action="store_true", help="skip the test match at the end")
+    s.set_defaults(fn=cmd_setup)
+    b = sub.add_parser("build", help="hybrid exe: rebuild matched functions from source into a copy "
+                       "of the game exe and verify it (see README)")
+    b.add_argument("--diff", action="store_true",
+                   help="also patch in non-matching functions whose references all check out (experimental)")
+    b.add_argument("--force", action="store_true",
+                   help="with --diff: allow custom LTCG calling conventions too (may crash)")
+    b.add_argument("--run", action="store_true", help="copy the hybrid exe into the game folder and start it")
+    b.add_argument("--clean", action="store_true", help="remove what --run put in the game folder")
+    b.set_defaults(fn=cmd_build)
     sub.add_parser("env", help="check the toolchain").set_defaults(fn=cmd_env)
     a = sub.add_parser("analyze", help="Ghidra headless analysis + function export")
     a.add_argument("--reimport", action="store_true",
@@ -741,7 +845,7 @@ def main():
                    help="claim each task for its own worker id (<prefix>1, <prefix>2, ...)")
     t.add_argument("-v", "--verbose", action="store_true")
     t.set_defaults(fn=cmd_task)
-    ag = sub.add_parser("agent", help="run config.json agent_cmd over the next N tasks")
+    ag = sub.add_parser("agent", help="run agent_cmd (config.local.json) over the next N tasks")
     ag.add_argument("--n", type=int, default=5)
     ag.add_argument("--tries", type=int, default=3)
     ag.add_argument("--min-size", type=int, default=5)
@@ -767,6 +871,7 @@ def main():
     args = p.parse_args()
     global WORKER
     WORKER = args.worker
+    require_setup(args.cmd)
     sys.exit(args.fn(args))
 
 

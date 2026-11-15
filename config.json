@@ -1,9 +1,22 @@
 {
-  "game_dir": "D:/Steam/steamapps/common/Sid Meier's Civilization V",
   "target_exe": "CivilizationV_DX11.exe",
-  "ghidra_dir": "C:/Users/<you>/Desktop/ghidra_10.3.2_PUBLIC",
-  "msvc_bin": "C:/Users/<you>/AppData/Local/Programs/Common/Microsoft/Visual C++ for Python/9.0/VC/bin",
-  "cflags": ["/nologo", "/c", "/O2", "/Ob1", "/Gy", "/MD", "/EHsc", "/GR", "/Zc:wchar_t", "/arch:SSE2", "/fp:fast"],
+  "target_sha256": "47a9eaa71b7db7891d649c08df04fc34bc2ba8d3e9f86ea4421e27ab5dacd078",
+  "target_build": "Steam final build, 2014-11-19 (DX11 exe)",
+  "ghidra_version": "10.3.2",
+  "msvc_version": "15.00.30729.01",
+  "cflags": [
+    "/nologo",
+    "/c",
+    "/O2",
+    "/Ob1",
+    "/Gy",
+    "/MD",
+    "/EHsc",
+    "/GR",
+    "/Zc:wchar_t",
+    "/arch:SSE2",
+    "/fp:fast"
+  ],
   "ghidra_project_dir": "ghidra_proj",
   "ghidra_project_name": "civ5",
   "agent_cmd": []

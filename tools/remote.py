@@ -5,17 +5,8 @@ Server URL and token live in config.local.json (git-ignored).
 import json
 import urllib.error
 import urllib.request
-from pathlib import Path
 
-LOCAL = Path(__file__).resolve().parent.parent / "config.local.json"
-
-
-def load_local():
-    return json.loads(LOCAL.read_text()) if LOCAL.exists() else {}
-
-
-def save_local(d):
-    LOCAL.write_text(json.dumps(d, indent=2) + "\n")
+from config import load_local, save_local  # noqa: F401  (config.local.json)
 
 
 class Remote:

@@ -12,7 +12,9 @@ from pathlib import Path
 from binfmt import PEImage
 
 ROOT = Path(__file__).resolve().parent.parent
-CFG = json.loads((ROOT / "config.json").read_text())
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import config  # noqa: E402
+CFG = config.load()
 
 
 def main():
@@ -23,7 +25,7 @@ def main():
     text = img.data[rawptr:rawptr + min(vsize, rawsize)]
 
     funcs = []
-    csv_path = ROOT / "build" / "functions.csv"
+    csv_path = config.functions_csv()
     if csv_path.exists():
         with open(csv_path, newline="") as fh:
             funcs = sorted((int(r["entry"], 16), r["name"]) for r in csv.DictReader(fh))

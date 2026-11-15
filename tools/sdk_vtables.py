@@ -19,7 +19,9 @@ from pathlib import Path
 from binfmt import PEImage
 
 ROOT = Path(__file__).resolve().parent.parent
-CFG = json.loads((ROOT / "config.json").read_text())
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import config  # noqa: E402
+CFG = config.load()
 SDK = ROOT / "third_party" / "Community-Patch-DLL" / "CvGameCoreDLLUtil" / "include"
 
 # (most-derived interface, header) the exe implements
@@ -96,7 +98,7 @@ def parse_guids():
 def load_functions():
     import bisect
     rows = []
-    with open(ROOT / "build" / "functions.csv", newline="") as fh:
+    with open(config.functions_csv(), newline="") as fh:
         for r in csv.DictReader(fh):
             rows.append((int(r["entry"], 16), int(r["size"])))
     rows.sort()

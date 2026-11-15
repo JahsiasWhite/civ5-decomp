@@ -4,7 +4,7 @@
     c5d task check <addr>       run the matcher for one task and log the attempt
     c5d agent [--n N] [--tries T]
                                 for each of the next N items: write the bundle,
-                                run config.json "agent_cmd" with TASK.md on
+                                run config.local.json "agent_cmd" with TASK.md on
                                 stdin, check, retry up to T times with the diff
 
 A bundle is build/tasks/<addr>/TASK.md: everything a fresh agent needs for
@@ -47,7 +47,7 @@ RULES = """\
   Calls to functions that use custom register conventions (marked below) only
   match when the callee is decompiled too; if that's the only difference, stop
   and say so.
-- Do not edit `tools/`, `config.json` or other people's functions. Don't commit.
+- Do not edit `tools/`, `config.json`, `config.local.json` or other people's functions. Don't commit.
 - Finish with a 1-3 line summary: final status, and what blocked you if not MATCH.
 """
 

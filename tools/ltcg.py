@@ -123,6 +123,37 @@ def _disasm(code, va):
     return list(md.disasm(code, va))
 
 
+def make_resolver(name, our_va, extent, orig_va, test_img, orig_img, lmap, syms, obj_refs):
+    """Returns resolve(value, off=None): an absolute address in our linked DLL ->
+    (label, the address it must have in the original exe, or None if unknown)."""
+    imports_t = test_img.imports()
+    orig_iat_by_name = {v: k for k, v in orig_img.imports().items()}
+
+    def resolve(value, off=None):
+        if value in imports_t:
+            imp = imports_t[value]
+            return imp, orig_iat_by_name.get(imp)
+        if our_va <= value < our_va + extent:
+            # inside this function (e.g. its own switch table): same offset
+            return f"{name}+0x{value - our_va:x}", orig_va + (value - our_va)
+        n, delta = lmap.lookup(value)
+        # LTCG maps omit file statics, so a non-exact hit may be the wrong
+        # neighbour; prefer the compiler's own name for this reference.
+        unreliable = n is None or delta != 0
+        if unreliable and off is not None and off in obj_refs:
+            hint, addend = obj_refs[off]
+            if hint in syms:
+                return hint if not addend else f"{hint}+0x{addend:x}", syms[hint] + addend
+            return hint, None
+        if unreliable:
+            return f"0x{value:08x}", None
+        if n in syms:
+            return (n if not delta else f"{n}+0x{delta:x}"), syms[n] + delta
+        return (n if not delta else f"{n}+0x{delta:x}"), None
+
+    return resolve
+
+
 def compare(name, orig_img, orig_va, orig_size, test_img, lmap, syms, obj_refs=None):
     """Compare one function. Returns a result dict like the obj-mode matcher.
 
@@ -175,32 +206,9 @@ def compare(name, orig_img, orig_va, orig_size, test_img, lmap, syms, obj_refs=N
                           f"{len(tail)} bytes after code " + ("identical" if ok else "differ"))
             ours = ours[:len(orig)]
 
-    imports_t, imports_o = test_img.imports(), orig_img.imports()
-    orig_iat_by_name = {v: k for k, v in imports_o.items()}
     test_relocs = test_img.base_relocs()
-
-    def resolve(value, off=None):
-        """Our absolute address -> (label, expected original address or None)."""
-        if value in imports_t:
-            imp = imports_t[value]
-            return imp, orig_iat_by_name.get(imp)
-        if our_va <= value < our_va + max(our_len, len(ours)):
-            # inside this function (e.g. its own switch table): same offset
-            return f"{name}+0x{value - our_va:x}", orig_va + (value - our_va)
-        n, delta = lmap.lookup(value)
-        # LTCG maps omit file statics, so a non-exact hit may be the wrong
-        # neighbour; prefer the compiler's own name for this reference.
-        unreliable = n is None or delta != 0
-        if unreliable and off is not None and off in obj_refs:
-            hint, addend = obj_refs[off]
-            if hint in syms:
-                return hint if not addend else f"{hint}+0x{addend:x}", syms[hint] + addend
-            return hint, None
-        if unreliable:
-            return f"0x{value:08x}", None
-        if n in syms:
-            return (n if not delta else f"{n}+0x{delta:x}"), syms[n] + delta
-        return (n if not delta else f"{n}+0x{delta:x}"), None
+    resolve = make_resolver(name, our_va, max(our_len, len(ours)), orig_va,
+                            test_img, orig_img, lmap, syms, obj_refs)
 
     masked, notes = set(), ([table_note] if table_note else [])
 

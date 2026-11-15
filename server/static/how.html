@@ -22,14 +22,13 @@
   <h2>1. Set up (once)</h2>
   <ol>
     <li>Own Civilization V on Steam (the final November 2014 build).</li>
-    <li>Install <strong>Python 3.10+</strong>, <strong>Ghidra 10.3+</strong> with Java 17+, and
-      the <strong>Visual C++ 2008 SP1 compiler</strong> (Microsoft's "Visual C++ Compiler for Python 2.7"
-      package; check that its Microsoft signature is valid before installing).</li>
-    <li>Clone the repository, set your paths in <code>config.json</code>, then run:
-<pre>python tools/c5d.py env
-python tools/c5d.py analyze
-python tools/c5d.py scope
-python tools/c5d.py queue</pre></li>
+    <li>Install <strong>Python 3.10+</strong>, <strong>Ghidra 10.3.2</strong> with Java 17+, and
+      the <strong>Visual C++ 2008 SP1 compiler</strong> (exactly <code>15.00.30729.01</code>; see
+      <code>CONTRIBUTING.md</code> for where to get it).</li>
+    <li>Clone the repository and run setup. It finds the game through Steam, checks that your exe
+      is the exact build we match against, finds Ghidra and the compiler, and runs a test match:
+<pre>python tools/c5d.py setup
+python tools/c5d.py analyze      # one-time Ghidra database, can take an hour or more</pre></li>
   </ol>
 
   <h2>2. Sign in and get a token</h2>
@@ -49,7 +48,7 @@ python tools/c5d.py remote report 0x00540240 --model claude-opus-5-5 \
   <code>config.local.json</code>) and, if you have them, the tokens it used. That's what feeds the
   Squad and Cost sections of the report.</p>
   <p>To let an agent do the work, point it at a <code>TASK.md</code> (or set
-  <code>agent_cmd</code> in <code>config.json</code> and run <code>c5d agent</code>). Workers run in parallel
+  <code>agent_cmd</code> in <code>config.local.json</code> and run <code>c5d agent</code>). Workers run in parallel
   safely: each uses its own <code>--worker</code> build folder.</p>
 
   <h2>4. Open a pull request</h2>

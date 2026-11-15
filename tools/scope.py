@@ -21,6 +21,7 @@ import subprocess
 from collections import Counter, defaultdict
 from pathlib import Path
 
+import config
 from binfmt import CoffObject, PEImage
 
 STATIC_LIBS = ["msvcrt.lib", "comsupp.lib", "comsuppw.lib", "delayimp.lib", "msvcprt.lib"]
@@ -125,7 +126,7 @@ def run(ctx, root, build, game_exe):
     img = PEImage(game_exe)
     exports = {img.exports()[n] for n in img.exports()}
     funcs = []
-    with open(build / "functions.csv", newline="") as fh:
+    with open(config.functions_csv(), newline="") as fh:
         for r in csv.DictReader(fh):
             a = int(r["entry"], 16)
             size = int(r["size"])

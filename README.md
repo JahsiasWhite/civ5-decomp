@@ -15,6 +15,9 @@ starting point for the exe <-> DLL interface classes.
   headers and tooling go in git. `.gitignore` enforces most of this.
 - Everyone works from their own legally owned copy of the game.
 
+**New contributors: start with [CONTRIBUTING.md](CONTRIBUTING.md)** (tools to install, then
+`python tools/c5d.py setup`).
+
 ## Target
 
 | | CivilizationV_DX11.exe |
@@ -28,21 +31,23 @@ starting point for the exe <-> DLL interface classes.
 ## Pipeline
 
 ```
-analyze ──► scope ──► queue ──► task next / agent ──► match ──► status
-(Ghidra)   (what's    (leaves-   (bundles for one     (LTCG      (PROGRESS.md)
-           in scope)   first)     function each)       verify)
+setup ──► scope ──► queue ──► task next / agent ──► match ──► build ──► status
+(paths,   (what's    (leaves-   (bundles for one     (LTCG      (hybrid    (PROGRESS.md)
+ exe hash) in scope)  first)     function each)       verify)    exe)
 ```
 
 | Command | What it does | Output |
 |---|---|---|
-| `c5d analyze` | Ghidra headless import, then function export | `build/functions.csv` |
+| `c5d setup` | Finds the game (Steam libraries), checks the exe's SHA-256, finds Ghidra, Java and the VC++ 2008 compiler, writes `config.local.json`, builds scope + queue, runs a test match | `config.local.json` |
+| `c5d analyze` | Ghidra headless import and analysis (needed for task bundles), plus function export. The shared list is `data/functions.csv`; maintainers refresh it from this export. | `ghidra_proj/`, `build/functions.csv` |
 | `c5d scope` | Classifies every function: game code vs import stubs, thunks, CRT (byte signatures from the compiler's static libs), ATL/MFC names, compiler EH funclets. Manual ranges go in `scope_overrides.txt`. | `build/scope.csv` |
 | `tools/sdk_vtables.py` | Names engine functions from the SDK interface headers: finds each interface's `QueryInterface` through its GUID, then its vtable | `names/sdk_vtables.csv` |
 | `c5d queue` | Call graph, calling-convention guess (stack / thiscall / custom LTCG registers), call depth, LTCG clusters. Leaves first. | `build/queue.csv` |
 | `c5d task next --n N` | Writes a self-contained bundle per ready function: rules, disassembly, Ghidra C, references with names/conventions/status | `build/tasks/<addr>/TASK.md` |
 | `c5d task check <addr>` | Verifies one function and logs the attempt | `build/attempts.jsonl` |
-| `c5d agent --n N --tries T` | Runs `agent_cmd` from `config.json` on each bundle (prompt on stdin), checks, retries with the diff. Any CLI agent works, e.g. `["claude", "-p", "--permission-mode", "acceptEdits"]`. Runs one function at a time. | as above |
+| `c5d agent --n N --tries T` | Runs `agent_cmd` from `config.local.json` on each bundle (prompt on stdin), checks, retries with the diff. Any CLI agent works, e.g. `["claude", "-p", "--permission-mode", "acceptEdits"]`. Runs one function at a time. | as above |
 | `c5d match` | LTCG build of all `src/` + verification; a full run updates `progress/status.csv` | |
+| `c5d build` | Hybrid exe: every function in `src/` relocated into a copy of the game exe (see "Hybrid build") | `build/hybrid/` |
 | `c5d status` | Progress summary | `PROGRESS.md` |
 
 The SDK headers come from the public Community Patch repo (sparse checkout of
@@ -95,6 +100,41 @@ Then open `http://127.0.0.1:8765/dev-login?login=you`. Tests: `python -m pytest 
    with `progress/status.csv`).
 5. Before launch: fill in the contact address and get the draft terms in
    `server/static/legal.html` reviewed.
+
+## Configuration
+
+- `config.json` (committed): compiler flags, the target exe's SHA-256, pinned tool versions.
+- `config.local.json` (git-ignored, written by `c5d setup`): this machine's game, Ghidra and
+  MSVC paths, plus the server login, `model` and `agent_cmd`. Its keys override `config.json`.
+- `data/functions.csv` (committed): the shared function list (addresses, sizes, Ghidra names;
+  no code), so everyone uses the same addresses whatever Ghidra version they have.
+
+Every toolchain command refuses to run until setup is done, and refuses an exe whose hash
+doesn't match (the hash is cached by size + mtime, so this costs nothing).
+
+## Hybrid build: testing as we go
+
+We don't wait for 100% to rebuild and check the exe. `c5d build` takes our `/LTCG`-linked
+code for every function in `src/` and writes it into a copy of your own exe at the original
+addresses, re-pointing every call, jump, global and switch table:
+
+- **Matched functions** are written in place, and the result must be **byte-identical** to the
+  original (SHA-256 of the whole file). This proves, at every stage, that the rebuilt
+  functions and the relocation from our link back to the game's addresses are right.
+- **`--diff`** also patches in non-matching functions whose calls and globals all check out:
+  our version goes in a new `.c5d` section and the original entry jumps to it. Functions with a
+  custom LTCG register convention are skipped unless you pass `--force`. The exe then runs our C++
+  for those functions (ASLR is turned off and the signature is dropped), so you can play-test
+  decompiled logic before it matches byte for byte.
+- **`--run`** copies the hybrid into the game folder as `CivilizationV_DX11_c5d.exe` (with a
+  `steam_appid.txt` if there isn't one) and starts it. **`--clean`** removes both.
+
+First run (2026-11-15): all 32 matched functions rebuilt into a byte-identical exe; with
+`--diff`, `KindQueryObject::GetKindFlags` (equivalent, but `lea` operands in a different order)
+runs from `.c5d`. The other 7 DIFFs stay original: 6 have references that don't check out yet,
+and 1 is custom-convention.
+
+The hybrid exe is built from each player's own copy and is never shared.
 
 ## Parallel workers
 
@@ -222,7 +262,10 @@ Not yet: `FSBAAllocate`, `FSBAHasAllocatorForSize` (1 byte off),
 ## Layout
 
 ```
-config.json        local paths (game, Ghidra, MSVC), compiler flags, agent_cmd
+config.json        shared settings: compiler flags, target exe SHA-256, tool versions
+config.local.json  this machine's paths, server login, agent_cmd (git-ignored; `c5d setup`)
+data/              functions.csv: the shared function list
+CONTRIBUTING.md    contributor setup guide
 symbols.txt        address <-> symbol map (drives `match`)
 names/             readable names from other sources (SDK vtables)
 progress/          status.csv: per-function match status (committed)
@@ -233,7 +276,10 @@ tools/workqueue.py call graph, conventions, leaves-first queue
 tools/tasks.py     task bundles + agent loop
 tools/sdk_vtables.py SDK interface names
 src/auto/          agent-written functions (f_<address>.cpp)
-tools/c5d.py       CLI: `env`, `analyze`, `dump`, `match`
+tools/c5d.py       CLI: `setup`, `analyze`, `dump`, `match`, `build`, ... (`--help`)
+tools/setup_env.py `c5d setup`: discovery, exe hash, toolchain checks
+tools/config.py    config.json + config.local.json loading
+tools/hybrid.py    `c5d build`: relocate our code into a copy of the exe
 tools/binfmt.py    PE / COFF readers (exports, imports, base relocations)
 tools/ltcg.py      /GL + /LTCG build, placeholders, linked comparison
 tools/xrefs.py     find callers of an address in the exe
@@ -246,10 +292,11 @@ build/             generated output (git-ignored)
 ## Quick start
 
 ```bash
-python tools/c5d.py env       # check the toolchain
-python tools/c5d.py analyze   # Ghidra headless import, then build/functions.csv
+python tools/c5d.py setup     # find + check everything, write config.local.json
+python tools/c5d.py analyze   # one-time Ghidra database (for task bundles)
 python tools/c5d.py dump 0x00813940   # disasm + decompile to build/dump (local only)
 python tools/c5d.py match             # compile src/ and compare against the exe
+python tools/c5d.py build             # hybrid exe, verified byte-identical
 ```
 
 ## Matching a function
