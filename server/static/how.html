@@ -24,8 +24,8 @@
     <li>Own Civilization V on Steam (the final November 2014 build).</li>
     <li>Install <strong>Python 3.10+</strong>, <strong>Ghidra 10.3.2</strong> with Java 17+, and
       the <strong>Visual C++ 2008 SP1 compiler</strong> (exactly <code>15.00.30729.01</code>; see
-      <code>CONTRIBUTING.md</code> for where to get it).</li>
-    <li>Clone the repository and run setup. It finds the game through Steam, checks that your exe
+      <a href="https://github.com/JahsiasWhite/civ5-decomp/blob/main/CONTRIBUTING.md"><code>CONTRIBUTING.md</code></a> for where to get it).</li>
+    <li>Clone the <a href="https://github.com/JahsiasWhite/civ5-decomp">repository</a> and run setup. It finds the game through Steam, checks that your exe
       is the exact build we match against, finds Ghidra and the compiler, and runs a test match:
 <pre>python tools/c5d.py setup
 python tools/c5d.py analyze      # one-time Ghidra database, can take an hour or more</pre></li>
@@ -53,7 +53,7 @@ python tools/c5d.py remote report 0x00540240 --model claude-opus-5-5 \
 
   <h2>4. Open a pull request</h2>
   <p>Commit your <code>src/auto/f_&lt;addr&gt;.cpp</code> and <code>symbols/auto/f_&lt;addr&gt;.txt</code>
-  files and open a pull request. A reported match shows as <em>awaiting verify</em> until the
+  files and open a <a href="https://github.com/JahsiasWhite/civ5-decomp/pulls">pull request</a>. A reported match shows as <em>awaiting verify</em> until the
   maintainer's nightly run rebuilds everything and confirms it; then it counts on the leaderboard.
   If it isn't verified within 14 days (no pull request, or it wasn't merged), the function goes
   back in the pool for others; you still get the credit if your PR is merged later, unless
@@ -69,6 +69,7 @@ python tools/c5d.py remote report 0x00540240 --model claude-opus-5-5 \
 
 <footer class="site"><div class="wrap">
   Non-commercial fan project. Not affiliated with or endorsed by Firaxis Games, 2K or Take-Two Interactive.
+  <a href="https://github.com/JahsiasWhite/civ5-decomp">Source on GitHub</a>.
   <a href="/legal">Terms &amp; contact</a>.
 </div></footer>
 </body>

@@ -46,7 +46,7 @@ Setup searches the default install folders of all three. If yours is somewhere e
 ## 2. Run setup
 
 ```bash
-git clone <repo-url> civ5-decomp
+git clone https://github.com/JahsiasWhite/civ5-decomp.git civ5-decomp
 cd civ5-decomp
 python tools/c5d.py setup
 ```
@@ -107,7 +107,7 @@ Tips:
 python tools/c5d.py remote report 0x00540240 --model <model or "hand"> --tries 2
 ```
 
-`report` re-checks the match on your machine before it reports. Then open a pull request with
+`report` re-checks the match on your machine before it reports. Then open a [pull request](https://github.com/JahsiasWhite/civ5-decomp/pulls) with
 your `src/auto/f_*.cpp` and `symbols/auto/f_*.txt` files. A maintainer re-runs the match against
 their own copy of the game. It counts on the site once that nightly check confirms it.
 
