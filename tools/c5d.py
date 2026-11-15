@@ -530,12 +530,30 @@ def task_context():
         sys.exit("run `c5d scope` and `c5d queue` first")
     with open(qcsv, newline="") as fh:
         rows = list(csv.DictReader(fh))
+    import classes
     image = PEImage(GAME_EXE)
+    symbols_by_addr = {va: n for n, va in load_symbols().items()}
     return types.SimpleNamespace(
         root=ROOT, build=BUILD, image=image, rows=rows,
         by_addr={int(r["entry"], 16): r for r in rows},
         names=load_names(), imports=image.imports(),
-        symbols_by_addr={va: n for n, va in load_symbols().items()})
+        symbols_by_addr=symbols_by_addr,
+        classes=classes.ClassIndex(image, config.load_functions(), symbols_by_addr))
+
+
+def cmd_classes(args):
+    """Classes found from vtables (tools/classes.py): the ones with the most unmatched
+    members, or one class in full."""
+    import classes
+    ctx = task_context()
+    if args.addr:
+        c = ctx.classes.lookup(int(args.addr, 16))
+        if c is None:
+            sys.exit(f"{args.addr}: not a vtable or a member of a known class")
+        print("\n".join(classes.describe(ctx.classes, c, ctx.by_addr)))
+    else:
+        print("\n".join(classes.report(ctx.classes, ctx.by_addr, args.top)))
+    return 0
 
 
 def pick_tasks(ctx, n, tries, min_size=5, max_size=None):
@@ -926,7 +944,7 @@ def cmd_setup(args):
 
 # commands that need the game exe and the toolchain from `c5d setup`
 NEEDS_SETUP = {"env", "analyze", "dump", "match", "scope", "queue", "task", "agent", "build",
-               "fingerprint"}
+               "fingerprint", "classes"}
 
 
 def require_setup(cmd, args=None):
@@ -1000,6 +1018,11 @@ def main():
     q = sub.add_parser("queue", help="build the leaves-first work queue (build/queue.csv)")
     q.add_argument("--top", type=int, default=20)
     q.set_defaults(fn=cmd_queue)
+    cl = sub.add_parser("classes", help="classes found from vtables: most unmatched members first, "
+                        "or `classes 0x<addr>` for one class")
+    cl.add_argument("addr", nargs="?", help="a vtable or member function address")
+    cl.add_argument("--top", type=int, default=30)
+    cl.set_defaults(fn=cmd_classes)
     t = sub.add_parser("task", help="task bundles: `next` writes them, `check <addr>` verifies one")
     t.add_argument("action", choices=["next", "check", "release"])
     t.add_argument("addr", nargs="?")

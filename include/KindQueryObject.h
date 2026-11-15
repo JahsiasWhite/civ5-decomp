@@ -1,4 +1,8 @@
 // Minimal layout of an object queried through vtable slot 24 (byte offset 0x60).
+// c5d-vtable: 0x00a462e8
+// GetKindFlags (0x005faa60) is virtual slot 23 and GetConstant_005acb70 is slot 18
+// (see `c5d classes 0x00a462e8`); they are declared non-virtual here because
+// nothing calls them through the vtable yet.
 #pragma once
 
 class KindQueryObject

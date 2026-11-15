@@ -27,6 +27,9 @@ RULES = """\
 ## House rules
 - Write the function in **`{src}`** (create it). Put new or extended class
   layouts in `include/` (one header per class), reusing existing headers.
+  When the "Class" section below names the function's class, use and extend
+  the header it points to; a new class header gets a `// c5d-vtable: 0x...`
+  line near the top so later tasks on that class find it.
 - Never paste disassembly, hex bytes or Ghidra output into source files or
   comments. Source must be hand-written C++.
 - Compiler: Visual C++ 2008 SP1, `/O2 /Ob1`, linked with `/GL` + `/LTCG`.
@@ -103,6 +106,16 @@ def ghidra_c(build, addr):
     return "(not dumped; run `python tools/c5d.py dump 0x%08x`)" % addr
 
 
+def class_section(ctx, addr, queue_by_addr):
+    """The bundle's "Class" section (tools/classes.py), or nothing when the function
+    has no known class or the context has no class index."""
+    idx = getattr(ctx, "classes", None)
+    if idx is None:
+        return []
+    import classes
+    return classes.bundle_section(idx, addr, queue_by_addr)
+
+
 def write_bundle(ctx, row, queue_by_addr, names, symbols_by_addr, imports, last_diff=None,
                  worker="w1"):
     addr, size = int(row["entry"], 16), int(row["size"])
@@ -138,6 +151,7 @@ def write_bundle(ctx, row, queue_by_addr, names, symbols_by_addr, imports, last_
         "",
         RULES.format(src=src, addr=f"0x{addr:08x}", worker=worker,
                      symfile=f"symbols/auto/f_{addr:08x}.txt"),
+        *class_section(ctx, addr, queue_by_addr),
         "## Disassembly (reference only)",
         "```", asm, "```",
         "",
