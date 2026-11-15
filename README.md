@@ -56,6 +56,46 @@ git -C third_party/Community-Patch-DLL sparse-checkout set CvGameCoreDLLUtil
 Automated work goes in `src/auto/f_<address>.cpp`. Move it into a proper area
 folder once the class it belongs to is known.
 
+## Website and claim service (`server/`)
+
+A coordination server written with the Python standard library only (`http.server`
++ `sqlite3`). It hosts the progress dashboard, the contribute/terms/account pages,
+and the claim API. **The server never stores game bytes**: only addresses, sizes,
+names, statuses, claims and activity. Code moves through GitHub pull requests.
+
+```
+contributor                      server                         maintainer (has the game)
+c5d remote claim  ──────────►  hands out ready functions,      git pull
+  (bundles built locally)       4 h lease, max 25 per user      python tools/c5d.py match
+c5d remote report ──────────►  marks "reported"                python server/manage.py verify
+  (re-checks locally first)                                       -> "matched", leaderboard, trend
+open a PR with src/auto + symbols/auto
+```
+
+**Try it locally** (dev sign-in, no GitHub needed):
+
+```bash
+python server/manage.py import
+python server/dev.py
+```
+
+Then open `http://127.0.0.1:8765/dev-login?login=you`. Tests: `python -m pytest tests/`.
+
+**Deploying publicly:**
+1. Put it behind an HTTPS reverse proxy (Caddy or nginx) on a small VPS, and set
+   `C5D_PUBLIC_URL=https://your-domain`, `C5D_SESSION_SECRET=<long random>` and
+   `C5D_HOST=127.0.0.1` (the proxy forwards to it). Never set `C5D_DEV_AUTH` in production.
+2. Create a GitHub OAuth app (GitHub → Settings → Developer settings → OAuth Apps)
+   with the callback `https://your-domain/auth/callback`, and set `GITHUB_CLIENT_ID` /
+   `GITHUB_CLIENT_SECRET`. No scopes are requested; the server only reads the public login.
+3. Copy `server/data/c5d.sqlite` (after `manage.py import`) to the server, or run
+   the import there with your `build/queue.csv` (it contains addresses, sizes and names only).
+4. Nightly: `git pull && python tools/c5d.py match && python server/manage.py verify`
+   on your machine, then sync the verify results (the DB, or run `verify` on the server
+   with `progress/status.csv`).
+5. Before launch: fill in the contact address and get the draft terms in
+   `server/static/legal.html` reviewed.
+
 ## Parallel workers
 
 Each worker passes `--worker <id>`, which gives it its own build folder

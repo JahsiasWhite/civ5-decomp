@@ -20,3 +20,7 @@ build_*.txt
 __pycache__/
 *.pyc
 third_party/
+
+# Local secrets / server data
+config.local.json
+server/data/

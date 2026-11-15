@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>civ5decomp</title>
+<meta name="description" content="A community, byte-matching reconstruction of the Civilization V engine's source code.">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a class="brand" href="/">civ5<b>decomp</b></a>
+  <nav class="site"><a href="/" aria-current="page">Progress</a><a href="/how">Contribute</a><a href="/legal">Terms</a><a href="/account">Account</a></nav>
+</div></header>
+
+<main class="wrap">
+  <section class="hero">
+    <div class="eyebrow">Reconstruction report · CivilizationV_DX11.exe · MSVC 2008 SP1 · LTCG</div>
+    <h1>Rebuilding the engine, byte for byte.</h1>
+    <p>Every function is rewritten in C++ until the original compiler turns it back into exactly the same bytes. Bring your own copy of the game; nothing here contains game files.</p>
+  </section>
+
+  <section class="big">
+    <div class="card">
+      <h2>Matched</h2>
+      <div class="pct" id="pct">–<small>%</small></div>
+      <div class="meter"><i id="meter"></i></div>
+      <div class="sub" id="pct-sub">Loading…</div>
+    </div>
+    <div class="card">
+      <h2>Status</h2>
+      <dl class="kv">
+        <dt>Functions matched</dt><dd id="k-matched">–</dd>
+        <dt>Reported, awaiting verify</dt><dd id="k-reported">–</dd>
+        <dt>Being worked on now</dt><dd id="k-claimed">–</dd>
+        <dt>Ready to claim</dt><dd id="k-ready">–</dd>
+        <dt>Contributors</dt><dd id="k-people">–</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section class="grid2">
+    <div class="card">
+      <h2>By function size</h2>
+      <div class="buckets" id="buckets"></div>
+    </div>
+    <div class="card">
+      <h2>Matched over time</h2>
+      <svg class="trend" id="trend" viewBox="0 0 400 120" preserveAspectRatio="none" role="img" aria-label="Matched functions over time"></svg>
+      <div class="sub" id="trend-sub"></div>
+    </div>
+  </section>
+
+  <section class="grid2">
+    <div class="card">
+      <h2>Leaderboard</h2>
+      <table><thead><tr><th>Contributor</th><th class="num">Functions</th><th class="num">Bytes</th></tr></thead>
+      <tbody id="board"></tbody></table>
+    </div>
+    <div class="card">
+      <h2>Recently matched</h2>
+      <table><thead><tr><th>Address</th><th>Function</th><th class="num">Bytes</th></tr></thead>
+      <tbody id="recent"></tbody></table>
+    </div>
+  </section>
+</main>
+
+<footer class="site"><div class="wrap">
+  Non-commercial fan project. Not affiliated with or endorsed by Firaxis Games, 2K or Take-Two Interactive.
+  No game files are hosted or distributed. <a href="/legal">Terms &amp; contact</a>.
+</div></footer>
+<script src="/static/dashboard.js"></script>
+</body>
+</html>

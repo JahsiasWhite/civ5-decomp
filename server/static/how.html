@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contribute · civ5decomp</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a class="brand" href="/">civ5<b>decomp</b></a>
+  <nav class="site"><a href="/">Progress</a><a href="/how" aria-current="page">Contribute</a><a href="/legal">Terms</a><a href="/account">Account</a></nav>
+</div></header>
+
+<main class="wrap prose">
+  <h1>How to contribute</h1>
+  <p>Each function in the game's engine is a small puzzle: write C++ that the original
+  compiler (Visual C++ 2008 SP1, whole-program optimisation) turns into exactly the same
+  bytes. You can solve them by hand, with an AI agent, or both.</p>
+
+  <h2>1. Set up (once)</h2>
+  <ol>
+    <li>Own Civilization V on Steam (the final November 2014 build).</li>
+    <li>Install <strong>Python 3.10+</strong>, <strong>Ghidra 10.3+</strong> with Java 17+, and
+      the <strong>Visual C++ 2008 SP1 compiler</strong> (Microsoft's "Visual C++ Compiler for Python 2.7"
+      package; check that its Microsoft signature is valid before installing).</li>
+    <li>Clone the repository, set your paths in <code>config.json</code>, then run:
+<pre>python tools/c5d.py env
+python tools/c5d.py analyze
+python tools/c5d.py scope
+python tools/c5d.py queue</pre></li>
+  </ol>
+
+  <h2>2. Sign in and get a token</h2>
+  <p>Sign in with GitHub on the <a href="/account">account page</a>, accept the contributor
+  terms, choose how your name appears on the leaderboard (or stay anonymous), and create an
+  API token. Then:</p>
+<pre>python tools/c5d.py remote login --server https://this-site --token c5d_…</pre>
+
+  <h2>3. Claim, solve, report</h2>
+<pre>python tools/c5d.py remote claim --n 3          # reserves 3 functions (4 h lease)
+# each one gets build/tasks/&lt;addr&gt;/TASK.md with everything you need
+python tools/c5d.py --worker w1 match --addr 0x00540240 -v
+python tools/c5d.py remote report 0x00540240    # re-checks locally, then reports</pre>
+  <p>To let an agent do the work, point it at a <code>TASK.md</code> (or set
+  <code>agent_cmd</code> in <code>config.json</code> and run <code>c5d agent</code>). Workers run in parallel
+  safely: each uses its own <code>--worker</code> build folder.</p>
+
+  <h2>4. Open a pull request</h2>
+  <p>Commit your <code>src/auto/f_&lt;addr&gt;.cpp</code> and <code>symbols/auto/f_&lt;addr&gt;.txt</code>
+  files and open a pull request. A reported match shows as <em>awaiting verify</em> until the
+  maintainer's nightly run rebuilds everything and confirms it; then it counts on the leaderboard.</p>
+
+  <h2>House rules</h2>
+  <ul>
+    <li>Hand-written C++ only. Never paste disassembly, bytes or decompiler output into source.</li>
+    <li>Never commit or upload game files, executables or anything extracted from them.</li>
+    <li>Don't sit on claims: they lapse after 4 hours, and you can hold at most 25.</li>
+  </ul>
+</main>
+
+<footer class="site"><div class="wrap">
+  Non-commercial fan project. Not affiliated with or endorsed by Firaxis Games, 2K or Take-Two Interactive.
+  <a href="/legal">Terms &amp; contact</a>.
+</div></footer>
+</body>
+</html>

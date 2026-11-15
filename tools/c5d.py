@@ -609,6 +609,72 @@ def cmd_status(_args):
     return 0
 
 
+def cmd_remote(args):
+    """Talk to the coordination server: login, claim, report, release, status."""
+    import tasks
+    import remote
+    if args.action == "login":
+        if not (args.server and args.token):
+            sys.exit("usage: c5d remote login --server URL --token TOKEN")
+        r = remote.Remote(args.server, args.token)
+        me = r.call("GET", "/api/me")
+        loc = remote.load_local()
+        loc.update({"server": r.server, "token": r.token})
+        remote.save_local(loc)
+        print(f"logged in to {r.server} as {me['login']} (saved to config.local.json)")
+        return 0
+    r = remote.Remote()
+    if args.action == "status":
+        me = r.call("GET", "/api/me")
+        print(f"{me['login']}  terms accepted: {me['accepted_terms']}  claims: {len(me['claims'])}")
+        for c in me["claims"]:
+            print(f"  0x{c['addr']:08x}  {c['worker']:<6} {c['size']:>6}b  {c['name']}")
+        return 0
+    if args.action == "claim":
+        body = {"n": args.n, "worker_prefix": args.worker_prefix, "min_size": args.min_size}
+        if args.max_size:
+            body["max_size"] = args.max_size
+        if args.addr:
+            body["addr"] = args.addr
+        got = r.call("POST", "/api/claim", body)["claims"]
+        if not got:
+            print("nothing available to claim with those filters")
+            return 0
+        ctx = task_context()
+        prefetch_dumps([int(c["addr"], 16) for c in got])
+        for c in got:
+            a = int(c["addr"], 16)
+            claim(a, c["worker"])                       # local claim mirrors the server's
+            row = ctx.by_addr.get(a)
+            if not row:
+                print(f"{c['addr']}: not in your local queue (re-run `c5d queue`?)")
+                continue
+            path, _src = tasks.write_bundle(ctx, row, ctx.by_addr, ctx.names, ctx.symbols_by_addr,
+                                            ctx.imports, worker=c["worker"])
+            print(f"{c['addr']}  {row['size']:>5}b  {row['conv']:<8} {c['worker']:<5} -> {path.relative_to(ROOT)}")
+        return 0
+    if args.action == "report":
+        a = int(args.addr, 16)
+        ctx = task_context()
+        status, out = tasks.check(ctx, a, claims().get(a))
+        tasks.log_attempt(BUILD, {"addr": f"0x{a:08x}", "status": status, "agent": "remote",
+                                  "time": __import__("time").time()})
+        if status not in ("MATCH", "DIFF"):
+            print(out)
+            sys.exit(f"local check gave {status}; not reporting (fix the build first)")
+        r.call("POST", "/api/report", {"addr": f"0x{a:08x}", "status": status})
+        release(a)
+        print(f"0x{a:08x}: reported {status}" + ("; it counts once the nightly verify confirms it"
+                                                 if status == "MATCH" else ""))
+        return 0
+    if args.action == "release":
+        a = int(args.addr, 16)
+        r.call("POST", "/api/release", {"addr": f"0x{a:08x}"})
+        release(a)
+        print(f"0x{a:08x}: released")
+        return 0
+
+
 def cmd_scope(_args):
     import scope
     scope.run(LinkCtx(), ROOT, BUILD, GAME_EXE)
@@ -679,6 +745,16 @@ def main():
     ag.add_argument("--timeout", type=int, default=1800)
     ag.set_defaults(fn=cmd_agent)
     sub.add_parser("status", help="write PROGRESS.md").set_defaults(fn=cmd_status)
+    rm = sub.add_parser("remote", help="coordination server: login | status | claim | report | release")
+    rm.add_argument("action", choices=["login", "status", "claim", "report", "release"])
+    rm.add_argument("addr", nargs="?")
+    rm.add_argument("--server")
+    rm.add_argument("--token")
+    rm.add_argument("--n", type=int, default=1)
+    rm.add_argument("--worker-prefix", default="w")
+    rm.add_argument("--min-size", type=int, default=0)
+    rm.add_argument("--max-size", type=int, default=None)
+    rm.set_defaults(fn=cmd_remote)
     args = p.parse_args()
     global WORKER
     WORKER = args.worker

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Account · civ5decomp</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a class="brand" href="/">civ5<b>decomp</b></a>
+  <nav class="site"><a href="/">Progress</a><a href="/how">Contribute</a><a href="/legal">Terms</a><a href="/account" aria-current="page">Account</a></nav>
+</div></header>
+
+<main class="wrap prose">
+  <h1>Your account</h1>
+
+  <section id="signed-out" class="hidden">
+    <p>Sign in with GitHub to claim functions and appear on the leaderboard. We only read your public login name.</p>
+    <p><a class="btn" href="/login">Sign in with GitHub</a></p>
+  </section>
+
+  <section id="signed-in" class="hidden">
+    <p>Signed in as <strong id="login"></strong> · <a href="/logout">Sign out</a></p>
+
+    <h2>Contributor terms</h2>
+    <div id="terms-todo">
+      <p>Before claiming work, confirm that you own the game, will contribute only hand-written code,
+      and accept the <a href="/legal">contributor terms</a>.</p>
+      <button class="btn" id="accept">I agree</button>
+    </div>
+    <p id="terms-done" class="hidden">Accepted ✓</p>
+
+    <h2>Leaderboard name</h2>
+    <p class="sub">Leave empty to appear as "anonymous".</p>
+    <div class="row-gap"><input type="text" id="display" maxlength="40"> <button class="btn ghost" id="save-display">Save</button> <span id="display-msg" class="sub"></span></div>
+
+    <h2>API token</h2>
+    <p>The <code>c5d</code> command-line tool uses this token to claim and report. Creating a new one replaces the old one.</p>
+    <button class="btn ghost" id="new-token">Create token</button>
+    <p id="token-box" class="hidden"><span class="token" id="token"></span><br><span class="sub">Copy it now; it won't be shown again.
+      Then run <code>python tools/c5d.py remote login --server <span id="origin"></span> --token …</code></span></p>
+
+    <h2>Your claims</h2>
+    <table><thead><tr><th>Address</th><th>Worker</th><th class="num">Bytes</th><th>Expires</th></tr></thead>
+    <tbody id="claims"></tbody></table>
+  </section>
+</main>
+
+<footer class="site"><div class="wrap">
+  Non-commercial fan project. Not affiliated with or endorsed by Firaxis Games, 2K or Take-Two Interactive.
+</div></footer>
+<script src="/static/account.js"></script>
+</body>
+</html>
