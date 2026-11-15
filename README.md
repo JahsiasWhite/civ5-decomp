@@ -222,6 +222,11 @@ by *other* workers, so a half-written file can't break anyone else's build.
 `c5d task release <addr>` drops a claim. Twenty workers ran at once in the trial without
 interfering.
 
+When you're logged in (`c5d remote login`),
+`task next`, `task release` and `agent` also claim and release on the server, so nobody else is
+handed the same function; ones someone else holds are skipped. If the server can't be reached
+they warn and carry on locally; `--local` skips the server.
+
 ### Per-file compiler flags
 
 Firaxis's build used **different settings per source file**. Most code is

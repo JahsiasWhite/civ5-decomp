@@ -569,12 +569,11 @@ def cmd_task(args):
     import tasks
     ctx = task_context()
     if args.action == "next":
-        rows = pick_tasks(ctx, args.n, args.tries, args.min_size, args.max_size)
-        prefetch_dumps([int(r["entry"], 16) for r in rows])
-        for i, r in enumerate(rows):
-            a = int(r["entry"], 16)
-            worker = f"{args.worker_prefix}{i + 1}" if args.worker_prefix else (WORKER or "w1")
-            claim(a, worker)
+        jobs = pick_and_claim(ctx, args.n, args.tries, args.min_size, args.max_size,
+                              lambda i: f"{args.worker_prefix}{i + 1}" if args.worker_prefix
+                              else (WORKER or "w1"), args.local)
+        prefetch_dumps([int(r["entry"], 16) for r, _w in jobs])
+        for r, worker in jobs:
             path, src = tasks.write_bundle(ctx, r, ctx.by_addr, ctx.names, ctx.symbols_by_addr,
                                            ctx.imports, worker=worker)
             print(f"{r['entry']}  {r['size']:>5}b  {r['conv']:<8} {worker:<5} -> {path.relative_to(ROOT)}")
@@ -585,8 +584,30 @@ def cmd_task(args):
                                   "time": __import__("time").time()})
         print(out if args.verbose else status)
     else:                                   # release
-        release(int(args.addr, 16))
+        import remote
+        a = int(args.addr, 16)
+        remote.ServerClaims.from_config(args.local).release(a)
+        release(a)
     return 0
+
+
+def pick_and_claim(ctx, n, tries, min_size, max_size, worker_for, local_only=False):
+    """Pick up to `n` tasks from the local queue and claim each one locally and, when logged
+    in, on the server. Functions the server says someone else holds (or that are matched
+    there) are skipped for the next candidate. -> [(queue row, worker)]"""
+    import remote
+    server = remote.ServerClaims.from_config(local_only)
+    out = []
+    for r in pick_tasks(ctx, n * 4 + 10, tries, min_size, max_size):
+        a = int(r["entry"], 16)
+        worker = worker_for(len(out))
+        if not server.claim(a, worker):
+            continue
+        claim(a, worker)
+        out.append((r, worker))
+        if len(out) >= n:
+            break
+    return out
 
 
 def cmd_agent(args):
@@ -608,14 +629,12 @@ def cmd_agent(args):
             body["max_size"] = args.max_size
         jobs = [(row, worker) for row, worker, _path in remote_claim(r, body, ctx)]
     else:
-        rows = pick_tasks(ctx, args.n, args.tries, args.min_size, args.max_size)
-        prefetch_dumps([int(row["entry"], 16) for row in rows])
-        jobs = [(row, WORKER or "w1") for row in rows]
+        jobs = pick_and_claim(ctx, args.n, args.tries, args.min_size, args.max_size,
+                              lambda _i: WORKER or "w1", args.local)
+        prefetch_dumps([int(row["entry"], 16) for row, _w in jobs])
     summary = []
     for row, worker in jobs:
         a = int(row["entry"], 16)
-        if not args.remote:
-            claim(a, worker)
         diff = None
         status = "ERROR"
         for t in range(args.tries):
@@ -981,6 +1000,8 @@ def main():
     t.add_argument("--max-size", type=int, default=None)
     t.add_argument("--worker-prefix", default=None,
                    help="claim each task for its own worker id (<prefix>1, <prefix>2, ...)")
+    t.add_argument("--local", action="store_true",
+                   help="don't claim/release on the server even when logged in")
     t.add_argument("-v", "--verbose", action="store_true")
     t.set_defaults(fn=cmd_task)
     ag = sub.add_parser("agent", help="run agent_cmd (config.local.json) over the next N tasks")
@@ -991,6 +1012,8 @@ def main():
     ag.add_argument("--timeout", type=int, default=1800)
     ag.add_argument("--remote", action="store_true",
                     help="claim from the server and report each result (with token usage)")
+    ag.add_argument("--local", action="store_true",
+                    help="without --remote: don't mirror claims on the server even when logged in")
     ag.set_defaults(fn=cmd_agent)
     sub.add_parser("status", help="write PROGRESS.md").set_defaults(fn=cmd_status)
     rm = sub.add_parser("remote", help="coordination server: login | status | claim | report | release")
