@@ -1,0 +1,34 @@
+# Function boundary fixes: <entry> <end-exclusive>  # why
+#
+# Ghidra sometimes splits one function in two, usually at an early `ret` with more
+# code after it that is reached only by a jump from the first part. Neither piece
+# can match, because the compiler only emits whole functions. A line here makes
+# the function at <entry> span [entry, end) as one range, and drops every function
+# entry that starts inside it. All tools read data/functions.csv through this
+# (tools/config.py load_functions), so scope, queue, task bundles, fingerprints and
+# `manage.py push` (which updates the server) all see the fixed boundaries.
+#
+# `python tools/c5d.py boundaries` finds candidates; `--write` appends them here.
+# After editing: `c5d scope`, `c5d queue`, `c5d fingerprint`, then push to main.
+
+0x00457a80 0x00457b36  # early ret at +0x1d; tail 0x00457a9e reached only by its je (found by hand)
+0x00473db0 0x0047405b  # auto (c5d boundaries): tail 0x00473e0b reached only by jumps from inside
+0x00508a40 0x00508af6  # auto (c5d boundaries): tail 0x00508a5e reached only by jumps from inside
+0x00586300 0x005864dd  # auto (c5d boundaries): tail 0x00586318 reached only by jumps from inside
+0x005a2850 0x005a2906  # auto (c5d boundaries): tail 0x005a286e reached only by jumps from inside
+0x0067c0f0 0x0067c14d  # auto (c5d boundaries): tail 0x0067c11b reached only by jumps from inside
+0x0068e390 0x0068e4fb  # auto (c5d boundaries): tail 0x0068e3c9 reached only by jumps from inside
+0x00702890 0x00702946  # auto (c5d boundaries): tail 0x007028ae reached only by jumps from inside
+0x0071e550 0x0071e5b1  # auto (c5d boundaries): tail 0x0071e57b reached only by jumps from inside
+0x00730fe0 0x00731096  # auto (c5d boundaries): tail 0x00730ffe reached only by jumps from inside
+0x00786f80 0x00787036  # auto (c5d boundaries): tail 0x00786f9e reached only by jumps from inside
+0x0081eb40 0x0081ebf2  # auto (c5d boundaries): tail 0x0081eb59 reached only by jumps from inside
+0x0082ae70 0x0082aedb  # auto (c5d boundaries): tail 0x0082aece reached only by jumps from inside
+0x009288c0 0x00928b4f  # auto (c5d boundaries): tail 0x00928913 reached only by jumps from inside
+0x0093d0f0 0x0093d1a0  # auto (c5d boundaries): tail 0x0093d145 reached only by jumps from inside
+0x0093d4f0 0x0093d5b5  # auto (c5d boundaries): tail 0x0093d536 reached only by jumps from inside
+0x0093d5c0 0x0093d685  # auto (c5d boundaries): tail 0x0093d606 reached only by jumps from inside
+0x0095e630 0x0095e67b  # auto (c5d boundaries): tail 0x0095e637 reached only by jumps from inside
+0x00970c30 0x00970d31  # auto (c5d boundaries): tail 0x00970c6a reached only by jumps from inside
+0x00977860 0x00977a01  # auto (c5d boundaries): tail 0x0097789b reached only by jumps from inside
+0x0097c310 0x0097c57d  # auto (c5d boundaries): tail 0x0097c382 reached only by jumps from inside

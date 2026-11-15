@@ -72,6 +72,24 @@ def disasm_text(img, addr, size, names):
     return "\n".join(lines), refs
 
 
+_MERGED = None
+
+
+def merged_note(addr):
+    """Lines warning that Ghidra's pseudo-C only covers the first piece of a function
+    whose boundary was fixed in boundary_overrides.txt."""
+    global _MERGED
+    if _MERGED is None:
+        import config
+        _MERGED = {m["entry"]: m["absorbed"] for m in config.boundary_merges()}
+    pieces = _MERGED.get(addr)
+    if not pieces:
+        return []
+    return ["Ghidra split this function (fixed in `boundary_overrides.txt`), so its pseudo-C",
+            "below stops before " + ", ".join(f"0x{a:08x}" for a in pieces)
+            + ". The disassembly above is the whole function.", ""]
+
+
 def ghidra_c(build, addr):
     for f in (build / "dump").glob(f"{addr:08x}_*.txt"):
         t = f.read_text(errors="replace")
@@ -119,6 +137,7 @@ def write_bundle(ctx, row, queue_by_addr, names, symbols_by_addr, imports, last_
         "```", asm, "```",
         "",
         "## Ghidra pseudo-C (reference only; types are guesses)",
+        *merged_note(addr),
         "```c", ghidra_c(ctx.build, addr), "```",
         "",
         "## References",

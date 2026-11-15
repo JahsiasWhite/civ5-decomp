@@ -363,6 +363,30 @@ class DB:
                     "conv=excluded.conv, depth=excluded.depth, cluster=excluded.cluster, "
                     "ready=excluded.ready, queue_pos=excluded.queue_pos", r)
 
+    def apply_merges(self, merges):
+        """Boundary fixes (boundary_overrides.txt): [{"addr", "size", "absorbed": [addr]}].
+        The function at addr now spans `size` bytes; each absorbed entry was a piece
+        Ghidra split off it, so it leaves the pool along with any claim on it. A piece
+        already matched is kept (that would need a closer look). Unknown addresses are
+        ignored. Returns (resized, removed)."""
+        resized = removed = 0
+        with self.tx():
+            for m in merges:
+                addr = m["addr"]
+                if not self.one("SELECT 1 FROM functions WHERE addr=?", (addr,)):
+                    continue
+                resized += self.conn.execute("UPDATE functions SET size=?, updated=? WHERE addr=? AND size<>?",
+                                             (m["size"], time.time(), addr, m["size"])).rowcount
+                for a in m["absorbed"]:
+                    f = self.one("SELECT status FROM functions WHERE addr=?", (a,))
+                    if not f or f["status"] == "matched":
+                        continue
+                    self.conn.execute("DELETE FROM claims WHERE addr=?", (a,))
+                    self.conn.execute("DELETE FROM functions WHERE addr=?", (a,))
+                    self.log("merge", None, a, "", f"part of 0x{addr:08x} (boundary fix)")
+                    removed += 1
+        return resized, removed
+
     # ------------------------------------------------------------ stats
     def fingerprint(self):
         """Cheap value that changes whenever anything stats() shows changes (used to keep the

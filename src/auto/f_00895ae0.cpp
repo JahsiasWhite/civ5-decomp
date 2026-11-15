@@ -1,0 +1,8 @@
+// c5d-cflags: +/Oy-   (this area of the exe keeps frame pointers)
+#include "UnkStateHolder.h"
+
+// Returns the +0x12c field of the holder's state block.
+int UnkStateHolder_GetField12C(UnkStateHolder* holder)
+{
+    return holder->state->field_12c;
+}

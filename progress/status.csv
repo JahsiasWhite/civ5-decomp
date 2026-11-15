@@ -1,9 +1,13 @@
 address,symbol,status,bytes,source,since
+0x0040c690,?LowestSetBit@ByteBitSet@@QBEHXZ,MATCH,30,src/auto/f_0040c690.cpp,2026-11-15
+0x0040e930,?SetEntry@IndexedFloatFlags@@QAEXH_NM@Z,MATCH,80,src/auto/f_0040e930.cpp,2026-11-15
 0x00411da0,??0PoolDescriptor@@QAE@XZ,MATCH,61,src/auto/f_00411da0.cpp,2026-11-15
+0x00439890,?IsAtLimit@VirtualCountPair@@QAE_NXZ,MATCH,30,src/auto/f_00439890.cpp,2026-11-15
 0x0046b110,?IsLateWeekDayUTC@@YA_NXZ,DIFF,61,src/auto/f_0046b110.cpp,2026-11-15
 0x00472ff0,?PushFourNameStringsToLua@@YAXPAUlua_State@@PBUFourNameBlock@@@Z,MATCH,61,src/auto/f_00472ff0.cpp,2026-11-15
 0x00493220,?SwapVec2f@@YAXPAUVec2f@@0@Z,MATCH,61,src/auto/f_00493220.cpp,2026-11-15
 0x004ac3d0,?GetCurrentEntryField6c@@YGPAHPAUOwner004ac3d0@@@Z,MATCH,20,src/auto/f_004ac3d0.cpp,2026-11-15
+0x004b78b0,?TreeMinNode@@YAPAUTreeNode_004b78b0@@PAU1@@Z,MATCH,30,src/auto/f_004b78b0.cpp,2026-11-15
 0x004f8e20,?ReleaseAllSlots@SlotReleaser_004f8e20@@QAEXXZ,MATCH,61,src/auto/f_004f8e20.cpp,2026-11-15
 0x004f9c90,?PushFloatIntIntFlagRecordToLua@@YAXPAUlua_State@@PBUFloatIntIntFlagRecord@@@Z,MATCH,61,src/auto/f_004f9c90.cpp,2026-11-15
 0x00503880,?GetHexDirectionAngle@@YAMH@Z,MATCH,61,src/auto/f_00503880.cpp,2026-11-15
@@ -19,7 +23,10 @@ address,symbol,status,bytes,source,since
 0x006ce440,?TrackedHeapAlloc@@YAPAXPAX0II@Z,MATCH,201,src/auto/f_006ce440.cpp,2026-11-15
 0x006f8d70,_GetSmallObjectAllocatorInitParams,MATCH,67,src/fsba/FSBAInitParams.cpp,2026-11-14
 0x00722720,?GetEntry@EntryTable_00722720@@QAEPAUEntry_00722720@@H@Z,MATCH,20,src/auto/f_00722720.cpp,2026-11-15
+0x00732f50,?GetRecord@LargeRecordTable@@QAEPAULargeRecord_00732f50@@H@Z,MATCH,20,src/auto/f_00732f50.cpp,2026-11-15
 0x0078f0b0,?DoTurn@CvEngineUtilityImpl@@QAEXXZ,MATCH,1,src/auto/f_0078f0b0.cpp,2026-11-15
+0x007901d0,??0ZeroedRecord_007901d0@@QAE@XZ,MATCH,20,src/auto/f_007901d0.cpp,2026-11-15
+0x007c3940,?NoOp_007c3940@@YAXXZ,MATCH,1,src/auto/f_007c3940.cpp,2026-11-15
 0x007cccf0,?Unk_007cccf0@@YAPAXXZ,DIFF,67,src/fsba/FMallocCallers.cpp,2026-11-14
 0x00813870,_FSBAAllocate,DIFF,57,src/fsba/FSBA.cpp,2026-11-14
 0x00813920,_FSBADisable,MATCH,25,src/fsba/FSBA.cpp,2026-11-14
@@ -39,4 +46,6 @@ address,symbol,status,bytes,source,since
 0x0081d6b0,_FJobSetAddJobImpl,MATCH,26,src/job/FJobSet.cpp,2026-11-14
 0x00824800,_GetMemTrackerForDLL,MATCH,18,src/core/CoreExports.cpp,2026-11-14
 0x00829aa0,_GetTempHeap,MATCH,6,src/core/CoreExports.cpp,2026-11-14
+0x00895ae0,?UnkStateHolder_GetField12C@@YAHPAUUnkStateHolder@@@Z,MATCH,20,src/auto/f_00895ae0.cpp,2026-11-15
+0x00896d00,?UnkStateHolder_GetField120@@YAHPAUUnkStateHolder@@@Z,MATCH,20,src/auto/f_00896d00.cpp,2026-11-15
 0x00928d60,?CtlObject_HandleMessage@@YAIPAUCtlObject@@HII@Z,MATCH,203,src/auto/f_00928d60.cpp,2026-11-15

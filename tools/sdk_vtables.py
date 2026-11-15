@@ -98,9 +98,8 @@ def parse_guids():
 def load_functions():
     import bisect
     rows = []
-    with open(config.functions_csv(), newline="") as fh:
-        for r in csv.DictReader(fh):
-            rows.append((int(r["entry"], 16), int(r["size"])))
+    for r in config.load_functions():
+        rows.append((int(r["entry"], 16), int(r["size"])))
     rows.sort()
     starts = [a for a, _ in rows]
 

@@ -42,6 +42,15 @@ def open_db():
     return DB(p)
 
 
+def read_merges():
+    """Boundary fixes from boundary_overrides.txt, resolved against data/functions.csv:
+    [{"addr": int, "size": int, "absorbed": [int]}]."""
+    sys.path.insert(0, str(ROOT / "tools"))
+    import config
+    return [{"addr": m["entry"], "size": m["size"], "absorbed": m["absorbed"]}
+            for m in config.boundary_merges()]
+
+
 def cmd_import(db, args):
     rows = []
     with open(args.queue, newline="") as fh:
@@ -52,6 +61,9 @@ def cmd_import(db, args):
                          "queue_pos": i})
     db.import_functions(rows)
     print(f"imported {len(rows)} functions")
+    resized, removed = db.apply_merges(read_merges())
+    if resized or removed:
+        print(f"boundary fixes: {resized} resized, {removed} split-off pieces removed")
     cmd_verify(db, args)
 
 
@@ -80,7 +92,9 @@ def cmd_push(_db, args):
     ready) to the live server (POST /api/admin/verify)."""
     if not Path(args.status).exists():
         raise SystemExit(f"{args.status} not found: run `python tools/c5d.py match` first")
-    payload = {"statuses": {f"0x{a:08x}": s for a, s in read_statuses(args.status).items()}}
+    payload = {"statuses": {f"0x{a:08x}": s for a, s in read_statuses(args.status).items()},
+               "merges": [{"addr": f"0x{m['addr']:08x}", "size": m["size"],
+                           "absorbed": [f"0x{a:08x}" for a in m["absorbed"]]} for m in read_merges()]}
     q = Path(args.queue)
     if q.exists():
         if q.stat().st_mtime < Path(args.status).stat().st_mtime:
@@ -93,7 +107,8 @@ def cmd_push(_db, args):
     from remote import Remote
     r = Remote(args.server, args.token).call("POST", "/api/admin/verify", payload)
     print(f"push: server received {r['received']} statuses, {r['changed']} status changes, "
-          f"{r.get('ready_changed', 0)} readiness changes, {r.get('requeued', 0)} stale reports requeued")
+          f"{r.get('ready_changed', 0)} readiness changes, {r.get('requeued', 0)} stale reports requeued, "
+          f"{r.get('resized', 0)} resized / {r.get('merged_away', 0)} removed by boundary fixes")
 
 
 def backup_db(src, dest_dir, keep=14):

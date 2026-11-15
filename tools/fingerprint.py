@@ -33,10 +33,9 @@ def digest(va, data):
     return hashlib.sha256(SALT + va.to_bytes(4, "little") + bytes(data)).hexdigest()[:32]
 
 
-def export(image, functions_csv, exe_sha256):
-    """Write fingerprints for every single-range function. Returns the row count."""
-    with open(functions_csv, newline="") as fh:
-        rows = list(csv.DictReader(fh))
+def export(image, rows, exe_sha256):
+    """Write fingerprints for every single-range function in `rows` (the function
+    list, from config.load_functions()). Returns the row count."""
     entries = sorted(int(r["entry"], 16) for r in rows)
     nxt = {a: b for a, b in zip(entries, entries[1:])}
 

@@ -2,7 +2,6 @@
 
     python tools/xrefs.py 0x0081c2a0
 """
-import csv
 import json
 import struct
 import sys
@@ -24,11 +23,7 @@ def main():
     base = img.image_base + rva
     text = img.data[rawptr:rawptr + min(vsize, rawsize)]
 
-    funcs = []
-    csv_path = config.functions_csv()
-    if csv_path.exists():
-        with open(csv_path, newline="") as fh:
-            funcs = sorted((int(r["entry"], 16), r["name"]) for r in csv.DictReader(fh))
+    funcs = sorted((int(r["entry"], 16), r["name"]) for r in config.load_functions())
     starts = [f[0] for f in funcs]
 
     def owner(va):

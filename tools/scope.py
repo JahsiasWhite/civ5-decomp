@@ -126,16 +126,15 @@ def run(ctx, root, build, game_exe):
     img = PEImage(game_exe)
     exports = {img.exports()[n] for n in img.exports()}
     funcs = []
-    with open(config.functions_csv(), newline="") as fh:
-        for r in csv.DictReader(fh):
-            a = int(r["entry"], 16)
-            size = int(r["size"])
-            if r["ranges"] != "1" and int(r["min"], 16) == a:
-                # Ghidra's size counts addresses across disjoint ranges (e.g.
-                # switch tables); use the real extent from the entry point.
-                size = int(r["max"], 16) - a + 1
-            funcs.append({"addr": a, "size": size, "name": r["name"],
-                          "thunk": r["thunk"] == "1", "exported": a in exports})
+    for r in config.load_functions():
+        a = int(r["entry"], 16)
+        size = int(r["size"])
+        if r["ranges"] != "1" and int(r["min"], 16) == a:
+            # Ghidra's size counts addresses across disjoint ranges (e.g.
+            # switch tables); use the real extent from the entry point.
+            size = int(r["max"], 16) - a + 1
+        funcs.append({"addr": a, "size": size, "name": r["name"],
+                      "thunk": r["thunk"] == "1", "exported": a in exports})
     res = classify(img, funcs, ctx, build, load_overrides(root / "scope_overrides.txt"))
     with open(build / "scope.csv", "w", newline="") as fh:
         w = csv.writer(fh)

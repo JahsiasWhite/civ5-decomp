@@ -338,13 +338,24 @@ def make_handler(cfg, db):
             if ready is not None and not isinstance(ready, dict):
                 raise ApiError(400, "ready must be an object of addr -> 0/1")
             ready = {parse_addr(a): bool(v) for a, v in (ready or {}).items()}
+            raw_merges = body.get("merges") or []
+            try:
+                merges = [{"addr": parse_addr(m["addr"]), "size": int(m["size"]),
+                           "absorbed": [parse_addr(a) for a in m["absorbed"]]} for m in raw_merges]
+            except (TypeError, KeyError, ValueError):
+                raise ApiError(400, "merges must be a list of {addr, size, absorbed: [addr]}")
+            if any(m["size"] <= 0 for m in merges):
+                raise ApiError(400, "merge size must be positive")
+            resized, removed = db.apply_merges(merges)      # before verify: sizes count toward bytes
             changed = db.apply_verified(statuses)
             ready_changed = db.set_ready(ready)
             requeued = db.expire_reports()
             sys.stderr.write(f"admin verify by {u['login']}: {len(statuses)} statuses, {changed} changes, "
-                             f"{ready_changed} readiness changes, {requeued} stale reports requeued\n")
+                             f"{ready_changed} readiness changes, {requeued} stale reports requeued, "
+                             f"{resized} resized / {removed} removed by boundary fixes\n")
             return self.send(200, {"received": len(statuses), "changed": changed,
-                                   "ready_changed": ready_changed, "requeued": requeued})
+                                   "ready_changed": ready_changed, "requeued": requeued,
+                                   "resized": resized, "merged_away": removed})
 
         # ---------------------------------------------------- static
         def static(self, rel):

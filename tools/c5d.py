@@ -292,13 +292,9 @@ FUNC_SIZES = {}
 
 
 def load_func_sizes():
-    csv_path = config.functions_csv()
-    if csv_path.exists():
-        import csv
-        with open(csv_path, newline="") as fh:
-            for row in csv.DictReader(fh):
-                if row["ranges"] == "1":
-                    FUNC_SIZES[int(row["entry"], 16)] = int(row["size"])
+    for row in config.load_functions():
+        if row["ranges"] == "1":
+            FUNC_SIZES[int(row["entry"], 16)] = int(row["size"])
 
 
 def print_diff(res):
@@ -482,12 +478,9 @@ def load_names():
     """{address: best-known readable name} from all name sources."""
     import csv
     names = {}
-    fcsv = config.functions_csv()
-    if fcsv.exists():
-        with open(fcsv, newline="") as fh:
-            for r in csv.DictReader(fh):
-                if not r["name"].startswith("FUN_"):
-                    names[int(r["entry"], 16)] = r["name"]
+    for r in config.load_functions():
+        if not r["name"].startswith("FUN_"):
+            names[int(r["entry"], 16)] = r["name"]
     for f in sorted((ROOT / "names").glob("*.csv")):
         with open(f, newline="") as fh:
             for r in csv.DictReader(fh):
@@ -501,7 +494,7 @@ def cmd_fingerprint(_args):
     """Write data/fingerprints.csv + .json from the game exe (see tools/fingerprint.py)."""
     import fingerprint
     from binfmt import PEImage
-    n = fingerprint.export(PEImage(GAME_EXE), config.functions_csv(), CFG["target_sha256"])
+    n = fingerprint.export(PEImage(GAME_EXE), config.load_functions(), CFG["target_sha256"])
     print(f"wrote {n} fingerprints to {fingerprint.CSV_PATH.relative_to(ROOT)} "
           f"(+ {fingerprint.META_PATH.relative_to(ROOT)})")
     return 0
@@ -740,6 +733,28 @@ def cmd_scope(_args):
     return 0
 
 
+def cmd_boundaries(args):
+    """Find functions Ghidra split in two; --write adds them to boundary_overrides.txt."""
+    import boundaries
+    from binfmt import PEImage
+    rows = config.load_functions()          # already-fixed ones aren't reported again
+    found = boundaries.find_splits(PEImage(GAME_EXE), rows, protected=set(load_symbols().values()))
+    for entry, end, absorbed in found:
+        print(f"  0x{entry:08x} 0x{end:08x}  absorbs " + ", ".join(f"0x{a:08x}" for a in absorbed))
+    print(f"{len(found)} split function(s) found")
+    if args.write and found:
+        path = config.BOUNDARY_OVERRIDES
+        text = path.read_text(encoding="utf-8") if path.exists() else ""
+        lines = [f"0x{e:08x} 0x{x:08x}  # auto (c5d boundaries): tail "
+                 + ", ".join(f"0x{a:08x}" for a in ab) + " reached only by jumps from inside\n"
+                 for e, x, ab in found]
+        sep = "\n" if text and not text.endswith("\n") else ""
+        path.write_text(text + sep + "".join(lines), encoding="utf-8")
+        print(f"appended {len(found)} line(s) to {path.name}; now run `c5d scope`, `c5d queue` "
+              "and `c5d fingerprint`")
+    return 0
+
+
 class LinkCtx:
     """Tool paths and flags for the LTCG build."""
 
@@ -875,6 +890,10 @@ def main():
                    ).set_defaults(fn=cmd_fingerprint)
     sub.add_parser("scope", help="classify functions: game (in scope) vs library/generated"
                    ).set_defaults(fn=cmd_scope)
+    bd = sub.add_parser("boundaries", help="find functions Ghidra split in two "
+                        "(see boundary_overrides.txt)")
+    bd.add_argument("--write", action="store_true", help="append what's found to boundary_overrides.txt")
+    bd.set_defaults(fn=cmd_boundaries)
     q = sub.add_parser("queue", help="build the leaves-first work queue (build/queue.csv)")
     q.add_argument("--top", type=int, default=20)
     q.set_defaults(fn=cmd_queue)

@@ -350,7 +350,8 @@ def step_data(rep):
     build = ROOT / "build"
     for name, args in (("scope", ("scope",)), ("queue", ("queue", "--top", "0"))):
         out = build / f"{name}.csv"
-        if out.exists() and out.stat().st_mtime >= fcsv.stat().st_mtime:
+        inputs = [fcsv] + [p for p in (config.BOUNDARY_OVERRIDES,) if p.exists()]
+        if out.exists() and out.stat().st_mtime >= max(p.stat().st_mtime for p in inputs):
             rep.ok(f"build/{name}.csv", "up to date")
             continue
         print(f"       running c5d {name} ...", flush=True)

@@ -10,6 +10,19 @@ starting point for the exe <-> DLL interface classes.
 
 Live progress, the leaderboard and contributor sign-up: **[civ5decomp.com](https://civ5decomp.com)**.
 
+## High-level flow
+
+1. **Claim, match and report** several functions (`c5d remote claim`, `c5d match`,
+   `c5d remote report`). Each report frees that claim slot (max 25 at once, 4-hour lease
+   each). The site now shows them as *reported*.
+2. **Put them all in one PR.** Batching is fine, since every function has its own pair of
+   files (`src/auto/f_*.cpp`, `symbols/auto/f_*.txt`) and they don't conflict. CI checks
+   each one on the PR.
+3. **Merge.** Verify runs on `main` and the site marks them *matched* within a few minutes.
+
+Reported functions that aren't verified within 14 days go back to the pool, so don't let a
+batch sit unmerged.
+
 ## Ground rules
 
 - **Never commit game files.** That means no exe, dll, machine code,
@@ -43,6 +56,7 @@ setup ──► scope ──► queue ──► task next / agent ──► matc
 | `c5d setup` | Finds the game (Steam libraries), checks the exe's SHA-256, finds Ghidra, Java and the VC++ 2008 compiler, writes `config.local.json`, builds scope + queue, runs a test match | `config.local.json` |
 | `c5d analyze` | Ghidra headless import and analysis (needed for task bundles), plus function export. The shared list is `data/functions.csv`; maintainers refresh it from this export. | `ghidra_proj/`, `build/functions.csv` |
 | `c5d scope` | Classifies every function: game code vs import stubs, thunks, CRT (byte signatures from the compiler's static libs), ATL/MFC names, compiler EH funclets. Manual ranges go in `scope_overrides.txt`. | `build/scope.csv` |
+| `c5d boundaries [--write]` | Finds functions Ghidra split in two (an early `ret`, then a tail reached only by a jump from the first part) and adds them to `boundary_overrides.txt`. Every tool reads the function list through those fixes. | `boundary_overrides.txt` |
 | `tools/sdk_vtables.py` | Names engine functions from the SDK interface headers: finds each interface's `QueryInterface` through its GUID, then its vtable | `names/sdk_vtables.csv` |
 | `c5d queue` | Call graph, calling-convention guess (stack / thiscall / custom LTCG registers), call depth, LTCG clusters. Leaves first. | `build/queue.csv` |
 | `c5d task next --n N` | Writes a self-contained bundle per ready function: rules, disassembly, Ghidra C, references with names/conventions/status | `build/tasks/<addr>/TASK.md` |

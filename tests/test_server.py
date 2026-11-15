@@ -304,11 +304,35 @@ def test_admin_verify(srv):
     assert req(base, "POST", "/api/admin/verify", payload)[0] == 401
     assert req(base, "POST", "/api/admin/verify", payload, token=alice)[0] == 403
     code, j = req(base, "POST", "/api/admin/verify", payload, token=boss)    # C5D_ADMINS is case-insensitive
-    assert code == 200 and j == {"received": 3, "changed": 2, "ready_changed": 0, "requeued": 0}
+    assert code == 200 and j == {"received": 3, "changed": 2, "ready_changed": 0, "requeued": 0,
+                                 "resized": 0, "merged_away": 0}
     f = {r["addr"]: r["status"] for r in db.q("SELECT addr, status FROM functions")}
     assert f[0x401000] == "matched" and f[0x401010] == "diff"
     assert req(base, "POST", "/api/admin/verify", {"statuses": {"zz": "MATCH"}}, token=boss)[0] == 400
     assert req(base, "POST", "/api/admin/verify", {"statuses": []}, token=boss)[0] == 400
+
+
+def test_admin_verify_boundary_merges(srv):
+    base, db = srv
+    boss, alice = make_user(db, "boss"), make_user(db, "alice")
+    # 0x401010 is the split-off tail of 0x401000 and alice holds a claim on it; 0x401020 is
+    # matched (kept), 0x00999999 is unknown (ignored)
+    req(base, "POST", "/api/claim", {"addr": "0x00401010"}, token=alice)
+    with db.tx():
+        db.conn.execute("UPDATE functions SET status='matched' WHERE addr=?", (0x401020,))
+    merges = [{"addr": "0x00401000", "size": 60, "absorbed": ["0x00401010", "0x00401020"]},
+              {"addr": "0x00999999", "size": 10, "absorbed": []}]
+    code, j = req(base, "POST", "/api/admin/verify", {"statuses": {}, "merges": merges}, token=boss)
+    assert code == 200 and j["resized"] == 1 and j["merged_away"] == 1
+    f = {r["addr"]: r["size"] for r in db.q("SELECT addr, size FROM functions")}
+    assert f[0x401000] == 60 and 0x401010 not in f and 0x401020 in f
+    assert db.one("SELECT COUNT(*) c FROM claims WHERE addr=?", (0x401010,))["c"] == 0
+    assert db.one("SELECT COUNT(*) c FROM events WHERE kind='merge'")["c"] == 1
+    # pushing the same fixes again changes nothing
+    _, j = req(base, "POST", "/api/admin/verify", {"statuses": {}, "merges": merges}, token=boss)
+    assert j["resized"] == 0 and j["merged_away"] == 0
+    for bad in ([{"addr": "0x00401000"}], [{"addr": "0x00401000", "size": 0, "absorbed": []}], "x"):
+        assert req(base, "POST", "/api/admin/verify", {"statuses": {}, "merges": bad}, token=boss)[0] == 400
 
 
 def test_admin_verify_accepts_large_body_others_dont(srv):

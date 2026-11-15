@@ -1,0 +1,1 @@
+0x00732f50 ?GetRecord@LargeRecordTable@@QAEPAULargeRecord_00732f50@@H@Z
