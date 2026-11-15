@@ -12,7 +12,8 @@
 #
 # `python tools/c5d.py boundaries` finds candidates (splits, and listed entries that
 # sit inside another function's code); `--write` appends them here.
-# After editing: `c5d scope`, `c5d queue`, `c5d fingerprint`, then push to main.
+# After editing: `c5d scope`, `c5d queue` (rewrites data/callgraph.csv), `c5d fingerprint`,
+# then push to main.
 
 0x00457a80 0x00457b36  # early ret at +0x1d; tail 0x00457a9e reached only by its je (found by hand)
 0x00473db0 0x0047405b  # auto (c5d boundaries): tail 0x00473e0b reached only by jumps from inside

@@ -64,7 +64,7 @@ setup ──► scope ──► queue ──► task next / agent ──► matc
 | `c5d scope` | Classifies every function: game code vs import stubs, thunks, CRT (byte signatures from the compiler's static libs), ATL/MFC names, compiler EH funclets. Manual ranges go in `scope_overrides.txt`. | `build/scope.csv` |
 | `c5d boundaries [--write]` | Finds functions Ghidra split in two (an early `ret`, then a tail reached only by a jump from the first part), and listed entries that sit inside another function's code (Ghidra misread a stretch of code; the real start may be missing, written as `new`), and adds them to `boundary_overrides.txt`. Every tool reads the function list through those fixes. | `boundary_overrides.txt` |
 | `tools/sdk_vtables.py` | Names engine functions from the SDK interface headers: finds each interface's `QueryInterface` through its GUID, then its vtable | `names/sdk_vtables.csv` |
-| `c5d queue` | Call graph, calling-convention guess (stack / thiscall / custom LTCG registers), call depth, LTCG clusters. Leaves first. | `build/queue.csv` |
+| `c5d queue` | Call graph, calling-convention guess (stack / thiscall / custom LTCG registers), call depth, LTCG clusters. Leaves first. | `build/queue.csv`, `data/callgraph.csv` (committed) |
 | `c5d task next --n N` | Writes a self-contained bundle per ready function: rules, disassembly, Ghidra C, references with names/conventions/status | `build/tasks/<addr>/TASK.md` |
 | `c5d task check <addr>` | Verifies one function and logs the attempt | `build/attempts.jsonl` |
 | `c5d agent --n N --tries T [--remote]` | Runs `agent_cmd` from `config.local.json` on each bundle (prompt on stdin), checks, retries with the diff. Any CLI agent works, e.g. `["claude", "-p", "--permission-mode", "acceptEdits", "--output-format", "json"]`. With JSON output, the token usage it prints is summed per task (`build/tasks/<addr>/usage.json`) and sent by `remote report`. `--remote` claims from the server and reports each result. Runs one function at a time. | as above |
@@ -127,11 +127,10 @@ Then open `http://127.0.0.1:8765/dev-login?login=you`. Tests: `python -m pytest 
    Verification runs on GitHub (see "Verification without the game" below): twice a day
    and on every push to `main`, `.github/workflows/verify.yml` matches everything and pushes
    the results. Add a repository secret `C5D_ADMIN_TOKEN` with an API token of an admin login.
-   Readiness (which functions are unblocked) still comes from a run on a machine with the game:
-   `git pull && python tools/c5d.py match && python tools/c5d.py queue && python server/manage.py push`.
-   `push` sends `progress/status.csv` and the readiness column of `build/queue.csv` to
-   `POST /api/admin/verify` (only logins listed in `C5D_ADMINS`, bearer token only). That way
-   functions whose callees just matched start being handed out. Reported matches that
+   `push` sends `progress/status.csv`, the boundary fixes and readiness (which functions
+   have all callees matched, worked out from the committed call graph `data/callgraph.csv`)
+   to `POST /api/admin/verify` (only logins listed in `C5D_ADMINS`, bearer token only). So
+   merging a PR is all it takes: functions whose callees just matched start being handed out. Reported matches that
    aren't verified within 14 days (no PR, or the PR wasn't merged) go back to the pool.
 6. Automatic deploys: `.github/workflows/tests.yml` runs the server tests on every push.
    On the VPS, `c5d-deploy.timer` runs `deploy/autodeploy.py` every 2 minutes as root: when

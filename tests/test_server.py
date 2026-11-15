@@ -462,10 +462,32 @@ def test_manage_push(srv, tmp_path):
                      "cluster,cluster_size\n"
                      "0x00401080,28,F8,todo,stack,,0,1,0,0,0x00401080,1\n"
                      "0x00401000,20,F0,todo,stack,,0,1,1,0,0x00401000,1\n")
-    manage.cmd_push(None, argparse.Namespace(status=str(csvp), queue=str(queue), server=base, token=boss))
+    manage.cmd_push(None, argparse.Namespace(status=str(csvp), queue=str(queue), server=base, token=boss,
+                                             callgraph=str(tmp_path / "none.csv")))
     ready = {r["addr"]: r["ready"] for r in db.q("SELECT addr, ready FROM functions")}
     assert ready[0x401080] == 1 and ready[0x401000] == 0 and ready[0x401090] == 0   # unlisted untouched
     assert db.one("SELECT status FROM functions WHERE addr=?", (0x401020,))["status"] == "matched"
+
+
+def test_manage_push_readiness_from_callgraph(srv, tmp_path):
+    # what CI does: no queue.csv (no game), readiness from the committed call graph
+    base, db = srv
+    import argparse
+    import manage
+    boss = make_user(db, "boss")
+    csvp = tmp_path / "status.csv"
+    csvp.write_text("address,symbol,status,bytes,source,since\n"
+                    "0x00401020,?F2@@YAXXZ,MATCH,22,src/auto/f.cpp,2026-11-15\n")
+    cg = tmp_path / "callgraph.csv"      # F8 calls only F2 (matched): ready; F0 calls F2 and F1
+    cg.write_text("entry,callees\n0x00401000,0x00401010 0x00401020\n0x00401080,0x00401020\n"
+                  "0x00401010,\n")
+    assert manage.ready_from_callgraph(cg, csvp) == {"0x00401000": 0, "0x00401080": 1, "0x00401010": 1}
+    with db.tx():
+        db.conn.execute("UPDATE functions SET ready=1 WHERE addr=?", (0x401000,))
+    manage.cmd_push(None, argparse.Namespace(status=str(csvp), queue=str(tmp_path / "none.csv"),
+                                             callgraph=str(cg), server=base, token=boss))
+    ready = {r["addr"]: r["ready"] for r in db.q("SELECT addr, ready FROM functions")}
+    assert ready[0x401080] == 1 and ready[0x401000] == 0 and ready[0x401010] == 1
 
 
 def test_manage_backup(tmp_path):

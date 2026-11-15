@@ -506,7 +506,7 @@ def cmd_queue(args):
     if not (BUILD / "scope.csv").exists():
         sys.exit("run `c5d scope` first")
     rows = workqueue.build(PEImage(GAME_EXE), BUILD / "scope.csv", load_status(), load_names(),
-                           BUILD / "queue.csv")
+                           BUILD / "queue.csv", callgraph_csv=ROOT / "data" / "callgraph.csv")
     todo = [r for r in rows if r["status"] != "MATCH"]
     ready = [r for r in todo if r["pending_callees"] == 0]
     from collections import Counter

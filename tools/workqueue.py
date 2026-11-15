@@ -14,6 +14,10 @@ Ordering (lower = sooner): functions whose callees are all done or out of
 scope come first ("ready"), then by call depth from the leaves, then size.
 Custom-convention functions are grouped with their callers' cluster id so a
 worker can take a whole cluster at once.
+
+The call graph (in-scope callees of every in-scope function, addresses only) is also
+written to data/callgraph.csv, which is committed: with it and progress/status.csv,
+readiness can be worked out without the game, so CI's `manage.py push` keeps it current.
 """
 import csv
 from collections import defaultdict
@@ -75,7 +79,32 @@ def analyse(img, addr, size, md):
     return callees, conv, "+".join(names)
 
 
-def build(img, scope_csv, status, names, out_csv):
+def write_callgraph(callees, path):
+    """callees: {addr: set of in-scope callee addrs} -> `entry,callees` rows (callees
+    space-separated), sorted, LF line endings, so an unchanged graph gives an unchanged file."""
+    with open(path, "w", newline="") as fh:
+        fh.write("entry,callees\n")
+        for a in sorted(callees):
+            fh.write(f"0x{a:08x}," + " ".join(f"0x{c:08x}" for c in sorted(callees[a])) + "\n")
+
+
+def read_callgraph(path):
+    """{addr: [callee addrs]} from data/callgraph.csv."""
+    out = {}
+    with open(path, newline="") as fh:
+        for r in csv.DictReader(fh):
+            out[int(r["entry"], 16)] = [int(c, 16) for c in r["callees"].split()]
+    return out
+
+
+def readiness(callgraph, status):
+    """{addr: bool}: ready when every callee is matched (or there are none). Same rule
+    as pending_callees == 0 in the queue."""
+    done = {a for a, s in status.items() if s == "MATCH"}
+    return {a: all(c in done for c in cs) for a, cs in callgraph.items()}
+
+
+def build(img, scope_csv, status, names, out_csv, callgraph_csv=None):
     game = {}
     with open(scope_csv, newline="") as fh:
         for r in csv.DictReader(fh):
@@ -89,6 +118,8 @@ def build(img, scope_csv, status, names, out_csv):
         callees, conv, regs = analyse(img, a, size, md)
         info[a] = {"size": size, "callees": {c for c in callees if c in game and c != a},
                    "conv": conv, "regs": regs}
+    if callgraph_csv:
+        write_callgraph({a: d["callees"] for a, d in info.items()}, callgraph_csv)
     callers = defaultdict(set)
     for a, d in info.items():
         for c in d["callees"]:
