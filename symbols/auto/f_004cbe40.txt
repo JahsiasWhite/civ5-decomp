@@ -1,0 +1,1 @@
+0x004cbe40 ?GetConstant_004cbe40@@YAHXZ

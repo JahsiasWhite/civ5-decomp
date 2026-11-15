@@ -1,0 +1,1 @@
+0x00426410 ?GetConstant_00426410@@YAHXZ
