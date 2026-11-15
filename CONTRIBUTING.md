@@ -29,8 +29,13 @@ Microsoft packages contains it:
 - **Microsoft Visual C++ Compiler for Python 2.7** (`VCForPython27.msi`). This is what the
   project is developed with. It installs to
   `%LOCALAPPDATA%\Programs\Common\Microsoft\Visual C++ for Python\9.0` and includes the
-  Windows SDK headers. Microsoft no longer lists it for download. If you get a copy, make sure it
-  is **signed by Microsoft** (right-click → Properties → Digital Signatures) before you install it.
+  Windows SDK headers. Microsoft no longer lists it for download, but the Wayback Machine kept
+  the original file from Microsoft's download server:
+  [VCForPython27.msi (archived 2021-01-06)](https://web.archive.org/web/20210106040224/https://download.microsoft.com/download/7/9/6/796EF2E4-801B-4FC4-AB28-B59FBF6D907B/VCForPython27.msi).
+  Before installing it, check that it is the genuine file:
+  - SHA-256 `070474db76a2e625513a5835df4595df9324d820f9cc97eab2a596dcbc2f5cbf`
+    (PowerShell: `Get-FileHash VCForPython27.msi`)
+  - **signed by Microsoft Corporation** (right-click → Properties → Digital Signatures)
 - **Windows SDK for Windows 7 and .NET Framework 3.5 SP1** (SDK 7.0): its "Visual C++
   Compilers" option installs the VS 2008 SP1 compilers.
 - **Visual Studio 2008 with SP1** (any edition, including Express), if you have it.

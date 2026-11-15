@@ -318,3 +318,8 @@ python tools/c5d.py build             # hybrid exe, verified byte-identical
    - `MATCH?`: identical bytes, but some relocation targets are unknown (add them to `symbols.txt`).
    - `DIFF`: a side-by-side disassembly with `!!` on differing lines
      (`r` = differs only in a relocation that checked out).
+
+## License
+
+The tooling, website and contributor-written source are under the [MIT License](LICENSE). It grants no rights to Civilization V itself: no game files are in this repository, and you need your own copy of the game to build anything.
+
