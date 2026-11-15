@@ -8,6 +8,8 @@ The gameplay DLL (`CvGameCore_Expansion2.dll`) is **not** in scope here:
 Firaxis published its source in the Civ V SDK. Its headers are our
 starting point for the exe <-> DLL interface classes.
 
+Live progress, the leaderboard and contributor sign-up: **[civ5decomp.com](https://civ5decomp.com)**.
+
 ## Ground rules
 
 - **Never commit game files.** That means no exe, dll, machine code,
@@ -265,21 +267,6 @@ What the trial found and fixed:
   (hundreds of inlined `FMalloc` expansions), so it should resolve as more callers
   are decompiled. Next experiments: decompile `GetSmallObjectAllocator` (the first
   caller in the same file), and try reordering functions or files within the link.
-
-## Progress
-
-| Date | Functions | Matched | Notes |
-|---|---|---|---|
-| 2026-11-14 | 19 | 15 | 9 of 13 in the second batch matched on the first attempt. All 4 misses are in the allocator cluster (LTCG register choice). |
-| 2026-11-14 | 21 | 15 | Added `FMalloc`/`FNEW` and 2 callers. EH shape fixed; the cluster is still blocked only on the EDI register choice. |
-
-Matched: `FSBADisable`, `FSBAIsDisabled`, `FSBAGetMaxAllocatorSize`,
-`FSBAPreventCreation`, `FSBAIsSmallBlock`, `FSmallObjectAllocator::IsSmallBlock`,
-`GetSmallObjectAllocatorInitParams`, `FStringA/W_GetStringInitData`,
-`PeekLogFileMgr`, `GetTempHeap`, `GetMemTrackerForDLL`, `FJobSetInitImpl`,
-`FJobSetWaitImpl`, `FJobSetAddJobImpl`.
-Not yet: `FSBAAllocate`, `FSBAHasAllocatorForSize` (1 byte off),
-`FSmallObjectAllocator::Allocate`, `FSmallObjectAllocator::GetAllocatorForSize`.
 
 ## Phases
 
