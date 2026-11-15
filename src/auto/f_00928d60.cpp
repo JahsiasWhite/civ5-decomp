@@ -1,3 +1,4 @@
+// c5d-model: claude-opus-5-5
 // Control-message handler for a codec/stream-like object: handles a few
 // get/set/flag messages itself and forwards everything else to the
 // default handler found in its dispatch table.

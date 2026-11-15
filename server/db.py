@@ -98,7 +98,13 @@ MIGRATIONS = [
     ("events", "tokens_out", "INTEGER NOT NULL DEFAULT 0"),
     ("events", "tokens_cached", "INTEGER NOT NULL DEFAULT 0"),
     ("events", "tries", "INTEGER NOT NULL DEFAULT 0"),
+    ("milestones", "key", "TEXT"),                                # set on automatic milestones
 ]
+
+# automatic milestones (check_milestones): verified function counts, and percent of
+# in-scope bytes (every 5%, plus two early ones)
+FUNCTION_MILESTONES = [1, 10, 50, 100, 500, 1000, 2500, 5000, 10000, 15000]
+BYTE_MILESTONES = [0.1, 1] + list(range(5, 101, 5))
 
 SIZE_TIERS = [(0, 64, "< 64 B"), (64, 256, "64–255 B"), (256, 1024, "256 B–1 KB"),
               (1024, 4096, "1–4 KB"), (4096, 10 ** 9, "≥ 4 KB")]
@@ -308,6 +314,20 @@ class DB:
             self.conn.execute("DELETE FROM claims WHERE addr=?", (addr,))
             self.log("report", user_id, addr, status, detail[:500], model, *nums)
 
+    def apply_credits(self, models):
+        """{addr: model} from `// c5d-model:` lines in the matched source files. Credits a
+        matched function nobody reported (by_user NULL: the maintainer committed it
+        directly), replacing the "maintainer" default, also for older matches. A
+        contributor's own report always wins. Returns how many credits changed."""
+        changed = 0
+        with self.tx():
+            for addr, model in models.items():
+                model = clean_model(model)
+                changed += self.conn.execute(
+                    "UPDATE functions SET model=? WHERE addr=? AND status='matched' "
+                    "AND by_user IS NULL AND model<>?", (model, addr, model)).rowcount
+        return changed
+
     def apply_verified(self, statuses, default_model="maintainer"):
         """Maintainer verify: {addr: 'MATCH'|'DIFF'|...} from a full local match run."""
         changed = kept = kept_bytes = rejected = 0
@@ -346,9 +366,34 @@ class DB:
             self.conn.execute("INSERT INTO spend(day,source,dollars,note) VALUES (?,?,?,?)",
                               (day, clean_model(source), float(dollars), note[:200]))
 
-    def add_milestone(self, day, text):
+    def add_milestone(self, day, text, key=None):
         with self.tx():
-            self.conn.execute("INSERT INTO milestones(day,text) VALUES (?,?)", (day, text[:300]))
+            self.conn.execute("INSERT INTO milestones(day,text,key) VALUES (?,?,?)", (day, text[:300], key))
+
+    def check_milestones(self, day=None):
+        """Log each progress milestone the first time it is reached (verified matches only):
+        function counts in FUNCTION_MILESTONES, and every share of in-scope bytes in
+        BYTE_MILESTONES. Each is keyed, so it's logged once. Returns the new texts."""
+        day = day or utc_day()
+        added = []
+        with self.tx():
+            tot = self.one("SELECT COUNT(*) c, COALESCE(SUM(size),0) b FROM functions")
+            m = self.one("SELECT COUNT(*) c, COALESCE(SUM(size),0) b FROM functions WHERE status='matched'")
+            have = {r["key"] for r in self.q("SELECT key FROM milestones WHERE key IS NOT NULL")}
+            due = []
+            for n in FUNCTION_MILESTONES:
+                if m["c"] >= n:
+                    due.append((f"functions:{n}", "First function matched" if n == 1 else
+                                f"{n:,} functions matched"))
+            for pct in BYTE_MILESTONES:
+                if tot["b"] and m["b"] * 100 >= pct * tot["b"]:
+                    due.append((f"bytes:{pct:g}", f"{pct:g}% of the code matched "
+                                f"({m['b']:,} of {tot['b']:,} bytes, {m['c']:,} functions)"))
+            for key, text in due:
+                if key not in have:
+                    self.conn.execute("INSERT INTO milestones(day,text,key) VALUES (?,?,?)", (day, text, key))
+                    added.append(text)
+        return added
 
     # ------------------------------------------------------------ import
     def import_functions(self, rows):

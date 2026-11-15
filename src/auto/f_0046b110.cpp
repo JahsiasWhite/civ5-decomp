@@ -1,3 +1,4 @@
+// c5d-model: claude-opus-5-5
 #include <windows.h>
 
 // Call counter bumped each time the weekday check runs.

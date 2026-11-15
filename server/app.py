@@ -20,6 +20,7 @@ import hmac
 import json
 import mimetypes
 import os
+import re
 import secrets
 import sys
 import threading
@@ -273,6 +274,8 @@ def make_handler(cfg, db):
             path = urllib.parse.urlparse(self.path).path
             if path == "/api/admin/verify":
                 return self.admin_verify()
+            if path == "/api/admin/milestone":
+                return self.admin_milestone()
             body = self.json_body()             # JSON-only: a cross-site form can't post here
             if path == "/api/logout":
                 return self.send(200, {"ok": True}, headers=self.set_cookie("c5d_session", "", 0))
@@ -320,15 +323,33 @@ def make_handler(cfg, db):
                 return self.send(200, {"ok": True})
             raise ApiError(404, "not found")
 
-        def admin_verify(self):
-            """Maintainer pushes a full local `c5d match` result: {"statuses": {"0x..": "MATCH"}}.
-            Bearer token only (no cookies), and the user's login must be in C5D_ADMINS.
-            Authenticated before the (large) body is read."""
+        def require_admin(self):
+            """Bearer token only (no cookies), and the user's login must be in C5D_ADMINS."""
             if not (self.headers.get("Authorization") or "").startswith("Bearer "):
                 raise ApiError(401, "admin calls need Authorization: Bearer <token>")
             u = self.current_user()
             if u["login"].lower() not in cfg.admins:
                 raise ApiError(403, "not an admin (C5D_ADMINS)")
+            return u
+
+        def admin_milestone(self):
+            """Maintainer adds a milestone to the log: {"text": "...", "day": "YYYY-MM-DD"?}."""
+            u = self.require_admin()
+            body = self.json_body()
+            text = str(body.get("text") or "").strip()
+            day = str(body.get("day") or time.strftime("%Y-%m-%d", time.gmtime()))
+            if not text:
+                raise ApiError(400, "text is required")
+            if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", day):
+                raise ApiError(400, "day must be YYYY-MM-DD")
+            db.add_milestone(day, text)
+            sys.stderr.write(f"milestone by {u['login']}: {day} {text[:80]}\n")
+            return self.send(200, {"ok": True, "day": day, "text": text[:300]})
+
+        def admin_verify(self):
+            """Maintainer pushes a full local `c5d match` result: {"statuses": {"0x..": "MATCH"}}.
+            Authenticated before the (large) body is read."""
+            u = self.require_admin()
             body = self.json_body(ADMIN_MAX_BODY)
             raw = body.get("statuses")
             if not isinstance(raw, dict):
@@ -346,16 +367,24 @@ def make_handler(cfg, db):
                 raise ApiError(400, "merges must be a list of {addr, size, absorbed: [addr]}")
             if any(m["size"] <= 0 for m in merges):
                 raise ApiError(400, "merge size must be positive")
+            models = body.get("models")
+            if models is not None and not isinstance(models, dict):
+                raise ApiError(400, "models must be an object of addr -> model")
+            models = {parse_addr(a): str(m) for a, m in (models or {}).items()}
             resized, removed = db.apply_merges(merges)      # before verify: sizes count toward bytes
             changed = db.apply_verified(statuses)
+            credited = db.apply_credits(models)             # after verify: covers new matches too
             ready_changed = db.set_ready(ready)
             requeued = db.expire_reports()
+            milestones = db.check_milestones()
             sys.stderr.write(f"admin verify by {u['login']}: {len(statuses)} statuses, {changed} changes, "
-                             f"{ready_changed} readiness changes, {requeued} stale reports requeued, "
-                             f"{resized} resized / {removed} removed by boundary fixes\n")
-            return self.send(200, {"received": len(statuses), "changed": changed,
+                             f"{credited} credits, {ready_changed} readiness changes, "
+                             f"{requeued} stale reports requeued, "
+                             f"{resized} resized / {removed} removed by boundary fixes, "
+                             f"{len(milestones)} milestones\n")
+            return self.send(200, {"received": len(statuses), "changed": changed, "credited": credited,
                                    "ready_changed": ready_changed, "requeued": requeued,
-                                   "resized": resized, "merged_away": removed})
+                                   "resized": resized, "merged_away": removed, "milestones": milestones})
 
         # ---------------------------------------------------- static
         def static(self, rel):

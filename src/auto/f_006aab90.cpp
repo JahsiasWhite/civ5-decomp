@@ -1,3 +1,4 @@
+// c5d-model: claude-opus-5-5
 // Constructs a small polymorphic object: installs its vtable and clears the
 // three data fields that follow it; returns the object like a constructor.
 

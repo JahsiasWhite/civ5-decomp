@@ -1,3 +1,4 @@
+// c5d-model: claude-opus-5-5
 // Returns 0x60 when the object's virtual "kind" query, adjusted by whether the
 // field at +0xAC is empty, equals -0xB8; otherwise returns 0.
 

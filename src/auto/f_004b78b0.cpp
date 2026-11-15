@@ -1,3 +1,4 @@
+// c5d-model: claude-opus-5-5
 // Red-black tree helper: from a node, follows left children down to the
 // leftmost real node (the one whose left child is the nil sentinel).
 

@@ -1,3 +1,4 @@
+// c5d-model: claude-opus-5-5
 // Pushes four fixed-width 32-character string fields onto the Lua stack.
 
 struct lua_State;

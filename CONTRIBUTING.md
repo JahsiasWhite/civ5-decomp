@@ -95,6 +95,17 @@ You can work by hand, with an AI agent, or both. Point the agent at the `TASK.md
 `agent_cmd` in `config.local.json` and run `c5d agent`. Different `--worker` ids keep parallel
 runs out of each other's way.
 
+The whole loop, with token usage on the site: set an agent command that prints JSON, for example
+
+```json
+"agent_cmd": ["claude", "-p", "--permission-mode", "acceptEdits", "--output-format", "json"]
+```
+
+then `python tools/c5d.py agent --remote --n 3`. It claims from the server, runs the agent
+(retrying with the diff), and reports each result with the tokens and model the agent
+printed. If you run an agent another way, pass `--tokens-in/--tokens-out/--tokens-cached` to
+`remote report` yourself.
+
 Tips:
 - Most code uses `/arch:SSE2 /fp:fast`. If a function only matches with other settings, add a
   `// c5d-cflags: -/arch:SSE2` line near the top of the file (see README).

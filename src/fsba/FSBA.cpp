@@ -1,3 +1,4 @@
+// c5d-model: claude-opus-5-5
 // Exported FSBA entry points (CivilizationV_DX11.exe 0x00813920..0x00813a2f)
 // STATUS: FSBADisable, FSBAIsDisabled, FSBAGetMaxAllocatorSize and
 // FSBAPreventCreation MATCH byte for byte (cl 15.00.30729.01, flags in config.json).

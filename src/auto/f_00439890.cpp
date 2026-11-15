@@ -1,3 +1,4 @@
+// c5d-model: claude-opus-5-5
 // Returns whether the value of one virtual getter is at least that of
 // another (unsigned comparison). Slot names are placeholders.
 

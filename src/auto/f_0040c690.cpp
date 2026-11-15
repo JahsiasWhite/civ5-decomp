@@ -1,3 +1,4 @@
+// c5d-model: claude-opus-5-5
 // Returns the index of the lowest set bit of a one-byte bit set. The caller
 // must make sure at least one bit is set.
 

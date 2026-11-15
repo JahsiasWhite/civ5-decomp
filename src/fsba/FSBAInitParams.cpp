@@ -1,3 +1,4 @@
+// c5d-model: claude-opus-5-5
 // Default small-object allocator configuration.
 #include <windows.h>
 

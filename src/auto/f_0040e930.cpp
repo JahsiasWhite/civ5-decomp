@@ -1,3 +1,4 @@
+// c5d-model: claude-opus-5-5
 // Sets one indexed entry of an object that keeps 64 float values plus a
 // 64-bit mask of per-entry flags: stores the value and replaces the entry's
 // flag bit with the given state.

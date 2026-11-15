@@ -23,6 +23,12 @@ Live progress, the leaderboard and contributor sign-up: **[civ5decomp.com](https
 Reported functions that aren't verified within 14 days go back to the pool, so don't let a
 batch sit unmerged.
 
+**Credit:** a reported function is credited to the `--model` given to `remote report`. A
+function nobody reported (the maintainer committed it directly) is credited from a
+`// c5d-model: <name>` line near the top of its source file, and shows as `maintainer`
+without one. Verify sends these on every run, so adding or changing the line also fixes
+older matches.
+
 ## Ground rules
 
 - **Never commit game files.** That means no exe, dll, machine code,
@@ -61,7 +67,7 @@ setup ──► scope ──► queue ──► task next / agent ──► matc
 | `c5d queue` | Call graph, calling-convention guess (stack / thiscall / custom LTCG registers), call depth, LTCG clusters. Leaves first. | `build/queue.csv` |
 | `c5d task next --n N` | Writes a self-contained bundle per ready function: rules, disassembly, Ghidra C, references with names/conventions/status | `build/tasks/<addr>/TASK.md` |
 | `c5d task check <addr>` | Verifies one function and logs the attempt | `build/attempts.jsonl` |
-| `c5d agent --n N --tries T` | Runs `agent_cmd` from `config.local.json` on each bundle (prompt on stdin), checks, retries with the diff. Any CLI agent works, e.g. `["claude", "-p", "--permission-mode", "acceptEdits"]`. Runs one function at a time. | as above |
+| `c5d agent --n N --tries T [--remote]` | Runs `agent_cmd` from `config.local.json` on each bundle (prompt on stdin), checks, retries with the diff. Any CLI agent works, e.g. `["claude", "-p", "--permission-mode", "acceptEdits", "--output-format", "json"]`. With JSON output, the token usage it prints is summed per task (`build/tasks/<addr>/usage.json`) and sent by `remote report`. `--remote` claims from the server and reports each result. Runs one function at a time. | as above |
 | `c5d match` | LTCG build of all `src/` + verification; a full run updates `progress/status.csv` | |
 | `c5d build` | Hybrid exe: every function in `src/` relocated into a copy of the game exe (see "Hybrid build") | `build/hybrid/` |
 | `c5d status` | Progress summary | `PROGRESS.md` |

@@ -1,3 +1,4 @@
+// c5d-model: claude-opus-5-5
 // FJobSet C entry points exported for the gameplay DLL.
 #include <stddef.h>
 

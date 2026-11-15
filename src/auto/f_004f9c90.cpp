@@ -1,3 +1,4 @@
+// c5d-model: claude-opus-5-5
 // c5d-cflags: -/arch:SSE2 -/fp:fast   (this file was built with x87 floating point)
 // Pushes a record (two ints, a float and a flag) onto the Lua stack.
 

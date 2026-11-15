@@ -1,3 +1,4 @@
+// c5d-model: claude-opus-5-5
 // Small functions that are nothing but an expansion of the inline FMalloc
 // path. Real names unknown yet; named by address.
 #include "FMemory.h"

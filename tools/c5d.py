@@ -590,6 +590,9 @@ def cmd_task(args):
 
 
 def cmd_agent(args):
+    """Run agent_cmd on N tasks with retries. With --remote, the tasks are claimed from the
+    server and each result is reported back, with the token usage the agent printed."""
+    import agentusage
     import tasks
     import time
     agent_cmd = CFG.get("agent_cmd")
@@ -597,34 +600,116 @@ def cmd_agent(args):
         sys.exit('set "agent_cmd" in config.local.json (a command that reads the task prompt on stdin), '
                  "or use `c5d task next` / `c5d task check` with any agent")
     ctx = task_context()
-    rows = pick_tasks(ctx, args.n, args.tries, args.min_size)
-    prefetch_dumps([int(r["entry"], 16) for r in rows])
+    if args.remote:
+        import remote
+        r = remote.Remote()
+        body = {"n": args.n, "worker_prefix": "w", "min_size": args.min_size}
+        if args.max_size:
+            body["max_size"] = args.max_size
+        jobs = [(row, worker) for row, worker, _path in remote_claim(r, body, ctx)]
+    else:
+        rows = pick_tasks(ctx, args.n, args.tries, args.min_size, args.max_size)
+        prefetch_dumps([int(row["entry"], 16) for row in rows])
+        jobs = [(row, WORKER or "w1") for row in rows]
     summary = []
-    for r in rows:
-        a = int(r["entry"], 16)
-        claim(a, WORKER or "w1")
+    for row, worker in jobs:
+        a = int(row["entry"], 16)
+        if not args.remote:
+            claim(a, worker)
         diff = None
+        status = "ERROR"
         for t in range(args.tries):
-            path, _src = tasks.write_bundle(ctx, r, ctx.by_addr, ctx.names, ctx.symbols_by_addr,
-                                            ctx.imports, last_diff=diff, worker=WORKER or "w1")
+            path, _src = tasks.write_bundle(ctx, row, ctx.by_addr, ctx.names, ctx.symbols_by_addr,
+                                            ctx.imports, last_diff=diff, worker=worker)
             t0 = time.time()
+            out = ""
             try:
                 p = subprocess.run(agent_cmd, input=path.read_text(encoding="utf-8"), text=True,
+                                   encoding="utf-8", errors="replace",
                                    capture_output=True, cwd=ROOT, timeout=args.timeout)
-                (path.parent / f"agent_{t}.log").write_text(p.stdout + p.stderr, encoding="utf-8")
-            except subprocess.TimeoutExpired:
-                pass
-            status, diff = tasks.check(ctx, a, WORKER or "w1")
-            tasks.log_attempt(BUILD, {"addr": r["entry"], "try": t, "status": status,
-                                      "agent": agent_cmd[0], "seconds": round(time.time() - t0),
-                                      "size": int(r["size"]), "time": time.time()})
-            print(f"{r['entry']} try {t + 1}: {status}", flush=True)
+                out = p.stdout or ""
+                (path.parent / f"agent_{t}.log").write_text(out + (p.stderr or ""), encoding="utf-8")
+            except subprocess.TimeoutExpired as e:
+                out = e.stdout.decode("utf-8", "replace") if isinstance(e.stdout, bytes) else (e.stdout or "")
+            usage = agentusage.parse(out)
+            agentusage.add(BUILD, a, usage)
+            status, diff = tasks.check(ctx, a, worker)
+            rec = {"addr": row["entry"], "try": t, "status": status, "agent": agent_cmd[0],
+                   "seconds": round(time.time() - t0), "size": int(row["size"]), "time": time.time()}
+            if usage:
+                rec.update(usage)
+            tasks.log_attempt(BUILD, rec)
+            tok = (f"  ({usage['tokens_in'] + usage['tokens_cached']:,} in, {usage['tokens_out']:,} out)"
+                   if usage else "  (no token usage in the agent's output)")
+            print(f"{row['entry']} try {t + 1}: {status}{tok}", flush=True)
             if status == "MATCH":
                 break
-        summary.append((r["entry"], status))
+        if args.remote:
+            if status in ("MATCH", "DIFF"):
+                remote_report(r, a)
+            else:
+                r.call("POST", "/api/release", {"addr": f"0x{a:08x}"})
+                release(a)
+                print(f"{row['entry']}: {status}, released back to the pool")
+        summary.append((row["entry"], status))
     ok = sum(1 for _a, s in summary if s == "MATCH")
     print(f"\nagent run: {ok}/{len(summary)} matched")
     return 0
+
+
+def remote_claim(r, body, ctx=None):
+    """Claim from the server, mirror the claims locally and write a bundle for each.
+    -> [(queue row, worker, bundle path)]."""
+    import tasks
+    got = r.call("POST", "/api/claim", body)["claims"]
+    if not got:
+        print("nothing available to claim with those filters")
+        return []
+    ctx = ctx or task_context()
+    prefetch_dumps([int(c["addr"], 16) for c in got])
+    out = []
+    for c in got:
+        a = int(c["addr"], 16)
+        claim(a, c["worker"])                       # local claim mirrors the server's
+        row = ctx.by_addr.get(a)
+        if not row:
+            print(f"{c['addr']}: not in your local queue (re-run `c5d queue`?)")
+            continue
+        path, _src = tasks.write_bundle(ctx, row, ctx.by_addr, ctx.names, ctx.symbols_by_addr,
+                                        ctx.imports, worker=c["worker"])
+        print(f"{c['addr']}  {row['size']:>5}b  {row['conv']:<8} {c['worker']:<5} -> {path.relative_to(ROOT)}")
+        out.append((row, c["worker"], path))
+    return out
+
+
+def remote_report(r, a, model=None, tokens_in=None, tokens_out=None, tokens_cached=None, tries=None):
+    """Re-check locally, then report. Values not given come from the task's usage.json
+    (written by `c5d agent`), then config.local.json's "model"."""
+    import agentusage
+    import remote
+    import tasks
+    ctx = task_context()
+    status, out = tasks.check(ctx, a, claims().get(a))
+    tasks.log_attempt(BUILD, {"addr": f"0x{a:08x}", "status": status, "agent": "remote",
+                              "time": __import__("time").time()})
+    if status not in ("MATCH", "DIFF"):
+        print(out)
+        sys.exit(f"local check gave {status}; not reporting (fix the build first)")
+    used = agentusage.load(BUILD, a)
+
+    def pick(given, key):
+        return used[key] if given is None else given
+    model = model or used["model"] or remote.load_local().get("model", "")
+    body = {"addr": f"0x{a:08x}", "status": status, "model": model,
+            "tokens_in": pick(tokens_in, "tokens_in"), "tokens_out": pick(tokens_out, "tokens_out"),
+            "tokens_cached": pick(tokens_cached, "tokens_cached"), "tries": pick(tries, "tries")}
+    r.call("POST", "/api/report", body)
+    release(a)
+    agentusage.reset(BUILD, a)                  # counted once; a later re-claim starts from zero
+    tok = body["tokens_in"] + body["tokens_cached"] + body["tokens_out"]
+    print(f"0x{a:08x}: reported {status} ({model or 'no model'}, {tok:,} tokens, {body['tries']} tries)"
+          + ("; it counts once the nightly verify confirms it" if status == "MATCH" else ""))
+    return status
 
 
 def cmd_status(_args):
@@ -685,39 +770,11 @@ def cmd_remote(args):
             body["max_size"] = args.max_size
         if args.addr:
             body["addr"] = args.addr
-        got = r.call("POST", "/api/claim", body)["claims"]
-        if not got:
-            print("nothing available to claim with those filters")
-            return 0
-        ctx = task_context()
-        prefetch_dumps([int(c["addr"], 16) for c in got])
-        for c in got:
-            a = int(c["addr"], 16)
-            claim(a, c["worker"])                       # local claim mirrors the server's
-            row = ctx.by_addr.get(a)
-            if not row:
-                print(f"{c['addr']}: not in your local queue (re-run `c5d queue`?)")
-                continue
-            path, _src = tasks.write_bundle(ctx, row, ctx.by_addr, ctx.names, ctx.symbols_by_addr,
-                                            ctx.imports, worker=c["worker"])
-            print(f"{c['addr']}  {row['size']:>5}b  {row['conv']:<8} {c['worker']:<5} -> {path.relative_to(ROOT)}")
+        remote_claim(r, body)
         return 0
     if args.action == "report":
-        a = int(args.addr, 16)
-        ctx = task_context()
-        status, out = tasks.check(ctx, a, claims().get(a))
-        tasks.log_attempt(BUILD, {"addr": f"0x{a:08x}", "status": status, "agent": "remote",
-                                  "time": __import__("time").time()})
-        if status not in ("MATCH", "DIFF"):
-            print(out)
-            sys.exit(f"local check gave {status}; not reporting (fix the build first)")
-        model = args.model or remote.load_local().get("model", "")
-        r.call("POST", "/api/report", {"addr": f"0x{a:08x}", "status": status, "model": model,
-                                       "tokens_in": args.tokens_in, "tokens_out": args.tokens_out,
-                                       "tokens_cached": args.tokens_cached, "tries": args.tries})
-        release(a)
-        print(f"0x{a:08x}: reported {status}" + ("; it counts once the nightly verify confirms it"
-                                                 if status == "MATCH" else ""))
+        remote_report(r, int(args.addr, 16), args.model, args.tokens_in, args.tokens_out,
+                      args.tokens_cached, args.tries)
         return 0
     if args.action == "release":
         a = int(args.addr, 16)
@@ -912,7 +969,10 @@ def main():
     ag.add_argument("--n", type=int, default=5)
     ag.add_argument("--tries", type=int, default=3)
     ag.add_argument("--min-size", type=int, default=5)
+    ag.add_argument("--max-size", type=int, default=None)
     ag.add_argument("--timeout", type=int, default=1800)
+    ag.add_argument("--remote", action="store_true",
+                    help="claim from the server and report each result (with token usage)")
     ag.set_defaults(fn=cmd_agent)
     sub.add_parser("status", help="write PROGRESS.md").set_defaults(fn=cmd_status)
     rm = sub.add_parser("remote", help="coordination server: login | status | claim | report | release")
@@ -926,10 +986,11 @@ def main():
     rm.add_argument("--max-size", type=int, default=None)
     rm.add_argument("--model", default=None,
                     help="model/tool that wrote it (default: \"model\" in config.local.json)")
-    rm.add_argument("--tokens-in", type=int, default=0)
-    rm.add_argument("--tokens-out", type=int, default=0)
-    rm.add_argument("--tokens-cached", type=int, default=0)
-    rm.add_argument("--tries", type=int, default=0, help="matcher iterations used")
+    rm.add_argument("--tokens-in", type=int, default=None,
+                    help="default: what `c5d agent` recorded for this task (build/tasks/<addr>/usage.json)")
+    rm.add_argument("--tokens-out", type=int, default=None)
+    rm.add_argument("--tokens-cached", type=int, default=None)
+    rm.add_argument("--tries", type=int, default=None, help="matcher iterations used")
     rm.set_defaults(fn=cmd_remote)
     args = p.parse_args()
     global WORKER

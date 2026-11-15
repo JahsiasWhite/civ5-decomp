@@ -304,12 +304,87 @@ def test_admin_verify(srv):
     assert req(base, "POST", "/api/admin/verify", payload)[0] == 401
     assert req(base, "POST", "/api/admin/verify", payload, token=alice)[0] == 403
     code, j = req(base, "POST", "/api/admin/verify", payload, token=boss)    # C5D_ADMINS is case-insensitive
-    assert code == 200 and j == {"received": 3, "changed": 2, "ready_changed": 0, "requeued": 0,
-                                 "resized": 0, "merged_away": 0}
+    assert code == 200 and j == {"received": 3, "changed": 2, "credited": 0, "ready_changed": 0,
+                                 "requeued": 0, "resized": 0, "merged_away": 0,
+                                 "milestones": ["First function matched"] + [
+                                     f"{p} of the code matched (20 of 245 bytes, 1 functions)"
+                                     for p in ("0.1%", "1%", "5%")]}
     f = {r["addr"]: r["status"] for r in db.q("SELECT addr, status FROM functions")}
     assert f[0x401000] == "matched" and f[0x401010] == "diff"
     assert req(base, "POST", "/api/admin/verify", {"statuses": {"zz": "MATCH"}}, token=boss)[0] == 400
     assert req(base, "POST", "/api/admin/verify", {"statuses": []}, token=boss)[0] == 400
+
+
+def test_auto_milestones_once_each(tmp_path):
+    import db as dbmod
+    db = dbmod.DB(tmp_path / "m.sqlite")
+    # 200 functions of 100 bytes: 20,000 bytes, so 1% = 2 functions and 5% = 10
+    db.import_functions([{"addr": 0x500000 + i * 0x100, "size": 100, "name": "", "conv": "stack",
+                          "depth": 0, "cluster": 0, "ready": 1, "queue_pos": i} for i in range(200)])
+
+    def match(n):
+        db.apply_verified({0x500000 + i * 0x100: "MATCH" for i in range(n)})
+        return db.check_milestones("2026-11-15")
+    assert match(0) == []
+    assert match(1) == ["First function matched", "0.1% of the code matched (100 of 20,000 bytes, 1 functions)"]
+    assert match(1) == []                                        # logged once
+    new = match(30)          # 30 functions, 15%: 10 functions, then 1%, 5%, 10%, 15%
+    assert new[0] == "10 functions matched" and [t.split("%")[0] for t in new[1:]] == ["1", "5", "10", "15"]
+    assert len(match(200)) == len(dbmod.FUNCTION_MILESTONES[2:4]) + 17   # 50, 100; 20%..100%
+    keys = [r["key"] for r in db.q("SELECT key FROM milestones")]
+    assert len(keys) == len(set(keys)) and "bytes:100" in keys
+    db.add_milestone("2026-11-15", "hand-written")               # manual ones have no key
+    assert db.check_milestones() == []
+
+
+def test_admin_milestone(srv):
+    base, db = srv
+    boss, alice = make_user(db, "boss"), make_user(db, "alice")
+    body = {"text": "Site launched", "day": "2026-11-14"}
+    assert req(base, "POST", "/api/admin/milestone", body)[0] == 401
+    assert req(base, "POST", "/api/admin/milestone", body, token=alice)[0] == 403
+    code, j = req(base, "POST", "/api/admin/milestone", body, token=boss)
+    assert code == 200 and j["day"] == "2026-11-14"
+    assert req(base, "POST", "/api/admin/milestone", {"text": ""}, token=boss)[0] == 400
+    assert req(base, "POST", "/api/admin/milestone", {"text": "x", "day": "14/11"}, token=boss)[0] == 400
+    _, s = req(base, "GET", "/api/stats")
+    assert {"day": "2026-11-14", "text": "Site launched"} in s["log"]
+
+
+def test_admin_verify_model_credits(srv):
+    base, db = srv
+    boss, alice = make_user(db, "boss"), make_user(db, "alice")
+    # 0x401000: matched earlier with no report ("maintainer"); 0x401010: alice reported it
+    req(base, "POST", "/api/admin/verify", {"statuses": {"0x00401000": "MATCH"}}, token=boss)
+    req(base, "POST", "/api/claim", {"addr": "0x00401010"}, token=alice)
+    req(base, "POST", "/api/report", {"addr": "0x00401010", "status": "MATCH", "model": "m-alice"},
+        token=alice)
+    models = {"0x00401000": "claude-opus-5-5", "0x00401010": "claude-opus-5-5",
+              "0x00401020": "claude-opus-5-5"}                       # 0x401020 isn't matched
+    code, j = req(base, "POST", "/api/admin/verify",
+                  {"statuses": {"0x00401010": "MATCH"}, "models": models}, token=boss)
+    assert code == 200 and j["credited"] == 1
+    m = {r["addr"]: r["model"] for r in db.q("SELECT addr, model FROM functions")}
+    assert m[0x401000] == "claude-opus-5-5"          # retroactive: replaces "maintainer"
+    assert m[0x401010] == "m-alice"                  # a contributor's own report wins
+    assert m[0x401020] == ""
+    _, j = req(base, "POST", "/api/admin/verify", {"statuses": {}, "models": models}, token=boss)
+    assert j["credited"] == 0
+    assert req(base, "POST", "/api/admin/verify", {"statuses": {}, "models": ["x"]}, token=boss)[0] == 400
+
+
+def test_manage_read_models(tmp_path, monkeypatch):
+    import manage
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "a.cpp").write_text("// c5d-cflags: +/Oy-\n// c5d-model: claude-opus-5-5\nint x;\n")
+    (tmp_path / "src" / "b.cpp").write_text("int y;\n")
+    monkeypatch.setattr(manage, "ROOT", tmp_path)
+    st = tmp_path / "status.csv"
+    st.write_text("address,symbol,status,bytes,source,since\n"
+                  "0x00401000,a,MATCH,1,src/a.cpp,2026-11-15\n"
+                  "0x00401010,b,MATCH,1,src/b.cpp,2026-11-15\n"
+                  "0x00401020,c,DIFF,1,src/a.cpp,2026-11-15\n")
+    assert manage.read_models(st) == {0x401000: "claude-opus-5-5"}
 
 
 def test_admin_verify_boundary_merges(srv):

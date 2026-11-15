@@ -5,6 +5,10 @@
   python server/manage.py token <login> [--display NAME]
                                     create/refresh an API token (e.g. for yourself)
   python server/manage.py stats     print the dashboard numbers
+  python server/manage.py milestone "text" [--day YYYY-MM-DD] [--remote]
+                                    add a milestone (--remote: to the live site, admin token).
+                                    Progress milestones (function counts, every 5% of bytes)
+                                    are added automatically by verify.
   python server/manage.py push [--server URL] [--token T]
                                     send progress/status.csv to the live server
                                     (your login must be in the server's C5D_ADMINS)
@@ -76,9 +80,41 @@ def read_statuses(path):
     return statuses
 
 
+def source_model(path):
+    """The model a source file credits with `// c5d-model: <name>` in its first 40 lines."""
+    try:
+        head = (ROOT / path.replace("\\", "/")).read_text(encoding="utf-8", errors="replace").splitlines()[:40]
+    except OSError:
+        return None
+    for line in head:
+        if "c5d-model:" in line:
+            name = line.split("c5d-model:", 1)[1].split()
+            return name[0] if name else None
+    return None
+
+
+def read_models(path):
+    """{addr: model} for matched functions whose source file has a `c5d-model:` line
+    (progress/status.csv says which file each match came from)."""
+    models, cache = {}, {}
+    if Path(path).exists():
+        with open(path, newline="") as fh:
+            for r in csv.DictReader(fh):
+                if r["status"] != "MATCH" or not r.get("source"):
+                    continue
+                if r["source"] not in cache:
+                    cache[r["source"]] = source_model(r["source"])
+                if cache[r["source"]]:
+                    models[int(r["address"], 16)] = cache[r["source"]]
+    return models
+
+
 def cmd_verify(db, args):
     statuses = read_statuses(args.status)
     print(f"verify: {db.apply_verified(statuses)} status changes from {args.status}")
+    print(f"credits: {db.apply_credits(read_models(args.status))} changed from c5d-model lines")
+    for text in db.check_milestones():
+        print(f"milestone: {text}")
 
 
 def read_ready(path):
@@ -94,7 +130,8 @@ def cmd_push(_db, args):
         raise SystemExit(f"{args.status} not found: run `python tools/c5d.py match` first")
     payload = {"statuses": {f"0x{a:08x}": s for a, s in read_statuses(args.status).items()},
                "merges": [{"addr": f"0x{m['addr']:08x}", "size": m["size"],
-                           "absorbed": [f"0x{a:08x}" for a in m["absorbed"]]} for m in read_merges()]}
+                           "absorbed": [f"0x{a:08x}" for a in m["absorbed"]]} for m in read_merges()],
+               "models": {f"0x{a:08x}": m for a, m in read_models(args.status).items()}}
     q = Path(args.queue)
     if q.exists():
         if q.stat().st_mtime < Path(args.status).stat().st_mtime:
@@ -107,8 +144,11 @@ def cmd_push(_db, args):
     from remote import Remote
     r = Remote(args.server, args.token).call("POST", "/api/admin/verify", payload)
     print(f"push: server received {r['received']} statuses, {r['changed']} status changes, "
+          f"{r.get('credited', 0)} credits, "
           f"{r.get('ready_changed', 0)} readiness changes, {r.get('requeued', 0)} stale reports requeued, "
           f"{r.get('resized', 0)} resized / {r.get('merged_away', 0)} removed by boundary fixes")
+    for text in r.get("milestones", []):
+        print(f"push: new milestone: {text}")
 
 
 def backup_db(src, dest_dir, keep=14):
@@ -163,9 +203,17 @@ def cmd_spend(db, args):
     print("added")
 
 
-def cmd_milestone(db, args):
-    db.add_milestone(args.day, args.text)
-    print("added")
+def cmd_milestone(_db, args):
+    """Add a milestone: to the live server with --remote (admin token), else the local DB."""
+    if args.remote:
+        sys.path.insert(0, str(ROOT / "tools"))
+        from remote import Remote
+        r = Remote(args.server, args.token).call("POST", "/api/admin/milestone",
+                                                 {"day": args.day, "text": args.text})
+        print(f"added to the live log: {r['day']} {r['text']}")
+        return
+    open_db().add_milestone(args.day or time.strftime("%Y-%m-%d", time.gmtime()), args.text)
+    print("added to the local DB (use --remote for the live site)")
 
 
 def cmd_credit(db, args):
@@ -213,10 +261,13 @@ def main():
     sp.add_argument("dollars", type=float)
     sp.add_argument("--note", default="")
     sp.set_defaults(fn=cmd_spend)
-    ms = sub.add_parser("milestone", help="add a milestone to the log")
-    ms.add_argument("day")
+    ms = sub.add_parser("milestone", help="add a milestone to the log (--remote: the live site)")
     ms.add_argument("text")
-    ms.set_defaults(fn=cmd_milestone)
+    ms.add_argument("--day", default=None, help="YYYY-MM-DD (UTC); default today")
+    ms.add_argument("--remote", action="store_true", help="send to the live server (admin token)")
+    ms.add_argument("--server", default=None, help="default: server in config.local.json")
+    ms.add_argument("--token", default=None, help="default: token in config.local.json")
+    ms.set_defaults(fn=cmd_milestone, no_db=True)
     cr = sub.add_parser("credit", help="set the model credited for matched functions")
     cr.add_argument("model")
     cr.add_argument("addr", nargs="+")
