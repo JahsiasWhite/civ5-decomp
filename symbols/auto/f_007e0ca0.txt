@@ -1,0 +1,1 @@
+0x007e0ca0 ?GetFlag@FieldHolder_007e0ca0@@QBE_NXZ

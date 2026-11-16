@@ -1,0 +1,1 @@
+0x007e3800 ?GetMember@MemberAddress_007e3800@@QAEPAHXZ
