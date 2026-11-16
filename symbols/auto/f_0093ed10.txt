@@ -1,0 +1,2 @@
+0x0093ed10 ?ClearBuffer_0093ed10@@YAXPAX@Z
+0x00926842 _memset

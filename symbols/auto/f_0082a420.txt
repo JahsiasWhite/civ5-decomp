@@ -1,0 +1,2 @@
+0x0082a420 ?Init@TlsSlot_0082a420@@QAEPAV1@XZ
+0x009d6368 __imp__TlsAlloc@0

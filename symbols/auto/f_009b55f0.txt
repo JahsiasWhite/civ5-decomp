@@ -1,0 +1,2 @@
+0x009b55f0 ?Dispatch@Host_009b55f0@@QAEXXZ
+0x00cb73a4 _g_dispatchTable_00cb73a4

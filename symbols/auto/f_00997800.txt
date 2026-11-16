@@ -1,0 +1,1 @@
+0x00997800 ?SetByte@Host_00997800@@QAA_NID@Z
