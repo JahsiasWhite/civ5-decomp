@@ -1,0 +1,2 @@
+0x006726e0 ?Thunk_006726e0@@YAHXZ
+0x006ab0e0 ?Target_006ab0e0@@YAHXZ
