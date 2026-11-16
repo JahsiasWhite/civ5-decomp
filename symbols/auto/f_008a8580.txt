@@ -1,0 +1,1 @@
+0x008a8580 ?GetFlag_008a8580@@YAHPAX@Z

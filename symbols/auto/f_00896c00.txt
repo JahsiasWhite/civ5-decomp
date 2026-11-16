@@ -1,0 +1,1 @@
+0x00896c00 ?GetFloat_00896c00@@YAMPAX@Z

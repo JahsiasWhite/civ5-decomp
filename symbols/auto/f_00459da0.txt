@@ -1,0 +1,2 @@
+0x00459da0 ?Thunk_00459da0@@YAXPAXPAH@Z
+0x00923940 _lua_pushinteger
