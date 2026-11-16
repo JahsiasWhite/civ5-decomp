@@ -106,3 +106,11 @@ address,symbol,status,bytes,source,since
 0x00934550,?GetGlobal_00ca27b0@@YAPAHXZ,MATCH,6,src/auto/f_00934550.cpp,2026-11-15
 0x0093aff0,?GetGlobal_00ca37a0@@YAPAHXZ,MATCH,6,src/auto/f_0093aff0.cpp,2026-11-15
 0x0093be40,?GetConst_00b468b0@@YAPBHXZ,MATCH,6,src/auto/f_0093be40.cpp,2026-11-15
+0x0093bf20,?GetConst_00b46920@@YAPBHXZ,MATCH,6,src/auto/f_0093bf20.cpp,2026-11-15
+0x0093f0f0,?GetGlobal_00cac72c@@YAPAHXZ,MATCH,6,src/auto/f_0093f0f0.cpp,2026-11-15
+0x0093ff90,?GetConst_00b4c498@@YAPBHXZ,MATCH,6,src/auto/f_0093ff90.cpp,2026-11-15
+0x0093ffd0,?GetConst_00b4c4e0@@YAPBHXZ,MATCH,6,src/auto/f_0093ffd0.cpp,2026-11-15
+0x0093fff0,?GetConst_00b4c528@@YAPBHXZ,MATCH,6,src/auto/f_0093fff0.cpp,2026-11-15
+0x009404f0,?GetConst_00b4c6b0@@YAPBHXZ,MATCH,6,src/auto/f_009404f0.cpp,2026-11-15
+0x00940540,?GetConst_00b4c6f8@@YAPBHXZ,MATCH,6,src/auto/f_00940540.cpp,2026-11-15
+0x009405b0,?GetConst_00b4c740@@YAPBHXZ,MATCH,6,src/auto/f_009405b0.cpp,2026-11-15

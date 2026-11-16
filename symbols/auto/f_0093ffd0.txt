@@ -1,0 +1,2 @@
+0x0093ffd0 ?GetConst_00b4c4e0@@YAPBHXZ
+0x00b4c4e0 ?g_Const_00b4c4e0@@3HB
