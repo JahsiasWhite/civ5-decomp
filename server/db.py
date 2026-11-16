@@ -316,17 +316,28 @@ class DB:
 
     def apply_credits(self, models):
         """{addr: model} from `// c5d-model:` lines in the matched source files. Credits a
-        matched function nobody reported (by_user NULL: the maintainer committed it
-        directly), replacing the "maintainer" default, also for older matches. A
-        contributor's own report always wins. Returns how many credits changed."""
+        matched function nobody reported (the maintainer committed it directly),
+        replacing the "maintainer" default, also for older matches. A contributor's
+        own report always wins. Returns how many credits changed."""
         changed = 0
         with self.tx():
             for addr, model in models.items():
                 model = clean_model(model)
                 changed += self.conn.execute(
-                    "UPDATE functions SET model=? WHERE addr=? AND status='matched' "
-                    "AND by_user IS NULL AND model<>?", (model, addr, model)).rowcount
+                    "UPDATE functions SET model=? WHERE addr=? AND status='matched' AND model<>? "
+                    "AND NOT EXISTS (SELECT 1 FROM events e WHERE e.kind='report' AND e.status='MATCH' "
+                    "AND e.addr=functions.addr AND e.user_id=functions.by_user)",
+                    (model, addr, model)).rowcount
         return changed
+
+    def credit_owner(self, user_id):
+        """Puts matched functions nobody reported (by_user NULL: committed straight to the
+        repo) under user_id, the maintainer pushing the verify, also for older matches, so
+        they count on the leaderboard. Returns how many were credited."""
+        with self.tx():
+            return self.conn.execute(
+                "UPDATE functions SET by_user=?, updated=? WHERE status='matched' AND by_user IS NULL",
+                (user_id, time.time())).rowcount
 
     def apply_verified(self, statuses, default_model="maintainer"):
         """Maintainer verify: {addr: 'MATCH'|'DIFF'|...} from a full local match run."""

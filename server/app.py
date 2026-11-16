@@ -376,16 +376,17 @@ def make_handler(cfg, db):
             resized, removed, added = db.apply_merges(merges)
             changed = db.apply_verified(statuses)
             credited = db.apply_credits(models)             # after verify: covers new matches too
+            owned = db.credit_owner(u["id"])                # direct commits count for the pusher
             ready_changed = db.set_ready(ready)
             requeued = db.expire_reports()
             milestones = db.check_milestones()
             sys.stderr.write(f"admin verify by {u['login']}: {len(statuses)} statuses, {changed} changes, "
-                             f"{credited} credits, {ready_changed} readiness changes, "
+                             f"{credited} credits, {owned} owned, {ready_changed} readiness changes, "
                              f"{requeued} stale reports requeued, "
                              f"{resized} resized / {removed} removed / {added} added by boundary fixes, "
                              f"{len(milestones)} milestones\n")
             return self.send(200, {"received": len(statuses), "changed": changed, "credited": credited,
-                                   "ready_changed": ready_changed, "requeued": requeued,
+                                   "owned": owned, "ready_changed": ready_changed, "requeued": requeued,
                                    "resized": resized, "merged_away": removed, "added": added,
                                    "milestones": milestones})
 

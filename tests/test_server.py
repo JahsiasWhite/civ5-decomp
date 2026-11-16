@@ -307,7 +307,7 @@ def test_admin_verify(srv):
     assert req(base, "POST", "/api/admin/verify", payload)[0] == 401
     assert req(base, "POST", "/api/admin/verify", payload, token=alice)[0] == 403
     code, j = req(base, "POST", "/api/admin/verify", payload, token=boss)    # C5D_ADMINS is case-insensitive
-    assert code == 200 and j == {"received": 3, "changed": 2, "credited": 0, "ready_changed": 0,
+    assert code == 200 and j == {"received": 3, "changed": 2, "credited": 0, "owned": 1, "ready_changed": 0,
                                  "requeued": 0, "resized": 0, "merged_away": 0, "added": 0,
                                  "milestones": ["First function matched"] + [
                                      f"{p} of the code matched (20 of 245 bytes, 1 functions)"
@@ -450,6 +450,25 @@ def test_admin_verify_accepts_large_body_others_dont(srv):
     big = {"statuses": {f"0x{0x500000 + i * 16:08x}": "MATCH" for i in range(20000)}}   # ~550 KB
     assert req(base, "POST", "/api/admin/verify", big, token=boss)[0] == 200
     assert req(base, "POST", "/api/display", {"display": "x" * 20000}, token=alice)[0] == 413
+
+
+def test_admin_verify_credits_direct_commits_to_pusher(srv):
+    base, db = srv
+    boss, alice = make_user(db, "boss"), make_user(db, "alice")
+    db.set_display(db.one("SELECT id FROM users WHERE login='boss'")["id"], "Boss")
+    # 0x401000 was committed straight to the repo; 0x401010 alice reported herself
+    req(base, "POST", "/api/claim", {"addr": "0x00401010"}, token=alice)
+    req(base, "POST", "/api/report", {"addr": "0x00401010", "status": "MATCH"}, token=alice)
+    _, j = req(base, "POST", "/api/admin/verify",
+               {"statuses": {"0x00401000": "MATCH", "0x00401010": "MATCH"}}, token=boss)
+    assert j["owned"] == 1
+    by = {r["addr"]: r["by_user"] for r in db.q("SELECT addr, by_user FROM functions WHERE status='matched'")}
+    ids = {r["login"]: r["id"] for r in db.q("SELECT id, login FROM users")}
+    assert by == {0x401000: ids["boss"], 0x401010: ids["alice"]}
+    s = req(base, "GET", "/api/stats")[1]
+    assert sum(r["bytes"] for r in s["leaderboard"]) == s["matched_bytes"]
+    assert sum(r["functions"] for r in s["leaderboard"]) == s["matched"]
+    assert req(base, "POST", "/api/admin/verify", {"statuses": {}}, token=boss)[1]["owned"] == 0
 
 
 def test_manage_push(srv, tmp_path):

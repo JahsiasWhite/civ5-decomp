@@ -157,7 +157,7 @@ def cmd_push(_db, args):
     from remote import Remote
     r = Remote(args.server, args.token).call("POST", "/api/admin/verify", payload)
     print(f"push: server received {r['received']} statuses, {r['changed']} status changes, "
-          f"{r.get('credited', 0)} credits, "
+          f"{r.get('credited', 0)} credits, {r.get('owned', 0)} credited to you, "
           f"{r.get('ready_changed', 0)} readiness changes, {r.get('requeued', 0)} stale reports requeued, "
           f"{r.get('resized', 0)} resized / {r.get('merged_away', 0)} removed / "
           f"{r.get('added', 0)} added by boundary fixes")
