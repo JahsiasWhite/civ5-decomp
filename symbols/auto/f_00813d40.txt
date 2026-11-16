@@ -1,0 +1,1 @@
+0x00813d40 ?Delete@FCriticalSection@@QAEXXZ

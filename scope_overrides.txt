@@ -7,3 +7,34 @@
 # point by hashed id through nvapi_QueryInterface (pointer at 0x02de1ea8).
 # Built unoptimised. Found in the 2026-11-15 trial.
 0x008a88c0 0x008bb02a nvapi
+
+# Register-call stubs: 24 functions whose whole body is `mov eax, <function>;
+# call eax; ret`. No construct we tried with this compiler emits that (a direct
+# call, const or template function pointers, member pointers, dllimport and LTCG
+# constant propagation all become a direct tail-call jmp). Probably inserted by
+# the exe's copy protection, like the register-call trampolines at 0x401010.
+# Found 2026-11-16. The functions they call are ordinary game code and stay in scope.
+0x004172e0 0x004172e8 regcall_stub
+0x004173d0 0x004173d8 regcall_stub
+0x00420910 0x00420918 regcall_stub
+0x00431b10 0x00431b18 regcall_stub
+0x004393c0 0x004393c8 regcall_stub
+0x00448c50 0x00448c58 regcall_stub
+0x00475490 0x00475498 regcall_stub
+0x00487720 0x00487728 regcall_stub
+0x00528c80 0x00528c88 regcall_stub
+0x00546f50 0x00546f58 regcall_stub
+0x0057b4c0 0x0057b4c8 regcall_stub
+0x00581a70 0x00581a78 regcall_stub
+0x0061fc40 0x0061fc48 regcall_stub
+0x0064e3e0 0x0064e3e8 regcall_stub
+0x00656510 0x00656518 regcall_stub
+0x006726e0 0x006726e8 regcall_stub
+0x0067b210 0x0067b218 regcall_stub
+0x006be0c0 0x006be0c8 regcall_stub
+0x006c72e0 0x006c72e8 regcall_stub
+0x006d00f0 0x006d00f8 regcall_stub
+0x006e99b0 0x006e99b8 regcall_stub
+0x0070df00 0x0070df08 regcall_stub
+0x00724930 0x00724938 regcall_stub
+0x0079e870 0x0079e878 regcall_stub

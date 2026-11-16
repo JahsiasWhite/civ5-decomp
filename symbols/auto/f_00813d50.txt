@@ -1,0 +1,1 @@
+0x00813d50 ?Enter@FCriticalSection@@QAEXXZ

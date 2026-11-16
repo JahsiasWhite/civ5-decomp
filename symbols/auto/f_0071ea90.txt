@@ -1,0 +1,1 @@
+0x0071ea90 ?HasPtr@PtrHolder_0071ea90@@QBE_NXZ
