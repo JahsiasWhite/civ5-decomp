@@ -1,0 +1,1 @@
+0x008e49a0 ?GetFloat@FieldHolder_008e49a0@@QBEMXZ
