@@ -485,7 +485,6 @@ class DB:
         board = [dict(r) for r in self.q(
             "SELECT CASE WHEN u.display='' THEN 'anonymous' ELSE u.display END who, "
             "COUNT(*) functions, SUM(f.size) bytes, "
-            "(SELECT COUNT(*) FROM events e WHERE e.user_id=u.id AND e.kind='report') submissions, "
             "(SELECT MIN(e.ts) FROM events e WHERE e.user_id=u.id) since "
             "FROM functions f JOIN users u ON u.id=f.by_user WHERE f.status='matched' "
             "GROUP BY u.id ORDER BY bytes DESC LIMIT 50")]
@@ -519,7 +518,7 @@ class DB:
             "GROUP BY 1 ORDER BY reports DESC")]
         runs = [{"day": utc_day(r["ts"]), "kept": r["kept"], "kept_bytes": r["kept_bytes"],
                  "rejected": r["rejected"]} for r in self.q(
-            "SELECT * FROM runs ORDER BY ts DESC LIMIT 14")]
+            "SELECT * FROM runs WHERE kept>0 OR rejected>0 ORDER BY ts DESC LIMIT 14")]
 
         # ---- cost
         ledger = [dict(r) for r in self.q(

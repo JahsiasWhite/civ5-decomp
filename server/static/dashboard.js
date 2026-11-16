@@ -164,9 +164,9 @@ function renderBoard() {
   });
   fillRows($("board-table").tBodies[0], rows.map((r, i) => [
     { t: String(i + 1), cls: "rank" }, { t: r.who }, { t: n0(r.functions), cls: "num" },
-    { t: size(r.bytes), cls: "num" }, { t: n0(r.submissions), cls: "num" },
+    { t: size(r.bytes), cls: "num" },
     { t: r.since ? new Date(r.since * 1000).toISOString().slice(0, 10) : "–", cls: "num" },
-  ]), 6, "No verified matches from contributors yet. Be the first.");
+  ]), 5, "No verified matches from contributors yet. Be the first.");
 }
 for (const th of document.querySelectorAll("#board-table th.sortable")) {
   th.addEventListener("click", () => {
@@ -219,7 +219,7 @@ function render(s) {
     { t: n0(r.matches), cls: "num" }, { t: pct(r.matches, r.reports, 0), cls: "num" }]), 4, "No reports yet.");
   fillRows($("t-runs").tBodies[0], s.squad.runs.map((r) => [
     { t: r.day, cls: "mono" }, { t: n0(r.kept), cls: "num" }, { t: kb(r.kept_bytes), cls: "num" },
-    { t: n0(r.rejected), cls: "num" }]), 4, "No verification runs yet.");
+    { t: n0(r.rejected), cls: "num" }]), 4, "No verification run has matched or rejected anything yet.");
 
   // map
   const tiers = $("tiers"); tiers.textContent = "";

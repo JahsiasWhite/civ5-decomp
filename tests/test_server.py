@@ -157,10 +157,13 @@ def test_report_verify_flow(srv):
     assert s["matched"] == 1 and s["reported"] == 0 and s["diff"] == 1
     assert s["matched_today"] == 1 and s["models_on_board"] == 1
     lb = s["leaderboard"][0]
-    assert lb["who"] == "alice" and lb["functions"] == 1 and lb["submissions"] == 2
+    assert lb["who"] == "alice" and lb["functions"] == 1 and "submissions" not in lb
     assert s["squad"]["all"][0]["model"] == "model-a" and s["squad"]["all"][0]["share"] == 1
     assert {t["model"]: t["matches"] for t in s["squad"]["tries"]} == {"model-a": 1, "model-b": 1}
     assert s["squad"]["runs"][0]["kept"] == 1 and s["squad"]["runs"][0]["rejected"] == 1
+    # a run that changes nothing isn't listed
+    db.apply_verified({0x401000: "MATCH"})
+    assert len(req(base, "GET", "/api/stats")[1]["squad"]["runs"]) == 1
     assert len(s["trend"]) == 1 and s["trend"][0]["functions"] == 1
     assert s["trend_by_model"][0]["model"] == "model-a"
     tier = s["tiers"][0]
