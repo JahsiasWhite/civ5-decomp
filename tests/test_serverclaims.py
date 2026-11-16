@@ -46,21 +46,42 @@ def test_unknown_on_server_stays_local():
     assert ServerClaims(r).claim(0x401000, "w1")
 
 
-def test_unreachable_goes_local_for_the_rest_of_the_run():
+def test_unreachable_stops_instead_of_going_local():
     r = FakeRemote({"0x00401000": RemoteError("cannot reach https://x: refused")})
-    sc = ServerClaims(r)
-    assert sc.claim(0x401000, "w1")
-    assert sc.claim(0x402000, "w2")
-    assert len(r.calls) == 1                # no further calls once offline
+    with pytest.raises(SystemExit, match="stopping rather than claiming it only locally"):
+        ServerClaims(r).claim(0x401000, "w1")
 
 
-def test_not_logged_in_is_local_only(monkeypatch):
+def test_other_server_refusal_stops():
+    r = FakeRemote({"0x00401000": RemoteError("server: accept the terms first", 403)})
+    with pytest.raises(SystemExit):
+        ServerClaims(r).claim(0x401000, "w1")
+
+
+def test_not_logged_in_stops(monkeypatch):
     monkeypatch.setattr(remote, "load_local", lambda: {})
-    sc = ServerClaims.from_config()
+    with pytest.raises(SystemExit, match="not logged in"):
+        ServerClaims.from_config()
+
+
+def test_not_logged_in_with_local_flag_warns(monkeypatch, capsys):
+    monkeypatch.setattr(remote, "load_local", lambda: {})
+    sc = ServerClaims.from_config(local_only=True)
     assert sc.r is None and sc.claim(0x401000, "w1")
+    assert "only on this machine" in capsys.readouterr().out
 
 
 def test_local_flag_skips_server(monkeypatch):
     monkeypatch.setattr(remote, "load_local", lambda: {"server": "https://x", "token": "t"})
     assert ServerClaims.from_config(local_only=True).r is None
     assert ServerClaims.from_config().r is not None
+
+
+def test_release_never_stops(monkeypatch):
+    monkeypatch.setattr(remote, "load_local", lambda: {})
+    ServerClaims.from_config(for_release=True).release(0x401000)      # not logged in: no-op
+    r = FakeRemote({"0x00401000": RemoteError("cannot reach https://x: refused")})
+    sc = ServerClaims(r)
+    sc.release(0x401000)                                               # warns, doesn't raise
+    sc.release(0x402000)
+    assert len(r.calls) == 1

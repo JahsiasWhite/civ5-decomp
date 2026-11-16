@@ -80,6 +80,12 @@ python tools/c5d.py analyze
 3. `python tools/c5d.py remote claim --n 3` reserves functions for 4 hours and writes
    `build/tasks/<address>/TASK.md` for each one, with everything needed to solve it.
 
+Claiming needs the login: `task next` and `agent` stop if you aren't logged in or the server
+can't be reached, rather than claiming only on your machine where nobody else can see it.
+`--local` does that on purpose, for offline work. Local-only claims are invisible to everyone
+else, so claim those functions on the server (`remote claim 0x<addr>`) before you start, or
+agree on them with the others first.
+
 ## 4. Match a function
 
 Write the function in `src/auto/f_<address>.cpp` and its symbol in
@@ -88,6 +94,11 @@ Write the function in `src/auto/f_<address>.cpp` and its symbol in
 ```bash
 python tools/c5d.py --worker w1 match --addr 0x00540240 -v
 ```
+
+With `--addr`, match builds only the files connected to that function (the ones defining
+what it calls, its callers, and so on outward), and unchanged files come from a shared
+object cache in `build/objcache/`, so a check takes a second or two. `--all-files` builds
+all of `src/` instead.
 
 - `MATCH`: identical, and every call and global points where the original's does. Done.
 - `MATCH?`: identical bytes, but some references aren't named yet. Add them to the symbols file.
@@ -167,7 +178,9 @@ the confidence.
 python tools/c5d.py remote report 0x00540240 --model <model or "hand"> --tries 2
 ```
 
-`report` re-checks the match on your machine before it reports. Then open a [pull request](https://github.com/JahsiasWhite/civ5-decomp/pulls) with
+`report` re-checks the match on your machine before it reports. Give it several addresses
+(`remote report 0x00540240 0x00540300 ...`) or `--claimed` (every claim that matches) to
+re-check and report them all in one go. Then open a [pull request](https://github.com/JahsiasWhite/civ5-decomp/pulls) with
 your `src/auto/f_*.cpp` and `symbols/auto/f_*.txt` files. A maintainer re-runs the match against
 their own copy of the game. It counts on the site once that nightly check confirms it.
 

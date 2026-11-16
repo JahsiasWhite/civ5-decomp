@@ -1,0 +1,2 @@
+0x0048c840 ?GetSelfRelPtr_009ef94c@@YAPAXXZ
+0x009ef94c ?g_selfRelOffset_009ef94c@@3HA
