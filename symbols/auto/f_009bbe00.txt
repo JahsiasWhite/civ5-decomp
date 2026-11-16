@@ -1,0 +1,1 @@
+0x009bbe00 ?Deref10_009bbe00@@YAHPAUObj_009bbe00@@@Z

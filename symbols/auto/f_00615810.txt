@@ -1,0 +1,1 @@
+0x00615810 ?SetPtrIfNonNull@Class_00615810@@QAEXPAX@Z

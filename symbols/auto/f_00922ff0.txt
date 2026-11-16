@@ -1,0 +1,2 @@
+0x00922ff0 ?MSS_AIL_set_room_type@@YAHPAX0@Z
+0x009d6d4c __imp__AIL_set_room_type@8

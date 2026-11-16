@@ -1,0 +1,2 @@
+0x007e0b40 ?GetOffset@Class_007e0b40@@QAEPADXZ
+0x009dea08 _aDefault_009dea08
