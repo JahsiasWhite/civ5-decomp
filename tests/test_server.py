@@ -472,6 +472,12 @@ def test_admin_verify_credits_direct_commits_to_pusher(srv):
     s = req(base, "GET", "/api/stats")[1]
     assert sum(r["bytes"] for r in s["leaderboard"]) == s["matched_bytes"]
     assert sum(r["functions"] for r in s["leaderboard"]) == s["matched"]
+    for r in s["leaderboard"]:                       # hover breakdown adds up to the row
+        assert [b["label"] for b in r["bands"]] == [t["label"] for t in s["tiers"]]
+        assert sum(b["functions"] for b in r["bands"]) == r["functions"]
+        assert sum(b["bytes"] for b in r["bands"]) == r["bytes"]
+        assert "uid" not in r
+    assert sum(t["new_functions"] for t in s["trend"]) == s["trend"][-1]["functions"]
     assert req(base, "POST", "/api/admin/verify", {"statuses": {}}, token=boss)[1]["owned"] == 0
 
 

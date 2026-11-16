@@ -500,11 +500,24 @@ class DB:
 
         # ---- leaderboard (verified matches only)
         board = [dict(r) for r in self.q(
-            "SELECT CASE WHEN u.display='' THEN 'anonymous' ELSE u.display END who, "
+            "SELECT u.id uid, CASE WHEN u.display='' THEN 'anonymous' ELSE u.display END who, "
             "COUNT(*) functions, SUM(f.size) bytes, "
             "(SELECT MIN(e.ts) FROM events e WHERE e.user_id=u.id) since "
             "FROM functions f JOIN users u ON u.id=f.by_user WHERE f.status='matched' "
             "GROUP BY u.id ORDER BY bytes DESC LIMIT 50")]
+        # each contributor's matches by size tier (the dashboard's hover breakdown)
+        tier_case = "CASE " + " ".join(f"WHEN f.size<{hi} THEN {i}" for i, (_lo, hi, _l) in
+                                       enumerate(SIZE_TIERS)) + f" ELSE {len(SIZE_TIERS) - 1} END"
+        per_band = {}
+        for r in self.q(f"SELECT f.by_user uid, {tier_case} t, COUNT(*) c, SUM(f.size) b "
+                        "FROM functions f WHERE f.status='matched' AND f.by_user IS NOT NULL "
+                        "GROUP BY uid, t"):
+            per_band[(r["uid"], r["t"])] = (r["c"], r["b"])
+        for row in board:
+            uid = row.pop("uid")
+            row["bands"] = [{"label": label, "functions": per_band.get((uid, i), (0, 0))[0],
+                             "bytes": per_band.get((uid, i), (0, 0))[1]}
+                            for i, (_lo, _hi, label) in enumerate(SIZE_TIERS)]
 
         # ---- trend: cumulative by first-matched day, and new bytes per day per model
         per_day = self.q("SELECT matched_day d, COUNT(*) c, SUM(size) b FROM functions "
@@ -514,7 +527,8 @@ class DB:
         for r in per_day:
             cum_f += r["c"]
             cum_b += r["b"]
-            trend.append({"day": r["d"], "functions": cum_f, "bytes": cum_b, "new_bytes": r["b"]})
+            trend.append({"day": r["d"], "functions": cum_f, "bytes": cum_b, "new_bytes": r["b"],
+                          "new_functions": r["c"]})
         by_model_day = [dict(r) for r in self.q(
             "SELECT matched_day day, CASE WHEN model='' THEN 'unspecified' ELSE model END model, "
             "SUM(size) bytes FROM functions "

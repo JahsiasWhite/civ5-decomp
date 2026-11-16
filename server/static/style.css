@@ -123,6 +123,33 @@ svg.chart text { fill: var(--faint); font: 10px var(--mono); }
 svg.chart .line { fill: none; stroke: var(--brass); stroke-width: 2; }
 svg.chart .area { fill: var(--brass); opacity: .12; }
 svg.chart .dot { fill: var(--brass-2); }
+/* hover targets: a strip per day / a row per bar; guide line + marker show on hover */
+svg.chart .hit { cursor: default; }
+svg.chart .hit .guide { stroke: var(--brass-2); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0; }
+svg.chart .hit .mark { fill: var(--bg); stroke: var(--brass-2); stroke-width: 2; opacity: 0; }
+svg.chart .hit.tip-on .guide { opacity: .7; }
+svg.chart .hit.tip-on .mark { opacity: 1; }
+svg.chart .bars.tip-on rect:not([fill]) { filter: brightness(1.18); }
+svg.chart .bars.tip-on text { fill: var(--ink); }
+
+/* the shared tooltip */
+.tip {
+  position: fixed; z-index: 50; pointer-events: none; left: 0; top: 0;
+  min-width: 180px; max-width: min(340px, calc(100vw - 16px));
+  background: var(--panel-2); color: var(--ink);
+  border: 1px solid var(--brass); border-radius: 8px; padding: 8px 11px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+  font: 12px/1.45 var(--mono);
+}
+.tip[hidden] { display: none; }
+.tip-title { color: var(--brass-2); font-weight: 600; margin-bottom: 4px; overflow-wrap: anywhere; }
+.tip-row { display: flex; justify-content: space-between; gap: 14px; }
+.tip-label { color: var(--muted); overflow-wrap: anywhere; }
+.tip-label .swatch { width: 8px; height: 8px; margin-right: 6px; }
+.tip-value { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tip-note { color: var(--faint); margin-top: 5px; padding-top: 5px; border-top: 1px solid var(--rule); }
+tr.tip-on td, .tierbar.tip-on { background: var(--panel-2); }
+tr[tabindex]:focus-visible, .tierbar:focus-visible { outline: 2px solid var(--brass); outline-offset: -2px; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 13px; color: var(--muted); }
 
 /* map bars */

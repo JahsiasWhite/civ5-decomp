@@ -38,11 +38,13 @@ function svg(tag, attrs) {
   return e;
 }
 function fillRows(tbody, rows, cols, emptyText) {
+  // -> the <tr> of each row (none when empty)
   tbody.textContent = "";
   if (!rows.length) {
     const tr = el("tr"); tr.appendChild(el("td", { colspan: cols, class: "empty" }, emptyText));
-    tbody.appendChild(tr); return;
+    tbody.appendChild(tr); return [];
   }
+  const out = [];
   for (const cells of rows) {
     const tr = el("tr");
     for (const c of cells) {
@@ -51,9 +53,67 @@ function fillRows(tbody, rows, cols, emptyText) {
       td.appendChild(document.createTextNode(c.t));
       tr.appendChild(td);
     }
-    tbody.appendChild(tr);
+    tbody.appendChild(tr); out.push(tr);
+  }
+  return out;
+}
+// ---------- tooltip ----------
+// One floating box for the whole page. tip(el, fn): hovering (or tapping, or focusing)
+// el shows fn()'s content: {title, rows: [{swatch?, label, value}], note?}. Built with
+// text nodes only: display names are user input.
+const tipBox = el("div", { class: "tip", role: "tooltip", hidden: "" });
+document.body.appendChild(tipBox);
+let tipOwner = null;
+function tipFill(c) {
+  tipBox.textContent = "";
+  if (c.title) tipBox.appendChild(el("div", { class: "tip-title" }, c.title));
+  for (const r of c.rows || []) {
+    const line = el("div", { class: "tip-row" });
+    const l = el("span", { class: "tip-label" });
+    if (r.swatch) { const s = el("i", { class: "swatch" }); s.style.background = r.swatch; l.appendChild(s); }
+    l.appendChild(document.createTextNode(r.label));
+    line.append(l, el("span", { class: "tip-value" }, r.value));
+    tipBox.appendChild(line);
+  }
+  if (c.note) tipBox.appendChild(el("div", { class: "tip-note" }, c.note));
+}
+function tipPlace(x, y) {
+  const m = 14, w = tipBox.offsetWidth, h = tipBox.offsetHeight;
+  const vw = document.documentElement.clientWidth, vh = window.innerHeight;
+  let left = x + m, top = y + m;
+  if (left + w > vw - 8) left = Math.max(8, x - m - w);
+  if (top + h > vh - 8) top = Math.max(8, y - m - h);
+  tipBox.style.left = left + "px"; tipBox.style.top = top + "px";
+}
+function tipShow(owner, fn, x, y) {
+  tipOwner = owner; owner.classList.add("tip-on");
+  tipFill(fn()); tipBox.hidden = false; tipPlace(x, y);
+}
+function tipHide(owner) {
+  if (owner && owner !== tipOwner) return;
+  if (tipOwner) tipOwner.classList.remove("tip-on");
+  tipOwner = null; tipBox.hidden = true;
+}
+function tip(target, fn) {
+  target.addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse") tipShow(target, fn, e.clientX, e.clientY); });
+  target.addEventListener("pointermove", (e) => { if (tipOwner === target) tipPlace(e.clientX, e.clientY); });
+  target.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") tipHide(target); });
+  target.addEventListener("click", (e) => {               // touch: tap to show, tap again to hide
+    if (tipOwner === target && e.pointerType !== "mouse") return tipHide(target);
+    tipShow(target, fn, e.clientX, e.clientY); e.stopPropagation();
+  });
+  if (target.tagName === "TR" || target.classList.contains("tierbar")) {
+    target.tabIndex = 0;
+    target.addEventListener("focus", () => {
+      const r = target.getBoundingClientRect(); tipShow(target, fn, r.left + 24, r.bottom - 10);
+    });
+    target.addEventListener("blur", () => tipHide(target));
   }
 }
+document.addEventListener("click", () => tipHide());
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") tipHide(); });
+window.addEventListener("scroll", () => tipHide(), { passive: true });
+
 function emptyChart(s, msg) {
   s.textContent = "";
   const vb = s.viewBox.baseVal;
@@ -71,7 +131,7 @@ function axes(s, W, H, pad, maxY, fmtY) {
     t.textContent = fmtY(maxY * i / 4); s.appendChild(t);
   }
 }
-function lineChart(s, points, key, fmtY) {
+function lineChart(s, points, key, fmtY, tipFor) {
   s.textContent = "";
   if (!points.length) return emptyChart(s, "No verified matches yet");
   const vb = s.viewBox.baseVal, W = vb.width, H = vb.height, pad = { l: 56, r: 12, t: 10, b: 26 };
@@ -87,17 +147,26 @@ function lineChart(s, points, key, fmtY) {
     s.appendChild(svg("path", { class: "line", d }));
   }
   points.forEach((p, i) => {
-    const c = svg("circle", { class: "dot", cx: x(i), cy: y(p[key]), r: n > 40 ? 0 : 3 });
-    const tt = svg("title"); tt.textContent = `${p.day}: ${fmtY(p[key])}`; c.appendChild(tt);
-    s.appendChild(c);
+    s.appendChild(svg("circle", { class: "dot", cx: x(i), cy: y(p[key]), r: n > 40 ? 0 : 3 }));
   });
   const step = Math.max(1, Math.ceil(n / 6));
   points.forEach((p, i) => {
     if (i % step && i !== n - 1) return;
     const t = svg("text", { x: x(i), y: H - 8, "text-anchor": "middle" }); t.textContent = p.day.slice(5); s.appendChild(t);
   });
+  // a full-height hover strip per day, with a guide line and a marker on the point
+  const half = n === 1 ? (W - pad.l - pad.r) / 2 : (W - pad.l - pad.r) / (n - 1) / 2;
+  points.forEach((p, i) => {
+    const g = svg("g", { class: "hit" });
+    g.appendChild(svg("line", { class: "guide", x1: x(i), x2: x(i), y1: pad.t, y2: H - pad.b }));
+    g.appendChild(svg("circle", { class: "mark", cx: x(i), cy: y(p[key]), r: 4.5 }));
+    const left = Math.max(pad.l, x(i) - half), right = Math.min(W - pad.r, x(i) + half);
+    g.appendChild(svg("rect", { x: left, y: pad.t, width: right - left, height: H - pad.t - pad.b, fill: "transparent" }));
+    if (tipFor) tip(g, () => tipFor(p));
+    s.appendChild(g);
+  });
 }
-function stackedDaily(s, rows, legend) {
+function stackedDaily(s, rows, legend, dayFns) {
   s.textContent = ""; legend.textContent = "";
   if (!rows.length) return emptyChart(s, "No verified matches yet");
   const days = [...new Set(rows.map((r) => r.day))];
@@ -111,15 +180,23 @@ function stackedDaily(s, rows, legend) {
   days.forEach((d, i) => {
     let acc = 0;
     const x0 = pad.l + slot * i + (slot - bw) / 2;
+    const g = svg("g", { class: "hit bars" });
+    g.appendChild(svg("rect", { x: pad.l + slot * i, y: pad.t, width: slot, height: H - pad.t - pad.b, fill: "transparent" }));
     for (const m of models) {
       const v = val.get(d + "|" + m) || 0;
       if (!v) continue;
       const h = (H - pad.t - pad.b) * v / maxY;
       const r = svg("rect", { x: x0, width: bw, y: H - pad.b - acc - h, height: h });
       r.style.fill = modelColour(m);
-      const tt = svg("title"); tt.textContent = `${d} · ${m}: ${size(v)}`; r.appendChild(tt);
-      s.appendChild(r); acc += h;
+      g.appendChild(r); acc += h;
     }
+    const parts = models.map((m) => [m, val.get(d + "|" + m) || 0]).filter(([, v]) => v).sort((a, b) => b[1] - a[1]);
+    const fns = (dayFns && dayFns.get(d)) || 0;
+    tip(g, () => ({
+      title: `${d} · +${size(totals[i])}` + (fns ? `, +${n0(fns)} fns` : ""),
+      rows: parts.map(([m, v]) => ({ swatch: modelColour(m), label: m, value: `${size(v)} · ${pct(v, totals[i], 0)}` })),
+    }));
+    s.appendChild(g);
     if (days.length <= 14 || i % Math.ceil(days.length / 10) === 0) {
       const t = svg("text", { x: x0 + bw / 2, y: H - 8, "text-anchor": "middle" }); t.textContent = d.slice(5); s.appendChild(t);
     }
@@ -130,7 +207,7 @@ function stackedDaily(s, rows, legend) {
   }
 }
 function hbars(s, items, fmtV) {
-  // items: [{label, parts:[{v, colour, title}]}]
+  // items: [{label, parts:[{v, colour}], tip: () => tooltip content}]
   s.textContent = "";
   if (!items.length) return emptyChart(s, "Nothing yet");
   const vb = s.viewBox.baseVal, W = vb.width;
@@ -140,18 +217,21 @@ function hbars(s, items, fmtV) {
   const max = Math.max(...items.map((it) => it.parts.reduce((a, p) => a + p.v, 0)), 1);
   items.forEach((it, i) => {
     const y = pad + i * rowH;
+    const g = svg("g", { class: "hit bars" });
+    g.appendChild(svg("rect", { x: 0, y, width: W, height: rowH, fill: "transparent" }));
     const t = svg("text", { x: labelW - 10, y: y + rowH / 2 + 3, "text-anchor": "end" });
-    t.textContent = it.label.length > 24 ? it.label.slice(0, 23) + "…" : it.label; s.appendChild(t);
+    t.textContent = it.label.length > 24 ? it.label.slice(0, 23) + "…" : it.label; g.appendChild(t);
     let x = labelW;
     for (const p of it.parts) {
       const w = (W - labelW - 90) * p.v / max;
       const r = svg("rect", { x, y: y + 6, width: Math.max(w, p.v ? 1 : 0), height: rowH - 12, rx: 2 });
       r.style.fill = p.colour;
-      const tt = svg("title"); tt.textContent = p.title; r.appendChild(tt);
-      s.appendChild(r); x += w;
+      g.appendChild(r); x += w;
     }
     const v = svg("text", { x: x + 8, y: y + rowH / 2 + 3 });
-    v.textContent = fmtV(it.parts.reduce((a, p) => a + p.v, 0)); s.appendChild(v);
+    v.textContent = fmtV(it.parts.reduce((a, p) => a + p.v, 0)); g.appendChild(v);
+    if (it.tip) tip(g, it.tip);
+    s.appendChild(g);
   });
 }
 
@@ -162,11 +242,20 @@ function renderBoard() {
     const x = a[boardKey], y = b[boardKey];
     return (typeof x === "string" ? x.localeCompare(y) : x - y) * boardDir;
   });
-  fillRows($("board-table").tBodies[0], rows.map((r, i) => [
+  const trs = fillRows($("board-table").tBodies[0], rows.map((r, i) => [
     { t: String(i + 1), cls: "rank" }, { t: r.who }, { t: n0(r.functions), cls: "num" },
     { t: size(r.bytes), cls: "num" },
     { t: r.since ? new Date(r.since * 1000).toISOString().slice(0, 10) : "–", cls: "num" },
   ]), 5, "No verified matches from contributors yet. Be the first.");
+  trs.forEach((tr, i) => {
+    const r = rows[i];
+    if (r.bands) tip(tr, () => ({
+      title: `${r.who} · by size band`,
+      rows: r.bands.filter((b) => b.functions).map((b) => ({
+        label: b.label, value: `${n0(b.functions)} fns · ${size(b.bytes)} · ${pct(b.bytes, r.bytes, 0)}` })),
+      note: `${n0(r.functions)} functions · ${size(r.bytes)} verified`,
+    }));
+  });
 }
 for (const th of document.querySelectorAll("#board-table th.sortable")) {
   th.addEventListener("click", () => {
@@ -200,13 +289,31 @@ function render(s) {
   boardRows = s.leaderboard; renderBoard();
 
   // trend
-  lineChart($("ch-bytes"), s.trend, "bytes", (v) => size(v));
-  lineChart($("ch-fns"), s.trend, "functions", (v) => n0(Math.round(v)));
-  stackedDaily($("ch-daily"), s.trend_by_model, $("lg-daily"));
+  const dayTip = (p) => ({
+    title: p.day,
+    rows: [{ label: "total", value: `${n0(p.functions)} functions · ${size(p.bytes)}` },
+           { label: "that day", value: `+${n0(p.new_functions || 0)} fns · +${size(p.new_bytes || 0)}` }],
+    note: `${pct(p.bytes, s.bytes, 3)} of the bytes in scope`,
+  });
+  lineChart($("ch-bytes"), s.trend, "bytes", (v) => size(v), dayTip);
+  lineChart($("ch-fns"), s.trend, "functions", (v) => n0(Math.round(v)), dayTip);
+  stackedDaily($("ch-daily"), s.trend_by_model, $("lg-daily"),
+    new Map(s.trend.map((p) => [p.day, p.new_functions || 0])));
 
   // squad
+  const tries = new Map(s.squad.tries.map((r) => [r.model, r]));
+  const today = new Map(s.squad.day.map((r) => [r.model, r]));
   hbars($("ch-squad"), s.squad.all.map((r) => ({
-    label: r.model, parts: [{ v: r.bytes, colour: modelColour(r.model), title: `${r.model}: ${size(r.bytes)}` }] })),
+    label: r.model, parts: [{ v: r.bytes, colour: modelColour(r.model) }],
+    tip: () => {
+      const rows = [{ swatch: modelColour(r.model), label: "matched", value: `${n0(r.functions)} fns · ${size(r.bytes)}` },
+                    { label: "share", value: (100 * r.share).toFixed(1) + "%" },
+                    { label: "avg size", value: size(r.bytes / (r.functions || 1)) }];
+      const d = today.get(r.model), t = tries.get(r.model);
+      if (d) rows.push({ label: "last 24 h", value: `+${n0(d.functions)} fns · +${size(d.bytes)}` });
+      if (t) rows.push({ label: "hit rate", value: `${n0(t.matches)} / ${n0(t.reports)} reports · ${pct(t.matches, t.reports, 0)}` });
+      return { title: r.model, rows };
+    } })),
     (v) => kb(v) + " KB");
   fillRows($("t-squad-all").tBodies[0], s.squad.all.map((r) => [
     { t: r.model, swatch: modelColour(r.model) }, { t: n0(r.functions), cls: "num" },
@@ -226,7 +333,14 @@ function render(s) {
   for (const k of s.tiers) {
     const row = el("div", { class: "tierbar" });
     row.appendChild(el("span", {}, k.label));
-    const st = el("div", { class: "stack", title: `${n0(k.matched)} matched · ${n0(k.open)} tried, open · ${n0(k.untried)} never tried` });
+    const st = el("div", { class: "stack" });
+    tip(row, () => ({
+      title: `${k.label} functions`,
+      rows: [{ swatch: "var(--brass)", label: "matched", value: `${n0(k.matched)} · ${size(k.matched_bytes)}` },
+             { swatch: "var(--bad)", label: "tried, open", value: n0(k.open) },
+             { swatch: "var(--rule)", label: "never tried", value: n0(k.untried) }],
+      note: `${pct(k.matched, k.total, 1)} done · ${size(k.bytes - k.matched_bytes)} left of ${size(k.bytes)}`,
+    }));
     for (const [cls, v] of [["k-matched", k.matched], ["k-open", k.open], ["k-untried", k.untried]]) {
       const sp = el("span", { class: cls }); sp.style.width = (k.total ? 100 * v / k.total : 0) + "%"; st.appendChild(sp);
     }
@@ -238,9 +352,17 @@ function render(s) {
   // cost
   hbars($("ch-tokens"), s.cost.ledger.map((r) => ({
     label: r.source, parts: [
-      { v: r.input / 1e6, colour: "var(--m0)", title: `input ${big(r.input)}` },
-      { v: r.output / 1e6, colour: "var(--m1)", title: `output ${big(r.output)}` },
-      { v: r.cached / 1e6, colour: "var(--m7)", title: `cached ${big(r.cached)}` }] })),
+      { v: r.input / 1e6, colour: "var(--m0)" },
+      { v: r.output / 1e6, colour: "var(--m1)" },
+      { v: r.cached / 1e6, colour: "var(--m7)" }],
+    tip: () => {
+      const all = r.input + r.output + r.cached;
+      return { title: r.source, rows: [
+        { swatch: "var(--m0)", label: "input", value: `${big(r.input)} · ${pct(r.input, all, 0)}` },
+        { swatch: "var(--m1)", label: "output", value: `${big(r.output)} · ${pct(r.output, all, 0)}` },
+        { swatch: "var(--m7)", label: "cached", value: `${big(r.cached)} · ${pct(r.cached, all, 0)}` }],
+        note: `${big(all)} tokens in all` };
+    } })),
     (v) => v.toFixed(2) + " M");
   fillRows($("t-ledger").tBodies[0], s.cost.ledger.map((r) => {
     const all = r.input + r.output + r.cached;
