@@ -60,6 +60,21 @@ def cmd_env(_args):
     return 0 if good else 1
 
 
+def run_headless(cmd, **kwargs):
+    """Run Ghidra's analyzeHeadless.bat. Python's default way of starting a .bat
+    mangles the quoting of any argument with parentheses, and the script's argument
+    loop then fails on it ("\Steam\steamapps\common\Sid was unexpected at this
+    time" for a game under C:\Program Files (x86)). So build cmd's command line
+    here: /s strips only the outer quotes, and every argument stays quoted."""
+    if os.name != "nt":
+        return subprocess.run(cmd, **kwargs)
+    for a in cmd:
+        if '"' in a or "%" in a or "!" in a:
+            sys.exit(f"can't pass this path to Ghidra's launcher (it contains \", % or !): {a}")
+    line = '"' + " ".join(f'"{a}"' for a in cmd) + '"'
+    return subprocess.run(f'{os.environ.get("COMSPEC", "cmd.exe")} /d /s /c {line}', **kwargs)
+
+
 def cmd_analyze(args):
     if not HEADLESS.is_file():
         sys.exit(f"Ghidra not found: {HEADLESS}")
@@ -81,7 +96,7 @@ def cmd_analyze(args):
         "-log", str(BUILD / "ghidra_analyze.log"),
     ]
     print(" ".join(f'"{c}"' if " " in c else c for c in cmd), flush=True)
-    return subprocess.call(cmd)
+    return run_headless(cmd).returncode
 
 
 def cmd_dump(args):
@@ -92,7 +107,7 @@ def cmd_dump(args):
            "-process", CFG["target_exe"], "-noanalysis", "-readOnly",
            "-scriptPath", str(ROOT / "tools" / "ghidra"),
            "-postScript", "DumpFunctions.py", str(out), *args.addrs]
-    r = subprocess.run(cmd, capture_output=True, text=True)
+    r = run_headless(cmd, capture_output=True, text=True)
     for line in r.stdout.splitlines():
         if "DumpFunctions:" in line:
             print(line.split("DumpFunctions:", 1)[1].strip())
