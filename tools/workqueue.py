@@ -15,6 +15,9 @@ scope come first ("ready"), then by call depth from the leaves, then size.
 Custom-convention functions are grouped with their callers' cluster id so a
 worker can take a whole cluster at once.
 
+Functions that call each other (a call cycle) can't wait on each other: a cycle is one
+unit, ready once everything it calls outside itself is matched, and one cluster.
+
 The call graph (in-scope callees of every in-scope function, addresses only) is also
 written to data/callgraph.csv, which is committed: with it and progress/status.csv,
 readiness can be worked out without the game, so CI's `manage.py push` keeps it current.
@@ -97,11 +100,69 @@ def read_callgraph(path):
     return out
 
 
+def call_cycles(callgraph):
+    """{addr: frozenset of its cycle} for every function in a call cycle (functions that
+    call each other, directly or through others: a strongly connected component of 2+).
+    Iterative Tarjan; callees missing from the graph are ignored."""
+    index, low, on, stack, out = {}, {}, set(), [], {}
+    counter = 0
+    for root in callgraph:
+        if root in index:
+            continue
+        index[root] = low[root] = counter
+        counter += 1
+        stack.append(root)
+        on.add(root)
+        work = [(root, iter(callgraph[root]))]
+        while work:
+            v, it = work[-1]
+            for w in it:
+                if w not in callgraph:
+                    continue
+                if w not in index:
+                    index[w] = low[w] = counter
+                    counter += 1
+                    stack.append(w)
+                    on.add(w)
+                    work.append((w, iter(callgraph[w])))
+                    break
+                if w in on:
+                    low[v] = min(low[v], index[w])
+            else:
+                work.pop()
+                if work:
+                    low[work[-1][0]] = min(low[work[-1][0]], low[v])
+                if low[v] == index[v]:
+                    comp = []
+                    while True:
+                        w = stack.pop()
+                        on.discard(w)
+                        comp.append(w)
+                        if w == v:
+                            break
+                    if len(comp) > 1:
+                        group = frozenset(comp)
+                        out.update((a, group) for a in comp)
+    return out
+
+
+def pending(addr, callgraph, done, cycles):
+    """Callees `addr` still waits for. A call cycle is one unit: each member waits on
+    the unmatched functions any member calls outside the cycle, not on the other members
+    (otherwise each would wait on another forever, and so would everything calling in)."""
+    group = cycles.get(addr)
+    if group is None:
+        return [c for c in callgraph[addr] if c not in done]
+    return sorted({c for m in group for c in callgraph.get(m, ())
+                   if c not in done and c not in group})
+
+
 def readiness(callgraph, status):
-    """{addr: bool}: ready when every callee is matched (or there are none). Same rule
-    as pending_callees == 0 in the queue."""
+    """{addr: bool}: ready when every callee is matched (or there are none), a call cycle
+    as one unit (see pending). Same rule as pending_callees == 0 in the queue."""
     done = {a for a, s in status.items() if s == "MATCH"}
-    return {a: all(c in done for c in cs) for a, cs in callgraph.items()}
+    cycles = call_cycles(callgraph)
+    return {a: not pending(a, callgraph, done, cycles) for a in callgraph}
 
 
 def build(img, scope_csv, status, names, out_csv, callgraph_csv=None):
@@ -155,6 +216,11 @@ def build(img, scope_csv, status, names, out_csv, callgraph_csv=None):
         if d["conv"] == "custom":
             for c in callers[a]:
                 parent[find(c)] = find(a)
+    # a call cycle is handed out as one unit too
+    graph = {a: d["callees"] for a, d in info.items()}
+    cycles = call_cycles(graph)
+    for a, group in cycles.items():
+        parent[find(a)] = find(min(group))
     clusters = defaultdict(list)
     for a in info:
         clusters[find(a)].append(a)
@@ -162,7 +228,7 @@ def build(img, scope_csv, status, names, out_csv, callgraph_csv=None):
     done = {a for a, s in status.items() if s == "MATCH"}
     rows = []
     for a, d in info.items():
-        pending_callees = [c for c in d["callees"] if c not in done]
+        pending_callees = pending(a, graph, done, cycles)
         cid = find(a)
         rows.append({
             "entry": f"0x{a:08x}", "size": d["size"], "name": names.get(a, ""),
