@@ -1,0 +1,2 @@
+0x0074e510 ?IsNonZero_02de044c@@YA_NXZ
+0x02de044c ?g_value_02de044c@@3HA
