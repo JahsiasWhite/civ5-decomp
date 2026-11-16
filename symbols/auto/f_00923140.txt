@@ -1,0 +1,2 @@
+0x00923140 ?PauseStream_00923140@@YAXPAX_N@Z
+0x009d6d80 __imp__AIL_pause_stream@8

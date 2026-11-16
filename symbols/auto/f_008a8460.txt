@@ -1,0 +1,2 @@
+0x008a8460 ?IncCounter_008a8460@@YAXXZ
+0x02de1ea0 ?g_iGlobalCounter_02de1ea0@@3HA
