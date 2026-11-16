@@ -1,0 +1,2 @@
+0x00714570 ?Destroy@Unk_00b859ac@@QAEXXZ
+0x00b859ac ?g_vtable_00b859ac@@3QBQAXB

@@ -1,0 +1,1 @@
+0x00831020 ?GetSpan@Unk_00b89728@@QBEHXZ
