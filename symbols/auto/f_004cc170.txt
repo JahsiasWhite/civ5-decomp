@@ -1,0 +1,1 @@
+0x004cc170 ?GetTargetField4@UnkLinkedHolder@@QAEHXZ

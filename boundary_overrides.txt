@@ -189,3 +189,4 @@
 0x007a5b30 0x007a5d99  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
 0x007aceb0 0x007acf4e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
 0x009277f0 0x00927808  # auto (c5d boundaries): cut short at a call to DeleteCriticalSection, which returns
+0x00716160 0x007161d5 new  # not listed by Ghidra; Lua C closure only pointed to by 0x00404090 (lua_pushcclosure) (found by hand)

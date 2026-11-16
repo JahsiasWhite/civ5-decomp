@@ -1,0 +1,10 @@
+0x00404090 ?RegisterLuaEventFunction@@YAHPAUlua_State@@@Z
+0x00716160 ?LuaEventDispatch@@YAHPAUlua_State@@@Z
+0x0092391c _lua_pushstring
+0x00923934 _lua_createtable
+0x0092395e _lua_rawset
+0x009239dc _lua_setmetatable
+0x0092396a _lua_pushcclosure
+0x00a58c5c ??_C@_08MEMEBALO@LuaEvent?$AA@
+0x00a58c68 ??_C@_06BPGFKLEK@__mode?$AA@
+0x00a58c70 ??_C@_01MHEDDDHA@v?$AA@
