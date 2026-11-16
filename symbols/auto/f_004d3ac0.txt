@@ -1,0 +1,2 @@
+0x004d3ac0 ?Thunk_004d3ac0@@YAMXZ
+0x00527e40 _Target_00527e40

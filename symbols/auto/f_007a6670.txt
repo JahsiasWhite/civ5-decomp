@@ -1,0 +1,1 @@
+0x007a6670 ?GetFlag@Class_007a6670@@QAEDXZ
