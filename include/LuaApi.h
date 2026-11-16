@@ -18,5 +18,6 @@ void lua_createtable(lua_State* L, int narr, int nrec);
 void lua_getfield(lua_State* L, int idx, const char* k);
 void lua_rawset(lua_State* L, int idx);
 int lua_setmetatable(lua_State* L, int objindex);
+void lua_pushnil(lua_State* L);
 void lua_concat(lua_State* L, int n);
 }
