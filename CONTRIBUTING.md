@@ -66,8 +66,8 @@ Every problem shows as `[!!]` with a line telling you how to fix it. Fix those a
 `--game`, `--ghidra`, `--msvc` (point at a folder), `--sdk-headers` (also fetch the
 Civ V SDK headers), `--no-install`.
 
-Then build your local Ghidra database once. It supplies the pseudo-C in your task bundles and can take
-an hour or more:
+Then build your local Ghidra database once. It supplies the pseudo-C in your task bundles and takes
+about 5–15 minutes:
 
 ```bash
 python tools/c5d.py analyze

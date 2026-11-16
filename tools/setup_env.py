@@ -447,7 +447,7 @@ def run(args):
     print("\nAll set.")
     if not proj.exists():
         print("One more one-time step before claiming work: build your local Ghidra database\n"
-              "(it supplies the pseudo-C in task bundles; can take an hour or more):\n"
+              "(it supplies the pseudo-C in task bundles; takes about 5-15 minutes):\n"
               "    python tools/c5d.py analyze")
     print("Then see CONTRIBUTING.md: sign in on the site, `c5d remote login`, `c5d remote claim`.")
     return 0
