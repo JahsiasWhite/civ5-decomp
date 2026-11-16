@@ -1,0 +1,1 @@
+0x008eb110 ?GetField30@UnkRecord30@@QBEHXZ
