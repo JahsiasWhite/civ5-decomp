@@ -34,13 +34,15 @@ address,symbol,status,bytes,source,since
 0x00463a00,?SetField3c@FieldOwner_00463a00@@QAEXH@Z,MATCH,10,src/auto/f_00463a00.cpp,2026-11-16
 0x0046b110,?IsLateWeekDayUTC@@YA_NXZ,DIFF,61,src/auto/f_0046b110.cpp,2026-11-15
 0x0046b1a0,?GetByte@ByteGetter_0046b1a0@@QBEDXZ,MATCH,7,src/auto/f_0046b1a0.cpp,2026-11-16
+0x0046d5e0,?GetLuaFloat_0046d5e0@@YAXPAUlua_State@@PAM@Z,MATCH,22,src/auto/f_0046d5e0.cpp,2026-11-16
 0x00470fd0,?SetBits@Class_00470fd0@@QAEXE@Z,MATCH,15,src/auto/f_00470fd0.cpp,2026-11-16
 0x00472ff0,?PushFourNameStringsToLua@@YAXPAUlua_State@@PBUFourNameBlock@@@Z,MATCH,61,src/auto/f_00472ff0.cpp,2026-11-15
+0x004739c0,?GetVal@Host_004739c0@@QBEHI@Z,MATCH,22,src/auto/f_004739c0.cpp,2026-11-16
 0x00475490,?Thunk_00475490@@YAHXZ,MATCH,8,src/auto/f_00475490.cpp,2026-11-16
 0x0047dfb0,?GetSelfRelPtr_009fbbbc@@YAPAXXZ,MATCH,12,src/auto/f_0047dfb0.cpp,2026-11-16
 0x0047f5d0,?GetFlag@FieldHolder_0047f5d0@@QBE_NXZ,MATCH,4,src/auto/f_0047f5d0.cpp,2026-11-16
 0x0047fc90,?GetMember@MemberAddress_0047fc90@@QAEPAHXZ,MATCH,4,src/auto/f_0047fc90.cpp,2026-11-16
-0x00480a10,?Clear@StringHost_00480a10@@QAIXXZ,MATCH,21,src/auto/f_00480a10.cpp,2026-11-16
+0x00480a10,?Clear@StringHost_00480a10@@QAEXXZ,MATCH,21,src/auto/f_00480a10.cpp,2026-11-16
 0x00487720,?Thunk_00487720@@YAHXZ,MATCH,8,src/auto/f_00487720.cpp,2026-11-16
 0x00489c50,?SetVal@Unk_00489c50@@QAEPAV1@D@Z,MATCH,11,src/auto/f_00489c50.cpp,2026-11-16
 0x0048c840,?GetSelfRelPtr_009ef94c@@YAPAXXZ,MATCH,12,src/auto/f_0048c840.cpp,2026-11-16
@@ -65,6 +67,7 @@ address,symbol,status,bytes,source,since
 0x004f6d00,?GetConstant_004f6d00@@YAHXZ,MATCH,6,src/auto/f_004f6d00.cpp,2026-11-15
 0x004f8e20,?ReleaseAllSlots@SlotReleaser_004f8e20@@QAEXXZ,MATCH,61,src/auto/f_004f8e20.cpp,2026-11-15
 0x004f9c90,?PushFloatIntIntFlagRecordToLua@@YAXPAUlua_State@@PBUFloatIntIntFlagRecord@@@Z,MATCH,61,src/auto/f_004f9c90.cpp,2026-11-15
+0x00500010,?SetVal@Host_00500010@@QAEXIH@Z,MATCH,23,src/auto/f_00500010.cpp,2026-11-16
 0x00503880,?GetHexDirectionAngle@@YAMH@Z,MATCH,61,src/auto/f_00503880.cpp,2026-11-15
 0x0050a880,?CheckGlobal_0050a880@@YADXZ,MATCH,11,src/auto/f_0050a880.cpp,2026-11-16
 0x0050ee20,?CopyData@Host_0050ee20@@QAEXPBUDataBlock_0050ee20@@@Z,MATCH,21,src/auto/f_0050ee20.cpp,2026-11-16
@@ -81,6 +84,7 @@ address,symbol,status,bytes,source,since
 0x00528c80,?Thunk_00528c80@@YAHXZ,MATCH,8,src/auto/f_00528c80.cpp,2026-11-16
 0x00529990,?GetMember@MemberAddress_00529990@@QAEPAHXZ,MATCH,7,src/auto/f_00529990.cpp,2026-11-16
 0x0052c350,?Thunk_0052c350@@YAXXZ,MATCH,11,src/auto/f_0052c350.cpp,2026-11-16
+0x0052e6b0,?GetElement@Host_0052e6b0@@QBEHI@Z,MATCH,22,src/auto/f_0052e6b0.cpp,2026-11-16
 0x0052e7e0,?ClearField4@FieldOwner_0052e7e0@@QAEXXZ,MATCH,8,src/auto/f_0052e7e0.cpp,2026-11-16
 0x005341d0,?SetField0d@FieldOwner_005341d0@@QAEX_N@Z,MATCH,10,src/auto/f_005341d0.cpp,2026-11-16
 0x00536b90,?GetField24C@CvUserInterfaceImpl@@QBEHXZ,MATCH,7,src/auto/f_00536b90.cpp,2026-11-16
@@ -107,6 +111,7 @@ address,symbol,status,bytes,source,since
 0x00585400,?GetValue@FieldHolder_00585400@@QBEHXZ,MATCH,4,src/auto/f_00585400.cpp,2026-11-16
 0x0058d5f0,?GetMember@MemberGetter_0058d5f0@@QBEHXZ,MATCH,7,src/auto/f_0058d5f0.cpp,2026-11-16
 0x00597b50,?MetatableToString@@YAHPAUlua_State@@@Z,MATCH,84,src/auto/f_00597b50.cpp,2026-11-15
+0x00599900,?GetLuaInt_00599900@@YAXPAUlua_State@@PAH@Z,MATCH,22,src/auto/f_00599900.cpp,2026-11-16
 0x0059a060,?IsZero_02de0448@@YA_NXZ,MATCH,12,src/auto/f_0059a060.cpp,2026-11-16
 0x0059b3f0,?Start@TickTimer@@QAEXH@Z,MATCH,30,src/auto/f_0059b3f0.cpp,2026-11-15
 0x0059d440,??1Vtbl_00a10754@@QAE@XZ,MATCH,7,src/auto/f_0059d440.cpp,2026-11-16
@@ -119,10 +124,13 @@ address,symbol,status,bytes,source,since
 0x005c63f0,?Unk_005c63f0@@YAXXZ,DIFF,92,src/fsba/FMallocCallers.cpp,2026-11-14
 0x005ccc10,?Init@Class_005ccc10@@QAEPAV1@XZ,MATCH,16,src/auto/f_005ccc10.cpp,2026-11-16
 0x005d2760,?SetVal@Class_005d2760@@QAEXD@Z,MATCH,13,src/auto/f_005d2760.cpp,2026-11-16
+0x005d5680,?GetLuaInt2_005d5680@@YAXPAUlua_State@@PAUTarget_005d5680@@@Z,MATCH,23,src/auto/f_005d5680.cpp,2026-11-16
 0x005dea40,?SetVal@Class_005dea40@@QAEXH@Z,MATCH,13,src/auto/f_005dea40.cpp,2026-11-16
 0x005e3c20,?SetFlag@State_005e3c20@@QAEDD@Z,MATCH,19,src/auto/f_005e3c20.cpp,2026-11-16
 0x005e52f0,?GetMember@MemberAddress_005e52f0@@QAEPAHXZ,MATCH,4,src/auto/f_005e52f0.cpp,2026-11-16
 0x005e59b0,?GetValue@FieldHolder_005e59b0@@QBEHXZ,MATCH,4,src/auto/f_005e59b0.cpp,2026-11-16
+0x005e81a0,??0Host_005e81a0@@QAE@XZ,MATCH,23,src/auto/f_005e81a0.cpp,2026-11-16
+0x005e88c0,?VirtualCall@Host_005e88c0@@QAEXH@Z,MATCH,23,src/auto/f_005e88c0.cpp,2026-11-16
 0x005eb560,?HasIndex4c@IndexOwner_005eb560@@QBE_NXZ,MATCH,10,src/auto/f_005eb560.cpp,2026-11-16
 0x005faa60,?GetKindFlags@KindQueryObject@@QAEHXZ,MATCH,40,src/auto/f_005faa60.cpp,2026-11-15
 0x005fcca0,?Reset@Class_005fcca0@@QAEXXZ,MATCH,16,src/auto/f_005fcca0.cpp,2026-11-16
@@ -134,6 +142,7 @@ address,symbol,status,bytes,source,since
 0x00617f20,?SetField0c@FieldOwner_00617f20@@QAEX_N@Z,MATCH,10,src/auto/f_00617f20.cpp,2026-11-16
 0x0061b050,?GetValues@CTripleFieldOwner_0061b050@@QBEXPAH00@Z,MATCH,30,src/auto/f_0061b050.cpp,2026-11-15
 0x0061fc40,?Thunk_0061fc40@@YAHXZ,MATCH,8,src/auto/f_0061fc40.cpp,2026-11-16
+0x00620400,?GetItem@Host_00620400@@QBEHI@Z,MATCH,23,src/auto/f_00620400.cpp,2026-11-16
 0x00626aa0,??$_Umove@V?$_Vector_iterator@UByteCell@@V?$allocator@UByteCell@@@std@@@std@@@?$vector@UByteCell@@V?$allocator@UByteCell@@@std@@@std@@IAEPAUByteCell@@V?$_Vector_iterator@UByteCell@@V?$allocator@UByteCell@@@std@@@1@0PAU2@@Z,MATCH,40,src/auto/f_00626aa0.cpp,2026-11-15
 0x00627a00,?GetItem@Class_00627a00@@QAEPAUItem12_00627a00@@H@Z,MATCH,15,src/auto/f_00627a00.cpp,2026-11-16
 0x00627e10,?GetConstant_00627e10@@YAHXZ,MATCH,6,src/auto/f_00627e10.cpp,2026-11-15
@@ -219,6 +228,7 @@ address,symbol,status,bytes,source,since
 0x00712c10,?GetValue@FieldHolder_00712c10@@QBEHXZ,MATCH,4,src/auto/f_00712c10.cpp,2026-11-16
 0x00714570,?Destroy@Unk_00b859ac@@QAEXXZ,MATCH,7,src/auto/f_00714570.cpp,2026-11-16
 0x00714580,?SetString104@StringHolder_00714580@@QAEXPBD@Z,MATCH,12,src/auto/f_00714580.cpp,2026-11-16
+0x00717480,??0Buffer_00717480@@QAE@XZ,MATCH,22,src/auto/f_00717480.cpp,2026-11-16
 0x00717ec0,?GetValue@FieldHolder_00717ec0@@QBEHXZ,MATCH,4,src/auto/f_00717ec0.cpp,2026-11-16
 0x0071a070,?RegisterLuaOptions_0071a070@@YAHPAUlua_State@@@Z,MATCH,5261,src/auto/f_0071a070.cpp,2026-11-16
 0x0071caf0,?Toggle@Class_0071caf0@@QAEXXZ,MATCH,17,src/auto/f_0071caf0.cpp,2026-11-16
@@ -250,6 +260,7 @@ address,symbol,status,bytes,source,since
 0x0076c300,?GetFlag6@FlagBits_0076c300@@QBE_NXZ,MATCH,10,src/auto/f_0076c300.cpp,2026-11-16
 0x0076c430,?Destroy@Unk_00a7f9c0@@QAEXXZ,MATCH,7,src/auto/f_0076c430.cpp,2026-11-16
 0x0076e5c0,?GetValue@FieldHolder_0076e5c0@@QBEHXZ,MATCH,4,src/auto/f_0076e5c0.cpp,2026-11-16
+0x0076e940,?SetByte@Host_0076e940@@QAEXID@Z,MATCH,23,src/auto/f_0076e940.cpp,2026-11-16
 0x007793a0,?ReturnZero_007793a0@@YAHXZ,MATCH,3,src/auto/f_007793a0.cpp,2026-11-16
 0x00780eb0,??_9VCallSlot54@@$BFE@AE,MATCH,5,src/auto/f_00780eb0.cpp,2026-11-15
 0x00787b70,?GetMember@MemberAddress_00787b70@@QAEPAHXZ,MATCH,4,src/auto/f_00787b70.cpp,2026-11-16
@@ -258,6 +269,7 @@ address,symbol,status,bytes,source,since
 0x0078f0b0,?DoTurn@CvEngineUtilityImpl@@QAEXXZ,MATCH,1,src/auto/f_0078f0b0.cpp,2026-11-15
 0x007901d0,??0ZeroedRecord_007901d0@@QAE@XZ,MATCH,20,src/auto/f_007901d0.cpp,2026-11-15
 0x00790e70,?GetMember@MemberAddress_00790e70@@QAEPAHXZ,MATCH,7,src/auto/f_00790e70.cpp,2026-11-16
+0x00792e30,??0Class_00792e30@@QAE@XZ,MATCH,23,src/auto/f_00792e30.cpp,2026-11-16
 0x00793110,?Check@Host_00793110@@QAE_NXZ,MATCH,19,src/auto/f_00793110.cpp,2026-11-16
 0x00798130,?GetSelfRelPtr_00a03458@@YAPAXXZ,MATCH,12,src/auto/f_00798130.cpp,2026-11-16
 0x0079aeb0,?SetField08@Unk_00a416ec@@UAEXH@Z,MATCH,10,src/auto/f_0079aeb0.cpp,2026-11-16
@@ -356,6 +368,7 @@ address,symbol,status,bytes,source,since
 0x008337c0,?Reset@Class_008337c0@@QAEPAV1@XZ,MATCH,14,src/auto/f_008337c0.cpp,2026-11-16
 0x00834ff0,?GetValue@Host_00834ff0@@QBEHXZ,MATCH,21,src/auto/f_00834ff0.cpp,2026-11-16
 0x00838f40,?Close@HandleWrapper_00838f40@@QAEXXZ,MATCH,10,src/auto/f_00838f40.cpp,2026-11-16
+0x00838f50,?Wait@Synch_00838f50@@QAE_NK@Z,MATCH,22,src/auto/f_00838f50.cpp,2026-11-16
 0x00838f70,?Release@Sem_00838f70@@QAEXXZ,MATCH,14,src/auto/f_00838f70.cpp,2026-11-16
 0x00839640,?SetVal@Class_00839640@@QAEAAV1@H@Z,MATCH,11,src/auto/f_00839640.cpp,2026-11-16
 0x0083ba90,?SetGlobal_0083ba90@@YAXD@Z,MATCH,10,src/auto/f_0083ba90.cpp,2026-11-16
@@ -460,6 +473,7 @@ address,symbol,status,bytes,source,since
 0x008eb130,?GetMember@MemberGetter_008eb130@@QBEHXZ,MATCH,4,src/auto/f_008eb130.cpp,2026-11-16
 0x008eb1a0,?Calc@Unk_008eb1a0@@QAEHXZ,MATCH,10,src/auto/f_008eb1a0.cpp,2026-11-16
 0x008eb1d0,?GetCurrentIfAny@Holder008eb1d0@@QAEPAXXZ,MATCH,30,src/auto/f_008eb1d0.cpp,2026-11-15
+0x008eb210,?CalcValue@Host_008eb210@@QBEHXZ,MATCH,22,src/auto/f_008eb210.cpp,2026-11-16
 0x008eb5b0,?Thunk_008eb5b0@@YAXXZ,MATCH,13,src/auto/f_008eb5b0.cpp,2026-11-16
 0x008eb960,?FillUInt32Range@@YAXPAI0PBI@Z,MATCH,30,src/auto/f_008eb960.cpp,2026-11-15
 0x008ec710,?GetField_008ec710@@YIHPAX@Z,MATCH,19,src/auto/f_008ec710.cpp,2026-11-16
@@ -471,6 +485,8 @@ address,symbol,status,bytes,source,since
 0x008f4210,?Init@Unk_00b86914@@QAEXXZ,MATCH,7,src/auto/f_008f4210.cpp,2026-11-16
 0x008f4220,?Check@Class_008f4220@@QAE_NXZ,MATCH,14,src/auto/f_008f4220.cpp,2026-11-16
 0x008f4230,?Init@Class_008f4230@@QAEPAV1@XZ,MATCH,16,src/auto/f_008f4230.cpp,2026-11-16
+0x008f42d0,?Dispatch@Host_008f42d0@@QAEXXZ,MATCH,22,src/auto/f_008f42d0.cpp,2026-11-16
+0x008f43b0,?Check@Host_008f43b0@@QBEHXZ,MATCH,22,src/auto/f_008f43b0.cpp,2026-11-16
 0x008f43d0,?GetMember@MemberGetter_008f43d0@@QBEHXZ,MATCH,7,src/auto/f_008f43d0.cpp,2026-11-16
 0x008f4430,?ClearFields@Host_008f4430@@QAEXXZ,MATCH,21,src/auto/f_008f4430.cpp,2026-11-16
 0x008f5910,?Init@Class_008f5910@@QAEPAV1@XZ,MATCH,15,src/auto/f_008f5910.cpp,2026-11-16
@@ -499,6 +515,7 @@ address,symbol,status,bytes,source,since
 0x00906210,?GetValue@FloatHost_00906210@@QBEMXZ,MATCH,19,src/auto/f_00906210.cpp,2026-11-16
 0x009067b0,?GetFielde0@Fielde0Holder_009067b0@@QBEDXZ,MATCH,7,src/auto/f_009067b0.cpp,2026-11-16
 0x0090e150,?GetByte@ByteGetter_0090e150@@QBEDXZ,MATCH,4,src/auto/f_0090e150.cpp,2026-11-16
+0x0090e560,?IsOneOrThree@Host_0090e560@@QBEHXZ,MATCH,22,src/auto/f_0090e560.cpp,2026-11-16
 0x0090e840,?HasField20@FieldOwner_0090e840@@QBE_NXZ,MATCH,9,src/auto/f_0090e840.cpp,2026-11-16
 0x0090e9f0,?HasFlag@Class_0090e9f0@@QAEDH@Z,MATCH,16,src/auto/f_0090e9f0.cpp,2026-11-16
 0x0090ea00,?SetFlags@Class_0090ea00@@QAEXH@Z,MATCH,13,src/auto/f_0090ea00.cpp,2026-11-16
@@ -547,8 +564,10 @@ address,symbol,status,bytes,source,since
 0x00923230,?MSS_AIL_stream_loop_count@@YAHPAX@Z,MATCH,12,src/auto/f_00923230.cpp,2026-11-16
 0x00923240,?MSS_AIL_set_sample_loop_count@@YAHPAX0@Z,MATCH,17,src/auto/f_00923240.cpp,2026-11-16
 0x00923260,?MSS_AIL_set_stream_loop_count@@YAHPAX0@Z,MATCH,17,src/auto/f_00923260.cpp,2026-11-16
+0x00923280,?AIL_SampleVolumePanThunk_00923280@@YAXPAXHH@Z,MATCH,22,src/auto/f_00923280.cpp,2026-11-16
 0x00923420,?MSS_AIL_set_sample_ms_position@@YAHPAX0@Z,MATCH,17,src/auto/f_00923420.cpp,2026-11-16
 0x00923440,?MSS_AIL_set_stream_ms_position@@YAHPAX0@Z,MATCH,17,src/auto/f_00923440.cpp,2026-11-16
+0x00923670,?AIL_SampleReverbLevelsThunk_00923670@@YAXPAXHH@Z,MATCH,22,src/auto/f_00923670.cpp,2026-11-16
 0x009237e0,?MSS_AIL_set_redist_directory@@YAHPAPAX@Z,MATCH,14,src/auto/f_009237e0.cpp,2026-11-16
 0x00923dc0,?NullCrash_00923dc0@@YAXHH@Z,MATCH,15,src/auto/f_00923dc0.cpp,2026-11-16
 0x009268ea,?Unlock8_009268ea@@YAXXZ,MATCH,9,src/auto/f_009268ea.cpp,2026-11-16
@@ -639,10 +658,12 @@ address,symbol,status,bytes,source,since
 0x00968360,?Thunk_00968360@@YAXXZ,MATCH,16,src/auto/f_00968360.cpp,2026-11-16
 0x009683d0,?CheckNode_009683d0@@YAHPAUNode_009683d0@@@Z,MATCH,21,src/auto/f_009683d0.cpp,2026-11-16
 0x00969d30,?ReadAt_00969d30@@YAHPAUOff_00969d30@@PAUBase_00969d30@@@Z,MATCH,17,src/auto/f_00969d30.cpp,2026-11-16
+0x00969d50,?Exchange_00969d50@@YAHPBHH0@Z,MATCH,22,src/auto/f_00969d50.cpp,2026-11-16
 0x0096cbd0,?GetOpenSSLEcdsaMethod@@YAPAHXZ,MATCH,6,src/auto/f_0096cbd0.cpp,2026-11-16
 0x0096d530,?GetField18_0096d530@@YAPAXPAUUnk_0096d530@@@Z,MATCH,8,src/auto/f_0096d530.cpp,2026-11-16
 0x0096d540,?GetOpenSSLDsaMethod@@YAPAHXZ,MATCH,6,src/auto/f_0096d540.cpp,2026-11-16
 0x00972670,?GetStr_00972670@@YAPADXZ,MATCH,15,src/auto/f_00972670.cpp,2026-11-16
+0x009729c0,?InitRecord_009729c0@@YAXPAURecord_009729c0@@@Z,MATCH,22,src/auto/f_009729c0.cpp,2026-11-16
 0x00973590,?GetOpenSSLEcdhMethod@@YAPAHXZ,MATCH,6,src/auto/f_00973590.cpp,2026-11-16
 0x00973cf0,?GetGlobal_00b62430@@YAPAHXZ,MATCH,6,src/auto/f_00973cf0.cpp,2026-11-16
 0x00974000,?GetGlobal_00b624e0@@YAPAHXZ,MATCH,6,src/auto/f_00974000.cpp,2026-11-16
@@ -657,14 +678,18 @@ address,symbol,status,bytes,source,since
 0x00980ce0,?GetGlobal_00cb063c@@YAPAHXZ,MATCH,6,src/auto/f_00980ce0.cpp,2026-11-16
 0x00981bf0,?GetGlobal_00cb0a58@@YAPAHXZ,MATCH,6,src/auto/f_00981bf0.cpp,2026-11-16
 0x00997800,?SetByte@Host_00997800@@QAA_NID@Z,MATCH,21,src/auto/f_00997800.cpp,2026-11-16
+0x009b55f0,?Dispatch@Host_009b55f0@@QAEXXZ,MATCH,22,src/auto/f_009b55f0.cpp,2026-11-16
+0x009bbc00,?Lookup_009bbc00@@YAPAUItem64_009bbc00@@PBUTable_009bbc00@@H@Z,MATCH,22,src/auto/f_009bbc00.cpp,2026-11-16
 0x009bbcc0,?SetGlobal_009bbcc0@@YAXH@Z,MATCH,10,src/auto/f_009bbcc0.cpp,2026-11-16
 0x009bbce0,?GetField14_009bbce0@@YAPAXPAUUnk_009bbce0@@@Z,MATCH,8,src/auto/f_009bbce0.cpp,2026-11-16
+0x009bbd00,?Assert_009bbd00@@YAXPAX@Z,MATCH,22,src/auto/f_009bbd00.cpp,2026-11-16
 0x009bbd90,?Check_009bbd90@@YA_NPAUObj_009bbd90@@@Z,MATCH,14,src/auto/f_009bbd90.cpp,2026-11-16
 0x009bbda0,?GetVal_009bbda0@@YAHPAUObj_009bbda0@@@Z,MATCH,17,src/auto/f_009bbda0.cpp,2026-11-16
 0x009bbdc0,?GetVal_009bbdc0@@YAHPAUObj_009bbdc0@@@Z,MATCH,17,src/auto/f_009bbdc0.cpp,2026-11-16
 0x009bbde0,?GetVal_009bbde0@@YAHPAUObj_009bbde0@@@Z,MATCH,17,src/auto/f_009bbde0.cpp,2026-11-16
 0x009bbe00,?Deref10_009bbe00@@YAHPAUObj_009bbe00@@@Z,MATCH,16,src/auto/f_009bbe00.cpp,2026-11-16
 0x009bbe70,?SetTwoGlobals_009bbe70@@YAXHH@Z,MATCH,20,src/auto/f_009bbe70.cpp,2026-11-16
+0x009bbe90,?SetGlobals_009bbe90@@YAXPBH@Z,MATCH,22,src/auto/f_009bbe90.cpp,2026-11-16
 0x009bbeb0,?IncRef_009bbeb0@@YAXPAUUnk_009bbeb0@@@Z,MATCH,8,src/auto/f_009bbeb0.cpp,2026-11-16
 0x009bbec0,?ReadFirstDword_009bbec0@@YAHPBH@Z,MATCH,7,src/auto/f_009bbec0.cpp,2026-11-16
 0x009bbed0,?SetGlobal_009bbed0@@YAXH@Z,MATCH,10,src/auto/f_009bbed0.cpp,2026-11-16

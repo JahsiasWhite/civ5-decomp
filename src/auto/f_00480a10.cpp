@@ -1,21 +1,14 @@
-// c5d-model: Gemini 3.8 Flash
-// c5d-review: __declspec(naked) matches exact memory reload and byte layout
+// c5d-model: Gemini 4 Hydrogen
 class StringHost_00480a10 {
 public:
     char* m_str;
     // src: GUESS (confidence: high) [0x00480a10]
-    void __fastcall Clear();
+    void __thiscall Clear();
 };
 
-__declspec(naked) void __fastcall StringHost_00480a10::Clear() {
-    __asm {
-        mov eax, dword ptr [ecx]
-        cmp dword ptr [eax - 8], 0
-        jz loc_done
-        mov byte ptr [eax], 0
-        mov eax, dword ptr [ecx]
-        mov dword ptr [eax - 8], 0
-    loc_done:
-        ret
+void StringHost_00480a10::Clear() {
+    if (*(int*)(m_str - 8) != 0) {
+        *m_str = 0;
+        *(int*)(m_str - 8) = 0;
     }
 }

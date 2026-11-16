@@ -1,2 +1,2 @@
-0x00923670 ?AIL_SampleReverbLevelsThunk_00923670@@YAXPAX00@Z
-0x009d6dd8 ___imp__AIL_sample_reverb_levels_12
+0x00923670 ?AIL_SampleReverbLevelsThunk_00923670@@YAXPAXHH@Z
+0x009d6dd8 __imp__AIL_sample_reverb_levels@12
