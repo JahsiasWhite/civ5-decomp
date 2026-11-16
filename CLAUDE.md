@@ -14,11 +14,12 @@ carry on without it.
    `python tools/c5d.py remote status` and deal with the leftovers first.
 2. **Match:** for each address, write `src/auto/f_<addr>.cpp` and `symbols/auto/f_<addr>.txt`,
    then run `python tools/c5d.py --worker w1 match --addr 0x<addr> -v` until it says `MATCH`.
-3. **Report** every `MATCH` before it is committed:
-   `python tools/c5d.py --worker w1 remote report 0x<addr> --model <model id> --tries <n>`.
-   This re-checks the match locally, records which model wrote it, and frees the claim. Pass
-   `--model` explicitly, because `config.local.json` has no default.
-4. **Release** anything you gave up on: `python tools/c5d.py task release 0x<addr>`.
+3. **Report** every `MATCH` before it is committed, all in one call:
+   `python tools/c5d.py --worker w1 remote report 0x<a> 0x<b> ... --model <model id> --tries <n>`
+   (or `remote report --claimed --model <model id>` for every claim that matches). This
+   re-checks them locally in a single build, records which model wrote them, and frees the
+   claims. Pass `--model` explicitly, because `config.local.json` has no default.
+4. **Release** anything you gave up on: `python tools/c5d.py remote release 0x<a> 0x<b> ...`.
 5. **Check:** `python tools/c5d.py remote status` should list none of this batch's addresses.
 6. **Commit** only when the user has asked for it. TASK.md says "Don't commit" by default.
    Commit just `src/auto/` and `symbols/auto/` (plus any new `include/` headers).

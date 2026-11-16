@@ -217,18 +217,19 @@ def flags_for(src, base):
     return flags
 
 
+OBJ_CACHE = BUILD / "objcache"          # shared by all workers; see tools/objcache.py
+
+
 def compile_cpp(src, extra_flags=()):
-    """Compile one .cpp to build/obj/<name>.obj; return the obj path."""
-    out_dir = work_dir() / "obj"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    obj = out_dir / (src.stem + ".obj")
-    cmd = [*config.tool_cmd(MSVC_CL), *flags_for(src, CFG["cflags"]), *extra_flags,
-           f"/Fo{config.winpath(obj)}", config.winpath(src)]
-    r = subprocess.run(cmd, capture_output=True, text=True, env=msvc_env())
-    if r.returncode != 0:
-        print(r.stdout + r.stderr)
+    """Compile one .cpp (or reuse an unchanged earlier compile); return the obj path."""
+    import objcache
+    try:
+        return objcache.compile(OBJ_CACHE, ROOT, config.tool_cmd, MSVC_CL,
+                                [*flags_for(src, CFG["cflags"]), *extra_flags], src,
+                                msvc_env(), config.winpath)
+    except RuntimeError as e:
+        print(e)
         sys.exit(f"compile failed: {src}")
-    return obj
 
 
 def disasm(code, va):
@@ -347,6 +348,53 @@ def compile_all(sources, flags):
     return [(src, CoffObject(compile_cpp(src, flags))) for src in sources]
 
 
+def connected_files(per_file, syms, addrs):
+    """The files the LTCG result for `addrs` can depend on: the files defining them plus
+    everything connected to those through game symbols (a name in the symbol files) that
+    one file references and another defines. Callers count as well as callees, because
+    LTCG picks a function's calling convention from all of its call sites. Files that
+    share no game symbol with the target can't change its code, so they're left out of
+    the build. Compiler constants and library code don't connect files (they aren't
+    game symbols). Falls back to every file when no file defines an address."""
+    by_addr = {}
+    for n, a in syms.items():
+        by_addr.setdefault(a, set()).add(n)
+    wanted = {n for a in addrs for n in by_addr.get(a, ())}
+    defines, refs = [], []
+    for _src, obj in per_file:
+        d, r = set(), set()
+        for s in obj.symbols.values():
+            if s.name in syms:
+                (d if s.section > 0 else r).add(s.name)
+        for sec in obj.sections.values():
+            for rel in sec.relocs:
+                if rel.symbol.name in syms:
+                    r.add(rel.symbol.name)
+        defines.append(d)
+        refs.append(r - d)
+    users = {}                                  # name -> files that define or reference it
+    for i in range(len(per_file)):
+        for n in defines[i] | refs[i]:
+            users.setdefault(n, set()).add(i)
+    todo = [i for i, d in enumerate(defines) if d & wanted]
+    if not todo:
+        return per_file
+    keep = set(todo)
+    while todo:
+        i = todo.pop()
+        nbrs = set()
+        for n in defines[i]:                    # its callers and other copies (COMDATs)
+            nbrs |= users[n]
+        for n in refs[i]:                       # the files defining what it uses
+            nbrs |= {j for j in users[n] if n in defines[j]}
+        for j in nbrs - keep:
+            keep.add(j)
+            todo.append(j)
+    print(f"building {len(keep)} of {len(per_file)} files (the ones connected to the target; "
+          "--all-files builds everything)")
+    return [pf for i, pf in enumerate(per_file) if i in keep]
+
+
 def ltcg_link(image, syms, sources, per_file, flags):
     """/GL + /LTCG link of `sources` into a throwaway DLL. Returns (test_img, lmap)."""
     import ltcg
@@ -404,6 +452,9 @@ def cmd_match(args):
     results = {}
 
     per_file = compile_all(sources, args.flag or ())
+    if args.addr and not args.sources and not args.obj and not getattr(args, "all_files", False):
+        per_file = connected_files(per_file, syms, set(args.addr))
+        sources = [src for src, _obj in per_file]
     test_img = lmap = None
     if not args.obj:
         import ltcg
@@ -619,7 +670,7 @@ def cmd_task(args):
     else:                                   # release
         import remote
         a = int(args.addr, 16)
-        remote.ServerClaims.from_config(args.local).release(a)
+        remote.ServerClaims.from_config(args.local, for_release=True).release(a)
         release(a)
     return 0
 
@@ -698,7 +749,7 @@ def cmd_agent(args):
                 break
         if args.remote:
             if status in ("MATCH", "DIFF"):
-                remote_report(r, a)
+                remote_report(r, [a])
             else:
                 r.call("POST", "/api/release", {"addr": f"0x{a:08x}"})
                 release(a)
@@ -734,34 +785,49 @@ def remote_claim(r, body, ctx=None):
     return out
 
 
-def remote_report(r, a, model=None, tokens_in=None, tokens_out=None, tokens_cached=None, tries=None):
-    """Re-check locally, then report. Values not given come from the task's usage.json
-    (written by `c5d agent`), then config.local.json's "model"."""
+def remote_report(r, addrs, model=None, tokens_in=None, tokens_out=None, tokens_cached=None, tries=None,
+                  only_match=False):
+    """Re-check locally (one matcher run for all of `addrs`), then report each. Values not
+    given come from each task's usage.json (written by `c5d agent`), then config.local.json's
+    "model". With only_match, a DIFF is skipped instead of reported (for sweeping all claims,
+    some of which may still be in progress). Returns {addr: status}."""
     import agentusage
     import remote
     import tasks
+    import time
     ctx = task_context()
-    status, out = tasks.check(ctx, a, claims().get(a))
-    tasks.log_attempt(BUILD, {"addr": f"0x{a:08x}", "status": status, "agent": "remote",
-                              "time": __import__("time").time()})
-    if status not in ("MATCH", "DIFF"):
-        print(out)
-        sys.exit(f"local check gave {status}; not reporting (fix the build first)")
-    used = agentusage.load(BUILD, a)
+    held = claims()
+    worker = next((held[a] for a in addrs if held.get(a)), None) or WORKER
+    statuses, out = tasks.check_many(ctx, addrs, worker)
+    reportable = ("MATCH",) if only_match else ("MATCH", "DIFF")
+    failed = []
+    for a in addrs:
+        status = statuses[a]
+        tasks.log_attempt(BUILD, {"addr": f"0x{a:08x}", "status": status, "agent": "remote",
+                                  "time": time.time()})
+        if status not in reportable:
+            failed.append(a)
+            print(f"0x{a:08x}: local check gave {status}; not reporting")
+            continue
+        used = agentusage.load(BUILD, a)
 
-    def pick(given, key):
-        return used[key] if given is None else given
-    model = model or used["model"] or remote.load_local().get("model", "")
-    body = {"addr": f"0x{a:08x}", "status": status, "model": model,
-            "tokens_in": pick(tokens_in, "tokens_in"), "tokens_out": pick(tokens_out, "tokens_out"),
-            "tokens_cached": pick(tokens_cached, "tokens_cached"), "tries": pick(tries, "tries")}
-    r.call("POST", "/api/report", body)
-    release(a)
-    agentusage.reset(BUILD, a)                  # counted once; a later re-claim starts from zero
-    tok = body["tokens_in"] + body["tokens_cached"] + body["tokens_out"]
-    print(f"0x{a:08x}: reported {status} ({model or 'no model'}, {tok:,} tokens, {body['tries']} tries)"
-          + ("; it counts once the nightly verify confirms it" if status == "MATCH" else ""))
-    return status
+        def pick(given, key):
+            return used[key] if given is None else given
+        m = model or used["model"] or remote.load_local().get("model", "")
+        body = {"addr": f"0x{a:08x}", "status": status, "model": m,
+                "tokens_in": pick(tokens_in, "tokens_in"), "tokens_out": pick(tokens_out, "tokens_out"),
+                "tokens_cached": pick(tokens_cached, "tokens_cached"), "tries": pick(tries, "tries")}
+        r.call("POST", "/api/report", body)
+        release(a)
+        agentusage.reset(BUILD, a)              # counted once; a later re-claim starts from zero
+        tok = body["tokens_in"] + body["tokens_cached"] + body["tokens_out"]
+        print(f"0x{a:08x}: reported {status} ({m or 'no model'}, {tok:,} tokens, {body['tries']} tries)"
+              + ("; it counts once the nightly verify confirms it" if status == "MATCH" else ""))
+    if failed and not only_match:
+        if any(statuses[a] not in ("MATCH", "DIFF") for a in failed):
+            print(out)
+        sys.exit(f"{len(failed)} of {len(addrs)} not reported (fix the build first)")
+    return statuses
 
 
 def review_files():
@@ -839,18 +905,37 @@ def cmd_remote(args):
         if args.max_size:
             body["max_size"] = args.max_size
         if args.addr:
-            body["addr"] = args.addr
+            if len(args.addr) > 1:
+                sys.exit("claim takes at most one address")
+            body["addr"] = args.addr[0]
         remote_claim(r, body)
         return 0
     if args.action == "report":
-        remote_report(r, int(args.addr, 16), args.model, args.tokens_in, args.tokens_out,
-                      args.tokens_cached, args.tries)
+        if args.claimed:
+            if args.addr:
+                sys.exit("give addresses or --claimed, not both")
+            addrs = [c["addr"] for c in r.call("GET", "/api/me")["claims"]]
+            if not addrs:
+                print("no claims to report")
+                return 0
+        elif args.addr:
+            addrs = [int(x, 16) for x in args.addr]
+        else:
+            sys.exit("usage: c5d remote report <addr> [<addr> ...] | --claimed")
+        if len(addrs) > 1 and any(v is not None for v in (args.tokens_in, args.tokens_out,
+                                                          args.tokens_cached)):
+            sys.exit("--tokens-* are per function; report one address at a time with them")
+        remote_report(r, addrs, args.model, args.tokens_in, args.tokens_out,
+                      args.tokens_cached, args.tries, only_match=args.claimed)
         return 0
     if args.action == "release":
-        a = int(args.addr, 16)
-        r.call("POST", "/api/release", {"addr": f"0x{a:08x}"})
-        release(a)
-        print(f"0x{a:08x}: released")
+        if not args.addr:
+            sys.exit("usage: c5d remote release <addr> [<addr> ...]")
+        for x in args.addr:
+            a = int(x, 16)
+            r.call("POST", "/api/release", {"addr": f"0x{a:08x}"})
+            release(a)
+            print(f"0x{a:08x}: released")
         return 0
 
 
@@ -909,6 +994,8 @@ class LinkCtx:
         self.env = msvc_env()
         self.libpaths = [vc / "lib", winsdk_dir() / "Lib"]
         self.build = work_dir()
+        self.root = ROOT
+        self.objcache = OBJ_CACHE
         self.tool = config.tool_cmd          # [exe] on Windows, [wine, Z:\\...] elsewhere
         self.wp = config.winpath
 
@@ -1017,6 +1104,8 @@ def main():
     m = sub.add_parser("match", help="compile sources and compare against the original exe")
     m.add_argument("sources", nargs="*", help=".cpp files (default: all of src/)")
     m.add_argument("--only", action="append", help="only functions whose name contains this")
+    m.add_argument("--all-files", action="store_true",
+                   help="with --addr: build all of src/, not just the files connected to it")
     m.add_argument("--addr", action="append", type=lambda s: int(s, 16),
                    help="only the function at this address (repeatable)")
     m.add_argument("--flag", action="append", help="extra cl.exe flag for this run (repeatable)")
@@ -1053,7 +1142,8 @@ def main():
     t.add_argument("--worker-prefix", default=None,
                    help="claim each task for its own worker id (<prefix>1, <prefix>2, ...)")
     t.add_argument("--local", action="store_true",
-                   help="don't claim/release on the server even when logged in")
+                   help="claim only on this machine (no login needed; others can be handed the same "
+                        "functions, so only for work nobody else will pick up)")
     t.add_argument("-v", "--verbose", action="store_true")
     t.set_defaults(fn=cmd_task)
     ag = sub.add_parser("agent", help="run agent_cmd (config.local.json) over the next N tasks")
@@ -1065,12 +1155,16 @@ def main():
     ag.add_argument("--remote", action="store_true",
                     help="claim from the server and report each result (with token usage)")
     ag.add_argument("--local", action="store_true",
-                    help="without --remote: don't mirror claims on the server even when logged in")
+                    help="without --remote: claim only on this machine (see `task --local`)")
     ag.set_defaults(fn=cmd_agent)
     sub.add_parser("status", help="write PROGRESS.md").set_defaults(fn=cmd_status)
     rm = sub.add_parser("remote", help="coordination server: login | status | claim | report | release")
     rm.add_argument("action", choices=["login", "status", "claim", "report", "release"])
-    rm.add_argument("addr", nargs="?")
+    rm.add_argument("addr", nargs="*",
+                    help="report and release take several (report re-checks them in one build)")
+    rm.add_argument("--claimed", action="store_true",
+                    help="report: every function you hold a claim on; reports MATCHes only and "
+                         "leaves the rest claimed")
     rm.add_argument("--server")
     rm.add_argument("--token")
     rm.add_argument("--n", type=int, default=1)

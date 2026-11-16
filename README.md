@@ -222,10 +222,13 @@ by *other* workers, so a half-written file can't break anyone else's build.
 `c5d task release <addr>` drops a claim. Twenty workers ran at once in the trial without
 interfering.
 
-When you're logged in (`c5d remote login`),
-`task next`, `task release` and `agent` also claim and release on the server, so nobody else is
-handed the same function; ones someone else holds are skipped. If the server can't be reached
-they warn and carry on locally; `--local` skips the server.
+`task next` and `agent` also claim on the server (`c5d remote login` first), so nobody else is
+handed the same function; ones someone else holds are skipped. They never fall back to local-only
+claims on their own: everyone's local queue has the same order, so a claim the server doesn't
+know about almost always collides with what it hands out next. Not being logged in, or the
+server failing, stops the run. `--local` claims only on this machine on purpose (offline work,
+or functions agreed with the others) and says so. `task release` never stops: a claim it can't
+drop on the server just expires.
 
 ### Per-file compiler flags
 

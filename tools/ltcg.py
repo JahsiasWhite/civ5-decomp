@@ -57,14 +57,14 @@ def build(ctx, sources, include_syms):
     """Compile with /GL and link with /LTCG. Returns (dll_path, map_path)."""
     out = ctx.build / "ltcg"
     out.mkdir(parents=True, exist_ok=True)
+    import objcache
     objs = []
     for src in sources:
-        obj = out / (src.stem + ".obj")
-        cmd = [*ctx.tool(ctx.cl), *ctx.flags_for(src), "/GL", f"/Fo{ctx.wp(obj)}", ctx.wp(src)]
-        r = subprocess.run(cmd, capture_output=True, text=True, env=ctx.env)
-        if r.returncode:
-            raise RuntimeError(f"compile failed: {src}\n{r.stdout}{r.stderr}")
-        objs.append(obj)
+        try:
+            objs.append(objcache.compile(ctx.objcache, ctx.root, ctx.tool, ctx.cl,
+                                         [*ctx.flags_for(src), "/GL"], src, ctx.env, ctx.wp))
+        except RuntimeError as e:
+            raise RuntimeError(f"compile failed: {src}\n{e}")
 
     dll, mapf = out / "test.dll", out / "test.map"
     base = [*ctx.tool(ctx.link), "/nologo", "/DLL", "/NOENTRY", "/LTCG", "/OPT:REF", "/OPT:ICF",
@@ -76,8 +76,11 @@ def build(ctx, sources, include_syms):
     stub_obj = out / "stubs.obj"
     extra = []
     missing_prev = []
+    rsp = out / "link.rsp"                      # thousands of objects overflow a command line
     for _attempt in range(3):
-        r = subprocess.run(base + [ctx.wp(o) for o in objs] + extra,
+        args = base[len(ctx.tool(ctx.link)):] + [ctx.wp(o) for o in objs] + extra
+        rsp.write_text("\n".join(f'"{a}"' for a in args) + "\n")
+        r = subprocess.run([*ctx.tool(ctx.link), f"@{ctx.wp(rsp)}"],
                            capture_output=True, text=True, env=ctx.env)
         if r.returncode == 0:
             return dll, mapf
@@ -124,6 +127,24 @@ def _disasm(code, va):
     return list(md.disasm(code, va))
 
 
+def our_extent(test_img, lmap, our_va, orig_size):
+    """Bytes from our_va to the next symbol in our DLL, or, when it's the last one, to the
+    end of its section minus the zero/int3 padding there (else switch tables after the code
+    would be cut off). Never less than orig_size, so code ending in 00 bytes is kept."""
+    nxt = lmap.next_after(our_va)
+    if nxt:
+        return nxt - our_va
+    rva = our_va - test_img.image_base
+    for _n, srva, vsize, _rawptr, rawsize in test_img.sections:
+        if srva <= rva < srva + max(vsize, rawsize):
+            n = srva + min(vsize, rawsize) - rva
+            if n <= orig_size:
+                return orig_size
+            data = test_img.read(our_va, n)
+            return max(orig_size, len(data.rstrip(b"\0\xcc")))
+    return orig_size
+
+
 def make_resolver(name, our_va, extent, orig_va, test_img, orig_img, lmap, syms, obj_refs):
     """Returns resolve(value, off=None): an absolute address in our linked DLL ->
     (label, the address it must have in the original exe, or None if unknown)."""
@@ -167,8 +188,7 @@ def compare(name, orig_img, orig_va, orig_size, test_img, lmap, syms, obj_refs=N
         return {"status": "ERROR", "detail": "not emitted by the linker (inlined, or "
                 "nothing references it yet; exported functions are kept automatically)"}
 
-    nxt = lmap.next_after(our_va)
-    our_len = (nxt - our_va) if nxt else orig_size
+    our_len = our_extent(test_img, lmap, our_va, orig_size)
     try:
         ours = test_img.read(our_va, our_len)
     except ValueError:
@@ -291,8 +311,7 @@ def compare_fp(name, fp, orig_va, test_img, lmap, syms, obj_refs=None):
         return {"status": "ERROR", "detail": "not emitted by the linker (inlined, or "
                 "nothing references it yet; exported functions are kept automatically)"}
 
-    nxt = lmap.next_after(our_va)
-    our_len = (nxt - our_va) if nxt else orig_size
+    our_len = our_extent(test_img, lmap, our_va, orig_size)
     try:
         ours = test_img.read(our_va, our_len)
     except ValueError:

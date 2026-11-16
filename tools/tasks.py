@@ -196,15 +196,27 @@ def attempts_by_addr(build):
 
 def check(ctx, addr, worker=None):
     """Run the matcher for one function; returns (status, output)."""
+    statuses, out = check_many(ctx, [addr], worker)
+    return statuses[addr], out
+
+
+def check_many(ctx, addrs, worker=None):
+    """Run the matcher once for several functions (one build and link instead of one
+    per function); returns ({addr: status}, output). A function the matcher didn't
+    report on gets "NONE"."""
     cmd = [sys.executable, str(ctx.root / "tools" / "c5d.py")]
     if worker:
         cmd += ["--worker", worker]
-    cmd += ["match", "--addr", f"0x{addr:08x}", "-v"]
+    cmd += ["match", "-v"]
+    for a in addrs:
+        cmd += ["--addr", f"0x{a:08x}"]
     r = subprocess.run(cmd, capture_output=True, text=True, cwd=ctx.root)
     out = r.stdout + r.stderr
-    status = "NONE"
+    statuses = {a: "NONE" for a in addrs}
+    tags = {f"@0x{a:08x}": a for a in addrs}
     for line in out.splitlines():
         s = line.strip()
-        if f"@0x{addr:08x}" in s:
-            status = s.split()[0]
-    return status, out
+        for tag, a in tags.items():
+            if tag in s:
+                statuses[a] = s.split()[0]
+    return statuses, out
