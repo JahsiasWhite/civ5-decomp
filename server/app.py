@@ -155,8 +155,10 @@ def make_handler(cfg, db):
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Referrer-Policy", "same-origin")
             self.send_header("Content-Security-Policy",
-                             "default-src 'self'; img-src 'self' data:; style-src 'self'; "
-                             "script-src 'self'; frame-ancestors 'none'")
+                             "default-src 'self'; img-src 'self' data: https://jahsias.goatcounter.com; "
+                             "style-src 'self'; script-src 'self' https://gc.zgo.at; "
+                             "connect-src 'self' https://jahsias.goatcounter.com; "
+                             "frame-ancestors 'none'")
             for k, v in (headers or {}).items():
                 self.send_header(k, v)
             self.end_headers()
