@@ -240,6 +240,10 @@ class DB:
                     raise LookupError("unknown or out-of-scope function")
                 if f["status"] == "matched":
                     raise ValueError("already matched")
+                # Someone's reported match is waiting on verify; it returns to the pool if
+                # verify rejects it or expire_reports (above) lapses it after 14 days.
+                if f["status"] == "reported":
+                    raise ValueError("already reported, waiting on verify")
                 if self.one("SELECT 1 FROM claims WHERE addr=?", (addr,)):
                     raise ValueError("already claimed by someone else")
                 picks = [addr]

@@ -178,6 +178,21 @@ def test_report_verify_flow(srv):
     assert req(base, "POST", "/api/claim", {"addr": "0x00401010"}, token=b)[0] == 200
 
 
+def test_reported_function_not_claimable_until_verify_or_expiry(srv):
+    base, db = srv
+    a, b = make_user(db, "alice"), make_user(db, "bob")
+    req(base, "POST", "/api/claim", {"n": 1}, token=a)
+    req(base, "POST", "/api/report", {"addr": "0x00401000", "status": "MATCH", "model": "m"}, token=a)
+    # the queue skips it and so does an explicit claim (what `c5d task next` sends)
+    _, j = req(base, "POST", "/api/claim", {"n": 1}, token=b)
+    assert j["claims"][0]["addr"] == "0x00401010"
+    code, j = req(base, "POST", "/api/claim", {"addr": "0x00401000"}, token=b)
+    assert code == 409 and "reported" in j["error"]
+    # a report that never gets verified lapses back to the pool
+    db.conn.execute("UPDATE functions SET updated=? WHERE addr=?", (time.time() - 15 * 86400, 0x401000))
+    assert req(base, "POST", "/api/claim", {"addr": "0x00401000"}, token=b)[0] == 200
+
+
 def test_anonymous_display(srv):
     base, db = srv
     tok = make_user(db, "alice")
