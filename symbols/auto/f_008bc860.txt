@@ -1,0 +1,2 @@
+0x008bc860 ?GetBlockVal_008bc860@@YGHH@Z
+0x04170f14 ?g_aBlocks_04170f14@@3PAUBlock_008bc860@@A

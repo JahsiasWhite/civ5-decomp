@@ -1,0 +1,1 @@
+0x009061c0 ?GetValue@FloatHost_009061c0@@QBEMXZ

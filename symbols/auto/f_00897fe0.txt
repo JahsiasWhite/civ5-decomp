@@ -1,0 +1,1 @@
+0x00897fe0 ?GetPtr_00897fe0@@YAPADPAD@Z

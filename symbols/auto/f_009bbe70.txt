@@ -1,0 +1,3 @@
+0x009bbe70 ?SetTwoGlobals_009bbe70@@YAXHH@Z
+0x00cb3824 ?g_iGlobalA_00cb3824@@3HA
+0x00cb38b4 ?g_iGlobalB_00cb38b4@@3HA

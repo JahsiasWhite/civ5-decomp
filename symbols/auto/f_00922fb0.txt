@@ -1,0 +1,2 @@
+0x00922fb0 ?SetRolloffFactor_00922fb0@@YAXPAXM@Z
+0x009d6d44 __imp__AIL_set_3D_rolloff_factor@8

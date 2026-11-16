@@ -1,0 +1,3 @@
+0x008c8b10 ?SetTwoGlobals_008c8b10@@YAXHH@Z
+0x05f54e84 ?g_iVarA_05f54e84@@3HA
+0x05f54e88 ?g_iVarB_05f54e88@@3HA
