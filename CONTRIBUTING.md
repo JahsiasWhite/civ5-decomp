@@ -77,8 +77,11 @@ python tools/c5d.py analyze
 
 1. Sign in with GitHub on the project site's **Account** page, accept the terms, and create an API token.
 2. `python tools/c5d.py remote login --server https://<site> --token c5d_...`
-3. `python tools/c5d.py remote claim --n 3` reserves functions for 4 hours and writes
-   `build/tasks/<address>/TASK.md` for each one, with everything needed to solve it.
+3. `python tools/c5d.py remote claim --n 3 --model <model id>` reserves functions for 4 hours
+   and writes `build/tasks/<address>/TASK.md` for each one, with everything needed to solve it.
+   The model is kept on the claim, so the match is credited to it even if it's merged before
+   you report it (verify then also closes the claim). `task next` and `agent` take `--model`
+   too; without it they use `"model"` from `config.local.json`.
 
 Claiming needs the login: `task next` and `agent` stop if you aren't logged in or the server
 can't be reached, rather than claiming only on your machine where nobody else can see it.
@@ -181,8 +184,9 @@ python tools/c5d.py remote report 0x00540240 --model <model or "hand"> --tries 2
 `report` re-checks the match on your machine before it reports. Give it several addresses
 (`remote report 0x00540240 0x00540300 ...`) or `--claimed` (every claim that matches) to
 re-check and report them all in one go. Then open a [pull request](https://github.com/JahsiasWhite/civ5-decomp/pulls) with
-your `src/auto/f_*.cpp` and `symbols/auto/f_*.txt` files. A maintainer re-runs the match against
-their own copy of the game. It counts on the site once that nightly check confirms it.
+your `src/auto/f_*.cpp` and `symbols/auto/f_*.txt` files. Once it's merged, the verify workflow
+re-runs the match on `main` (on every push, without the game) and the site marks it matched
+within a few minutes.
 
 ## 6. See it work in the game (optional)
 

@@ -85,3 +85,14 @@ def test_release_never_stops(monkeypatch):
     sc.release(0x401000)                                               # warns, doesn't raise
     sc.release(0x402000)
     assert len(r.calls) == 1
+
+
+def test_model_sent_with_claim():
+    class Rec(FakeRemote):
+        def call(self, method, path, body=None):
+            self.bodies = getattr(self, "bodies", []) + [body]
+            return super().call(method, path, body)
+    r = Rec()
+    ServerClaims(r, model="model-c").claim(0x401000, "w1")
+    ServerClaims(r).claim(0x401010, "w1")
+    assert r.bodies[0]["model"] == "model-c" and "model" not in r.bodies[1]

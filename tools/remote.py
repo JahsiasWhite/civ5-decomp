@@ -69,11 +69,12 @@ class ServerClaims:
     an explicit `--local`, which warns. Releasing never stops anything (a claim left on the
     server just expires)."""
 
-    def __init__(self, remote=None):
+    def __init__(self, remote=None, model=""):
         self.r = remote
+        self.model = model          # sent with each claim: credits a match merged before its report
 
     @classmethod
-    def from_config(cls, local_only=False, for_release=False):
+    def from_config(cls, local_only=False, for_release=False, model=""):
         if local_only:
             if not for_release:
                 print(LOCAL_WARNING, flush=True)
@@ -82,7 +83,7 @@ class ServerClaims:
             if for_release:
                 return cls(None)
             raise SystemExit(NOT_LOGGED_IN)
-        return cls(Remote())
+        return cls(Remote(), model)
 
     def claim(self, addr, worker):
         """True: go ahead (claimed on the server, or the server isn't in play because of
@@ -91,7 +92,10 @@ class ServerClaims:
         if self.r is None:
             return True
         try:
-            self.r.call("POST", "/api/claim", {"addr": f"0x{addr:08x}", "worker_prefix": worker})
+            body = {"addr": f"0x{addr:08x}", "worker_prefix": worker}
+            if self.model:
+                body["model"] = self.model
+            self.r.call("POST", "/api/claim", body)
             return True
         except RemoteError as e:
             if e.status == 409 and "limit" in str(e):

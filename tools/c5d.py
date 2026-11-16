@@ -655,7 +655,7 @@ def cmd_task(args):
     if args.action == "next":
         jobs = pick_and_claim(ctx, args.n, args.tries, args.min_size, args.max_size,
                               lambda i: f"{args.worker_prefix}{i + 1}" if args.worker_prefix
-                              else (WORKER or "w1"), args.local)
+                              else (WORKER or "w1"), args.local, claim_model(args))
         prefetch_dumps([int(r["entry"], 16) for r, _w in jobs])
         for r, worker in jobs:
             path, src = tasks.write_bundle(ctx, r, ctx.by_addr, ctx.names, ctx.symbols_by_addr,
@@ -675,12 +675,23 @@ def cmd_task(args):
     return 0
 
 
-def pick_and_claim(ctx, n, tries, min_size, max_size, worker_for, local_only=False):
+def claim_model(args):
+    """--model, else "model" in config.local.json. Sent with server claims so a match that
+    is merged before it's reported is still credited to it. Warns when there is none."""
+    import remote
+    m = getattr(args, "model", None) or remote.load_local().get("model", "")
+    if not m and not getattr(args, "local", False):
+        print("note: no --model given (and no \"model\" in config.local.json); a match merged "
+              "before you report it will show as \"unspecified\"", flush=True)
+    return m or ""
+
+
+def pick_and_claim(ctx, n, tries, min_size, max_size, worker_for, local_only=False, model=""):
     """Pick up to `n` tasks from the local queue and claim each one locally and, when logged
     in, on the server. Functions the server says someone else holds (or that are matched
     there) are skipped for the next candidate. -> [(queue row, worker)]"""
     import remote
-    server = remote.ServerClaims.from_config(local_only)
+    server = remote.ServerClaims.from_config(local_only, model=model)
     out = []
     for r in pick_tasks(ctx, n * 4 + 10, tries, min_size, max_size):
         a = int(r["entry"], 16)
@@ -708,13 +719,13 @@ def cmd_agent(args):
     if args.remote:
         import remote
         r = remote.Remote()
-        body = {"n": args.n, "worker_prefix": "w", "min_size": args.min_size}
+        body = {"n": args.n, "worker_prefix": "w", "min_size": args.min_size, "model": claim_model(args)}
         if args.max_size:
             body["max_size"] = args.max_size
         jobs = [(row, worker) for row, worker, _path in remote_claim(r, body, ctx)]
     else:
         jobs = pick_and_claim(ctx, args.n, args.tries, args.min_size, args.max_size,
-                              lambda _i: WORKER or "w1", args.local)
+                              lambda _i: WORKER or "w1", args.local, claim_model(args))
         prefetch_dumps([int(row["entry"], 16) for row, _w in jobs])
     summary = []
     for row, worker in jobs:
@@ -827,8 +838,8 @@ def remote_report(r, addrs, model=None, tokens_in=None, tokens_out=None, tokens_
         release(a)
         agentusage.reset(BUILD, a)              # counted once; a later re-claim starts from zero
         tok = body["tokens_in"] + body["tokens_cached"] + body["tokens_out"]
-        print(f"0x{a:08x}: reported {status} ({m or 'no model'}, {tok:,} tokens, {body['tries']} tries)"
-              + ("; it counts once the nightly verify confirms it" if status == "MATCH" else ""))
+        print(f"0x{a:08x}: reported {status} ({m or 'no --model, so the claim model if it has one'}, {tok:,} tokens, {body['tries']} tries)"
+              + ("; it counts once it's merged and verify on main confirms it" if status == "MATCH" else ""))
     if failed and not only_match:
         if any(statuses[a] not in ("MATCH", "DIFF") for a in failed):
             print(out)
@@ -907,7 +918,8 @@ def cmd_remote(args):
             print(f"  0x{c['addr']:08x}  {c['worker']:<6} {c['size']:>6}b  {c['name']}")
         return 0
     if args.action == "claim":
-        body = {"n": args.n, "worker_prefix": args.worker_prefix, "min_size": args.min_size}
+        body = {"n": args.n, "worker_prefix": args.worker_prefix, "min_size": args.min_size,
+                "model": claim_model(args)}
         if args.max_size:
             body["max_size"] = args.max_size
         if args.addr:
@@ -1150,6 +1162,9 @@ def main():
     t.add_argument("--local", action="store_true",
                    help="claim only on this machine (no login needed; others can be handed the same "
                         "functions, so only for work nobody else will pick up)")
+    t.add_argument("--model", default=None,
+                   help="next: model/tool that will write them, recorded on the server claim "
+                        "(default: \"model\" in config.local.json)")
     t.add_argument("-v", "--verbose", action="store_true")
     t.set_defaults(fn=cmd_task)
     ag = sub.add_parser("agent", help="run agent_cmd (config.local.json) over the next N tasks")
@@ -1158,6 +1173,8 @@ def main():
     ag.add_argument("--min-size", type=int, default=5)
     ag.add_argument("--max-size", type=int, default=None)
     ag.add_argument("--timeout", type=int, default=1800)
+    ag.add_argument("--model", default=None,
+                    help="recorded on the server claims (default: \"model\" in config.local.json)")
     ag.add_argument("--remote", action="store_true",
                     help="claim from the server and report each result (with token usage)")
     ag.add_argument("--local", action="store_true",
@@ -1178,7 +1195,8 @@ def main():
     rm.add_argument("--min-size", type=int, default=0)
     rm.add_argument("--max-size", type=int, default=None)
     rm.add_argument("--model", default=None,
-                    help="model/tool that wrote it (default: \"model\" in config.local.json)")
+                    help="model/tool that wrote it; claim records it too (default: \"model\" in "
+                         "config.local.json, then the claim's)")
     rm.add_argument("--tokens-in", type=int, default=None,
                     help="default: what `c5d agent` recorded for this task (build/tasks/<addr>/usage.json)")
     rm.add_argument("--tokens-out", type=int, default=None)

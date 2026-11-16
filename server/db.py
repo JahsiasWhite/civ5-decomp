@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS daily (
     matched_bytes INTEGER NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS runs (                 -- maintainer verify ("nightly") runs
+CREATE TABLE IF NOT EXISTS runs (                 -- verify runs (every push to main)
     id          INTEGER PRIMARY KEY,
     ts          REAL NOT NULL,
     kept        INTEGER NOT NULL,                 -- newly confirmed functions
@@ -99,6 +99,7 @@ MIGRATIONS = [
     ("events", "tokens_cached", "INTEGER NOT NULL DEFAULT 0"),
     ("events", "tries", "INTEGER NOT NULL DEFAULT 0"),
     ("milestones", "key", "TEXT"),                                # set on automatic milestones
+    ("claims", "model", "TEXT NOT NULL DEFAULT ''"),             # model the claimer works with
 ]
 
 # automatic milestones (check_milestones): verified function counts, and percent of
@@ -223,9 +224,12 @@ class DB:
                 self.log("expire", r["user_id"], r["addr"])
             self.conn.execute("DELETE FROM claims WHERE expires<?", (now,))
 
-    def claim(self, user_id, n=1, addr=None, worker_prefix="w", min_size=0, max_size=None):
-        """Claim specific `addr`, or the next `n` ready functions in queue order.
+    def claim(self, user_id, n=1, addr=None, worker_prefix="w", min_size=0, max_size=None, model=""):
+        """Claim specific `addr`, or the next `n` ready functions in queue order. `model` is
+        what will write them: a report without one falls back to it, and so does a match
+        that reaches verify while still claimed (see credit_claims).
         Returns list of (addr, worker)."""
+        model = clean_model(model) if model else ""
         self.expire_claims()
         self.expire_reports()
         now = time.time()
@@ -256,9 +260,9 @@ class DB:
             out = []
             for i, a in enumerate(picks):
                 worker = f"{worker_prefix}{i + 1}"
-                self.conn.execute("INSERT INTO claims(addr,user_id,worker,claimed,expires) VALUES (?,?,?,?,?)",
-                                  (a, user_id, worker, now, now + CLAIM_SECONDS))
-                self.log("claim", user_id, a)
+                self.conn.execute("INSERT INTO claims(addr,user_id,worker,claimed,expires,model) "
+                                  "VALUES (?,?,?,?,?,?)", (a, user_id, worker, now, now + CLAIM_SECONDS, model))
+                self.log("claim", user_id, a, model=model)
                 out.append((a, worker))
             return out
 
@@ -307,11 +311,11 @@ class DB:
         if status not in ("MATCH", "DIFF"):
             raise ValueError("status must be MATCH or DIFF")
         nums = [max(0, min(int(x or 0), 10 ** 10)) for x in (tokens_in, tokens_out, tokens_cached, tries)]
-        model = clean_model(model)
         with self.tx():
-            claim = self.one("SELECT user_id FROM claims WHERE addr=?", (addr,))
+            claim = self.one("SELECT user_id, model FROM claims WHERE addr=?", (addr,))
             if not claim or claim["user_id"] != user_id:
                 raise PermissionError("you don't hold a claim on this function")
+            model = clean_model(model or claim["model"])       # no model given: the claim's
             f = self.one("SELECT status FROM functions WHERE addr=?", (addr,))
             if f["status"] != "matched":
                 new = "reported" if status == "MATCH" else "diff"
@@ -346,6 +350,27 @@ class DB:
             return self.conn.execute(
                 "UPDATE functions SET by_user=?, updated=? WHERE status='matched' AND by_user IS NULL",
                 (user_id, time.time())).rowcount
+
+    def credit_claims(self, statuses):
+        """Before apply_verified: a function verify now finds matching that someone still
+        holds a claim on (merged before it was reported) is credited to the claim holder
+        and the claim's model, and the claim is closed, so it stops counting toward the
+        holder's limit. Returns how many claims were closed."""
+        closed = 0
+        with self.tx():
+            # walk the open claims (a few), not the statuses (every function on each push)
+            for c in self.q("SELECT c.addr, c.user_id, c.model, f.status FROM claims c "
+                            "JOIN functions f ON f.addr=c.addr"):
+                addr = c["addr"]
+                if statuses.get(addr) != "MATCH":
+                    continue
+                if c["status"] not in ("matched", "reported"):
+                    self.conn.execute("UPDATE functions SET by_user=?, model=?, updated=? WHERE addr=?",
+                                      (c["user_id"], c["model"], time.time(), addr))
+                self.conn.execute("DELETE FROM claims WHERE addr=?", (addr,))
+                self.log("close", c["user_id"], addr, "MATCH", "matched while claimed", c["model"])
+                closed += 1
+        return closed
 
     def apply_verified(self, statuses, default_model=""):
         """Maintainer verify: {addr: 'MATCH'|'DIFF'|...} from a full local match run. A

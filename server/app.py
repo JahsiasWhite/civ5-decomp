@@ -301,7 +301,7 @@ def make_handler(cfg, db):
                 max_size = as_int(body.get("max_size"), "max_size", None) or None
                 try:
                     got = db.claim(u["id"], n=n, addr=addr, worker_prefix=prefix,
-                                   min_size=min_size, max_size=max_size)
+                                   min_size=min_size, max_size=max_size, model=str(body.get("model") or ""))
                 except LookupError as e:
                     raise ApiError(404, str(e))
                 except ValueError as e:
@@ -374,18 +374,19 @@ def make_handler(cfg, db):
             models = {parse_addr(a): str(m) for a, m in (models or {}).items()}
             # before verify (sizes count toward bytes) and readiness (covers added functions)
             resized, removed, added = db.apply_merges(merges)
+            closed = db.credit_claims(statuses)             # before verify: credits the claim holder
             changed = db.apply_verified(statuses)
             credited = db.apply_credits(models)             # after verify: covers new matches too
             owned = db.credit_owner(u["id"])                # direct commits count for the pusher
             ready_changed = db.set_ready(ready)
             requeued = db.expire_reports()
             milestones = db.check_milestones()
-            sys.stderr.write(f"admin verify by {u['login']}: {len(statuses)} statuses, {changed} changes, "
+            sys.stderr.write(f"admin verify by {u['login']}: {len(statuses)} statuses, {changed} changes, {closed} claims closed, "
                              f"{credited} credits, {owned} owned, {ready_changed} readiness changes, "
                              f"{requeued} stale reports requeued, "
                              f"{resized} resized / {removed} removed / {added} added by boundary fixes, "
                              f"{len(milestones)} milestones\n")
-            return self.send(200, {"received": len(statuses), "changed": changed, "credited": credited,
+            return self.send(200, {"received": len(statuses), "changed": changed, "closed": closed, "credited": credited,
                                    "owned": owned, "ready_changed": ready_changed, "requeued": requeued,
                                    "resized": resized, "merged_away": removed, "added": added,
                                    "milestones": milestones})

@@ -17,7 +17,8 @@
   python server/manage.py backup --dir DIR [--keep 14]
                                     consistent online copy of the DB (safe while serving)
 
-The nightly routine on the maintainer's machine (which has the game) is:
+The verify workflow (.github/workflows/verify.yml) pushes results on every push to main and
+twice a day. To do it by hand from a machine with the game:
   git pull  ->  python tools/c5d.py match  ->  python tools/c5d.py queue  ->  python server/manage.py push
 (`verify` does the same against a local DB, for testing.)
 """
@@ -111,6 +112,7 @@ def read_models(path):
 
 def cmd_verify(db, args):
     statuses = read_statuses(args.status)
+    print(f"claims: {db.credit_claims(statuses)} closed (matched while claimed)")
     print(f"verify: {db.apply_verified(statuses)} status changes from {args.status}")
     print(f"credits: {db.apply_credits(read_models(args.status))} changed from c5d-model lines")
     for text in db.check_milestones():

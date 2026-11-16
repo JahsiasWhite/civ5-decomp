@@ -322,7 +322,7 @@ def test_admin_verify(srv):
     assert req(base, "POST", "/api/admin/verify", payload)[0] == 401
     assert req(base, "POST", "/api/admin/verify", payload, token=alice)[0] == 403
     code, j = req(base, "POST", "/api/admin/verify", payload, token=boss)    # C5D_ADMINS is case-insensitive
-    assert code == 200 and j == {"received": 3, "changed": 2, "credited": 0, "owned": 1, "ready_changed": 0,
+    assert code == 200 and j == {"received": 3, "changed": 2, "closed": 0, "credited": 0, "owned": 1, "ready_changed": 0,
                                  "requeued": 0, "resized": 0, "merged_away": 0, "added": 0,
                                  "milestones": ["First function matched"] + [
                                      f"{p} of the code matched (20 of 245 bytes, 1 functions)"
@@ -677,3 +677,41 @@ def test_old_maintainer_credit_becomes_unspecified(srv, tmp_path):
     again = dbmod.DB(tmp_path / "t.sqlite")                 # reopening migrates
     assert again.one("SELECT model FROM functions WHERE addr=?", (0x401000,))["model"] == ""
     assert not again.q("SELECT 1 FROM events WHERE model='maintainer'")
+
+
+def test_report_without_model_uses_claim_model(srv):
+    base, db = srv
+    a = make_user(db, "alice")
+    req(base, "POST", "/api/claim", {"addr": "0x00401000", "model": "model-c"}, token=a)
+    assert req(base, "POST", "/api/report", {"addr": "0x00401000", "status": "MATCH"}, token=a)[0] == 200
+    assert db.one("SELECT model FROM functions WHERE addr=?", (0x401000,))["model"] == "model-c"
+    # a model given at report time wins over the claim's
+    req(base, "POST", "/api/claim", {"addr": "0x00401010", "model": "model-c"}, token=a)
+    req(base, "POST", "/api/report", {"addr": "0x00401010", "status": "MATCH", "model": "model-d"}, token=a)
+    assert db.one("SELECT model FROM functions WHERE addr=?", (0x401010,))["model"] == "model-d"
+
+
+def test_verify_credits_and_closes_open_claims(srv):
+    base, db = srv
+    boss, alice = make_user(db, "boss"), make_user(db, "alice")
+    # alice claims two, merges both before reporting; one has no model on the claim
+    req(base, "POST", "/api/claim", {"addr": "0x00401000", "model": "model-c"}, token=alice)
+    req(base, "POST", "/api/claim", {"addr": "0x00401010"}, token=alice)
+    req(base, "POST", "/api/claim", {"addr": "0x00401020", "model": "model-c"}, token=alice)
+    _, j = req(base, "POST", "/api/admin/verify",
+               {"statuses": {"0x00401000": "MATCH", "0x00401010": "MATCH", "0x00401020": "DIFF"}},
+               token=boss)
+    assert j["closed"] == 2 and j["owned"] == 0
+    ids = {r["login"]: r["id"] for r in db.q("SELECT id, login FROM users")}
+    f = {r["addr"]: (r["status"], r["by_user"], r["model"]) for r in db.q("SELECT * FROM functions")}
+    assert f[0x401000] == ("matched", ids["alice"], "model-c")
+    assert f[0x401010] == ("matched", ids["alice"], "")
+    # still-diffing work stays claimed
+    held = [c["addr"] for c in req(base, "GET", "/api/claims", token=alice)[1]]
+    assert held == [0x401020]
+    s = req(base, "GET", "/api/stats")[1]
+    assert s["leaderboard"][0]["who"] == "alice" and s["leaderboard"][0]["functions"] == 2
+    assert {r["model"] for r in s["squad"]["all"]} == {"model-c", "unspecified"}
+    # a second verify finds nothing left to close
+    assert req(base, "POST", "/api/admin/verify", {"statuses": {"0x00401000": "MATCH"}},
+               token=boss)[1]["closed"] == 0

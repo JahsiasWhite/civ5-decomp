@@ -23,11 +23,12 @@ Live progress, the leaderboard and contributor sign-up: **[civ5decomp.com](https
 Reported functions that aren't verified within 14 days go back to the pool, so don't let a
 batch sit unmerged.
 
-**Credit:** a reported function is credited to the `--model` given to `remote report`. A
-function nobody reported (the maintainer committed it directly) shows as `unspecified`, so
-report a batch with `--model` **before** its commit reaches `main`: once verify has marked a
-function matched, a later report doesn't change its credit. Don't put credit lines in
-source files.
+**Credit:** pass `--model` when you claim (`task next`, `agent`, `remote claim`; or set
+`"model"` in `config.local.json`). The server keeps it on the claim. A reported function is
+credited to the report's `--model`, or the claim's if the report has none. If a function is
+merged while you still hold its claim, verify credits it to you and the claim's model and
+closes the claim. A function nobody claimed or reported (committed directly) shows as
+`unspecified`. Don't put credit lines in source files.
 
 ## Ground rules
 

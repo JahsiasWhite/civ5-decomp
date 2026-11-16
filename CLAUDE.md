@@ -9,8 +9,8 @@ rules for that function. Read both before you start; don't copy the workflow fro
 Skip no step. If a step fails or a permission check blocks it, stop and tell the user. Don't
 carry on without it.
 
-1. **Claim:** `python tools/c5d.py task next --n 8`. This claims on the server and writes the
-   task bundles. The server allows 25 open claims per user. If you're at the limit, run
+1. **Claim:** `python tools/c5d.py task next --n 8 --model <model id>`. This claims on the
+   server (recording the model on each claim) and writes the task bundles. The server allows 25 open claims per user. If you're at the limit, run
    `python tools/c5d.py remote status` and deal with the leftovers first.
 2. **Match:** for each address, write `src/auto/f_<addr>.cpp` and `symbols/auto/f_<addr>.txt`,
    then run `python tools/c5d.py --worker w1 match --addr 0x<addr> -v` until it says `MATCH`.
@@ -24,10 +24,14 @@ carry on without it.
 6. **Commit** only when the user has asked for it. TASK.md says "Don't commit" by default.
    Commit just `src/auto/` and `symbols/auto/` (plus any new `include/` headers).
 
-Why the order matters: merging or pushing never tells the server anything. Verify marks merged
-functions matched, but it never clears claims, and once a function is verified, a late report
-no longer sets its model, so the site shows "unspecified". Unreported claims also count toward
-the 25 limit until they expire after 4 hours.
+Verify isn't nightly: `.github/workflows/verify.yml` runs on every push to `main` (and twice a
+day), so a merged function is marked matched, and its callers become ready, within minutes.
+
+Why the order still matters: the report is what records tokens and tries, and it frees the
+claims right away. If a match is merged while still claimed, verify credits it to the claim's
+model and closes the claim, so nothing is lost, but the token and try counts are. Claiming
+without `--model` leaves such a match "unspecified". Unreported claims count toward the 25
+limit until verify or the 4-hour expiry clears them.
 
 ## Source rules
 
