@@ -1,0 +1,1 @@
+0x00492960 ?GetByte@Host_00492960@@QBEEI@Z

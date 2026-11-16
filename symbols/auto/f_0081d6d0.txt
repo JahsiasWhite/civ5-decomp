@@ -1,0 +1,2 @@
+0x0081d6d0 ??0Event_0081d6d0@@QAE@XZ
+0x009d6350 __imp__CreateEventA@16

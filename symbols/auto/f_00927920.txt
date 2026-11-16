@@ -1,0 +1,2 @@
+0x00927920 ?Size@Heap_00927920@@QAEIPBX@Z
+0x009d63f4 __imp__HeapSize@12

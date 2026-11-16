@@ -1,0 +1,2 @@
+0x009278b2 ?Alloc@Heap_009278b2@@QAEPAXI@Z
+0x009d63fc __imp__HeapAlloc@12

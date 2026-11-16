@@ -1,0 +1,2 @@
+0x009232a0 ?SetSampleVolume_009232a0@@YAXPAXPAH@Z
+0x009d6dac __imp__AIL_sample_volume_pan@12
