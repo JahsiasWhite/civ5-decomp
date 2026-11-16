@@ -11,6 +11,9 @@ headers). Those sources weren't edited by the PR, so they only fail on a regress
 function that isn't a MATCH now although --base-status (the base branch's
 progress/status.csv) doesn't list it as anything else. That is what stops a layout
 change in include/ from silently breaking functions that already match.
+
+Without --changed (main), --base-status is the results before the push: every function
+it had as MATCH must still MATCH, in any file, or the run fails.
 """
 import argparse
 import csv
@@ -77,19 +80,37 @@ def header_regressions(rows, base_rows, changed, graph):
     defines it) counts too."""
     headers = {c for c in changed if c.endswith(HEADER_EXT)}
     affected = sources_including(headers, graph) - set(changed)
+    return sorted(affected), regressions(rows, base_rows, affected, strict_unknown=True)
+
+
+def regressions(rows, base_rows, sources=None, strict_unknown=False):
+    """[(row, why)]: functions the base status had as MATCH that aren't now, by address
+    (a function that only moved to another file is fine), including ones no file
+    defines any more. sources: only judge these files (None: all). strict_unknown: a
+    function the base doesn't list must MATCH too."""
+    def judged(src):
+        return sources is None or src in sources
     base = {r["address"]: r for r in base_rows}
     bad, seen = [], set()
     for r in rows:
-        if r["source"] not in affected:
-            continue
         seen.add(r["address"])
+        if not judged(r["source"]) or r["status"] == "MATCH":
+            continue
         b = base.get(r["address"])
-        if r["status"] != "MATCH" and (b is None or b["status"] == "MATCH"):
-            bad.append((r, "was MATCH" if b else "not in the base status"))
+        if b is not None and b["status"] == "MATCH":
+            bad.append((r, "was MATCH"))
+        elif b is None and strict_unknown:
+            bad.append((r, "not in the base status"))
     for b in base_rows:
-        if b["source"] in affected and b["status"] == "MATCH" and b["address"] not in seen:
+        if judged(b["source"]) and b["status"] == "MATCH" and b["address"] not in seen:
             bad.append((dict(b, status="missing"), "was MATCH, now not built"))
-    return sorted(affected), bad
+    return bad
+
+
+def _regression_table(regressed):
+    return (["| Address | Function | Status | File | Why |", "|---|---|---|---|---|"]
+            + [f"| `{r['address']}` | `{r['symbol']}` | ❌ {r['status']} | `{r['source']}` | {why} |"
+               for r, why in regressed])
 
 
 def main():
@@ -97,7 +118,8 @@ def main():
     p.add_argument("--status", default=str(ROOT / "progress" / "status.csv"))
     p.add_argument("--changed", default=None)
     p.add_argument("--base-status", default=None,
-                   help="the base branch's progress/status.csv (for header regressions)")
+                   help="progress/status.csv before the change: the PR's base (header "
+                        "regressions) or, without --changed, before the push (all regressions)")
     args = p.parse_args()
 
     rows = _read_rows(args.status)
@@ -130,15 +152,27 @@ def main():
             if not base_rows:
                 out += ["(no base status: every function in them has to MATCH)", ""]
             if regressed:
-                out += ["| Address | Function | Status | File | Why |", "|---|---|---|---|---|"]
-                out += [f"| `{r['address']}` | `{r['symbol']}` | ❌ {r['status']} | `{r['source']}` | {why} |"
-                        for r, why in regressed]
+                out += _regression_table(regressed)
                 out += ["", "A header change broke these. Keep the layout they rely on (field offsets, "
                         "member order, signatures) or fix them in the same PR.", ""]
                 rc = 1
             else:
                 out += ["No function that matched before stopped matching.", ""]
     else:
+        # main: anything that matched before and doesn't now is a regression, whoever
+        # pushed it (the commit is already in, so this turns a silent break into a red run)
+        if args.base_status:
+            base_path = Path(args.base_status)
+            if base_path.is_file():
+                regressed = regressions(rows, _read_rows(base_path))
+                out += [f"### Regressions since the previous results: {len(regressed)}", ""]
+                if regressed:
+                    out += _regression_table(regressed)
+                    out += ["", "These matched before this push. See what changed with "
+                            "`python tools/c5d.py match --addr <address> -v`.", ""]
+                    rc = 1
+            else:
+                out += ["(no previous results to compare against: regressions not checked)", ""]
         notmatch = [r for r in rows if r["status"] != "MATCH"]
         if notmatch:
             out += ["| Address | Function | Status | File |", "|---|---|---|---|"]

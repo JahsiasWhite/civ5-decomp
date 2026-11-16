@@ -1,7 +1,9 @@
 # Verify matches without the game: compile everything with VC++ 2008 SP1 under Wine
 # and compare against data/fingerprints.csv (see tools/fingerprint.py).
 #
-# - pull requests: a check that fails if a function in the PR's files doesn't MATCH
+# - pull requests: a check that fails if a function in the PR's files doesn't MATCH, or
+#   one in a file including a changed header stops matching
+# - main: fails if anything that matched before the push doesn't any more
 # - main (push, twice daily, or by hand): also sends the results to civ5decomp.com, which
 #   is what marks reported matches as verified. Needs the C5D_ADMIN_TOKEN secret.
 name: verify
@@ -87,6 +89,7 @@ jobs:
           printf '{"msvc_bin": "%s", "winsdk_dir": "%s"}\n' "$PWD/msvc/VC/bin" "$PWD/msvc/WinSDK" > config.local.json
 
       - name: Match everything against the fingerprints
+        id: match
         run: |
           mkdir -p build
           set +e
@@ -106,7 +109,12 @@ jobs:
             git show "$base:progress/status.csv" > build/base_status.csv 2>/dev/null || rm -f build/base_status.csv
             python tools/ci_report.py --changed build/changed.txt --base-status build/base_status.csv >> "$GITHUB_STEP_SUMMARY"
           else
-            python tools/ci_report.py >> "$GITHUB_STEP_SUMMARY"
+            # results before this push (the commit before it; the current commit for the
+            # scheduled run): a function that matched there and doesn't now fails the run
+            before="${{ github.event.before }}"
+            case "$before" in ""|0000000000000000000000000000000000000000) before=HEAD;; esac
+            git show "$before:progress/status.csv" > build/base_status.csv 2>/dev/null || rm -f build/base_status.csv
+            python tools/ci_report.py --base-status build/base_status.csv >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - uses: actions/upload-artifact@v4
@@ -117,8 +125,12 @@ jobs:
             build/match.txt
             progress/status.csv
 
+      # also after a regression in Report: the site never downgrades a match, so the new
+      # matches in the same run still get counted
       - name: Send results to civ5decomp.com
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        if: >-
+          !cancelled() && steps.match.outcome == 'success'
+          && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:
           C5D_ADMIN_TOKEN: ${{ secrets.C5D_ADMIN_TOKEN }}
         run: |

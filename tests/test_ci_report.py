@@ -69,6 +69,40 @@ def test_edited_sources_are_left_to_the_direct_check(tmp_path):
     assert "src/auto/f_1.cpp" not in affected and bad == []
 
 
+def test_push_regressions_cover_every_file():
+    base = [row("0x1", "MATCH", "src/a.cpp"),
+            row("0x2", "DIFF", "src/a.cpp"),
+            row("0x3", "MATCH", "src/b.cpp"),
+            row("0x4", "MATCH", "src/c.cpp")]
+    now = [row("0x1", "DIFF", "src/a.cpp"),              # broke
+           row("0x2", "DIFF", "src/a.cpp"),              # was already DIFF
+           row("0x3", "MATCH", "src/moved.cpp"),         # moved file, still matches
+           row("0x7", "DIFF", "src/new.cpp")]            # new work in progress: fine on main
+    bad = ci_report.regressions(now, base)                # 0x4: file gone
+    assert sorted((r["address"], r["status"], why) for r, why in bad) == [
+        ("0x1", "DIFF", "was MATCH"), ("0x4", "missing", "was MATCH, now not built")]
+
+
+def test_push_report_exit_code(tmp_path, monkeypatch, capsys):
+    import csv
+    def csv_of(name, rows):
+        p = tmp_path / name
+        with open(p, "w", newline="") as fh:
+            w = csv.DictWriter(fh, ["address", "symbol", "status", "source"])
+            w.writeheader()
+            w.writerows(rows)
+        return str(p)
+    base = csv_of("base.csv", [row("0x1", "MATCH", "src/a.cpp")])
+    ok = csv_of("ok.csv", [row("0x1", "MATCH", "src/a.cpp")])
+    broke = csv_of("broke.csv", [row("0x1", "DIFF", "src/a.cpp")])
+    for status, rc in ((ok, 0), (broke, 1)):
+        monkeypatch.setattr(sys, "argv", ["ci_report", "--status", status, "--base-status", base])
+        assert ci_report.main() == rc
+    monkeypatch.setattr(sys, "argv", ["ci_report", "--status", broke])     # no baseline: not checked
+    assert ci_report.main() == 0
+    assert "Regressions since the previous results: 1" in capsys.readouterr().out
+
+
 def test_no_header_changed(tmp_path):
     g = tree(tmp_path)
     assert ci_report.header_regressions([], [], ["src/auto/f_4.cpp"], g) == ([], [])
