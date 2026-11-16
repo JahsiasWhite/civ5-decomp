@@ -247,7 +247,6 @@ address,symbol,status,bytes,source,since
 0x0073eea0,?SetVal@Class_0073eea0@@QAEXH@Z,MATCH,13,src/auto/f_0073eea0.cpp,2026-11-16
 0x00743bc0,?GetSelf@SelfReturner_00743bc0@@QAEPAV1@XZ,MATCH,3,src/auto/f_00743bc0.cpp,2026-11-16
 0x007491d0,?GetFlag_02de0445@@YA_NXZ,MATCH,6,src/auto/f_007491d0.cpp,2026-11-15
-0x0074b3b0,?Lua_GetSpokenLanguages_0074b3b0@@YAHPAUlua_State@@@Z,DIFF,350,src/auto/f_0074b3b0.cpp,2026-11-16
 0x0074e510,?IsNonZero_02de044c@@YA_NXZ,MATCH,12,src/auto/f_0074e510.cpp,2026-11-16
 0x0074f6f0,?SetVal@Class_0074f6f0@@QAEXD@Z,MATCH,13,src/auto/f_0074f6f0.cpp,2026-11-16
 0x007528f0,?SetGlobal_007528f0@@YAXXZ,MATCH,11,src/auto/f_007528f0.cpp,2026-11-16
