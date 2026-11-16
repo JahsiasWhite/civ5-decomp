@@ -205,3 +205,74 @@ def find_misplaced(img, rows, protected=()):
         if end is not None and b < end:
             groups.setdefault(a, []).append(b)
     return [(a, ends[a], bs, a in listed) for a, bs in sorted(groups.items())]
+
+
+# Imports the compiler knows never return (__declspec(noreturn) in the CRT/SDK headers),
+# so it emits nothing after a call to them. Every other import returns: code follows.
+NORETURN_IMPORTS = {"_CxxThrowException", "exit", "_exit", "abort", "longjmp", "terminate",
+                    "_invoke_watson", "_amsg_exit", "ExitProcess", "ExitThread", "FatalExit",
+                    "FatalAppExitA", "FatalAppExitW", "RaiseException", "__report_gsfailure",
+                    "_invalid_parameter_noinfo_noreturn"}
+
+
+def _import_thunks(img, text_base, text):
+    """{thunk VA: import name} for `jmp dword ptr [IAT slot]` stubs, plus the IAT slots."""
+    imps = img.imports()
+    out = {}
+    for i in range(len(text) - 6):
+        if text[i] == 0xFF and text[i + 1] == 0x25:
+            slot, = struct.unpack_from("<I", text, i + 2)
+            if slot in imps:
+                out[text_base + i] = imps[slot]
+    return out, imps
+
+
+def find_truncated(img, rows, protected=()):
+    """Functions Ghidra cut short at a call it wrongly took as never returning (it marked
+    the import thunk for lua_pushstring, lua_pushcclosure, ... noreturn). A listed
+    function is reported when its last instruction is a call to an import that returns,
+    the next byte isn't int3 padding, and the code reached from its entry (following
+    the fall-through after calls) runs past its listed end. FUN_ entries inside the new
+    range that nothing calls or points to are absorbed; any other entry there means a
+    real function starts there, and the candidate is skipped.
+    -> [(entry, end, [absorbed], import name)]."""
+    import bisect
+    base, text = _text(img)
+    calls, _jumps, pointers = _incoming(img)
+    thunks, imps = _import_thunks(img, base, text)
+    funcs = sorted((int(r["entry"], 16), int(r["size"]), r["name"]) for r in rows if r["ranges"] == "1")
+    starts = [f[0] for f in funcs]
+    names = {f[0]: f[2] for f in funcs}
+    protected = set(protected)
+    md = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_32)
+    md.detail = True
+    tables = _jump_tables(img)
+    out = []
+    for a, size, _name in funcs:
+        end = a + size
+        if size < 5 or not (base <= end < base + len(text)) or text[end - base] == 0xCC:
+            continue
+        last = None
+        for ins in md.disasm(_read_upto(img, a, size), a):
+            last = ins
+        if last is None or last.mnemonic != "call" or last.address + last.size != end:
+            continue
+        op = last.operands[0]
+        if op.type == x86.X86_OP_IMM:
+            imp = thunks.get(op.imm & 0xFFFFFFFF)
+        elif op.type == x86.X86_OP_MEM and op.mem.base == 0 and op.mem.index == 0:
+            imp = imps.get(op.mem.disp & 0xFFFFFFFF)
+        else:
+            imp = None
+        if not imp or imp.split("!")[-1] in NORETURN_IMPORTS:
+            continue
+        stops = (calls | pointers | {s for s in starts if s != a}) - {end}
+        new_end = _flow_end(md, img, a, stops, tables=tables)
+        if new_end is None or new_end <= end:
+            continue
+        inside = starts[bisect.bisect_right(starts, a):bisect.bisect_left(starts, new_end)]
+        if any(not names[b].startswith("FUN_") or b in calls or b in pointers or b in protected
+               for b in inside):
+            continue
+        out.append((a, new_end, inside, imp.split("!")[-1]))
+    return out

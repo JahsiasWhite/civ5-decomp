@@ -861,6 +861,11 @@ def cmd_boundaries(args):
         if ab:
             found.append((e, x, ab, listed, ("" if listed else "start not listed; ")
                           + "entries inside it: " + ", ".join(f"0x{a:08x}" for a in ab)))
+    done |= {a for f in found for a in f[2]} | {f[0] for f in found}
+    for e, x, ab, imp in boundaries.find_truncated(img, rows, protected=protected):
+        if e not in done and not done & set(ab):
+            found.append((e, x, ab, True, f"cut short at a call to {imp}, which returns"
+                          + ("; absorbs " + ", ".join(f"0x{a:08x}" for a in ab) if ab else "")))
     for entry, end, absorbed, listed, why in found:
         print(f"  0x{entry:08x} 0x{end:08x}{'' if listed else ' new'}  {why}")
     print(f"{len(found)} function(s) with wrong boundaries found")
