@@ -797,8 +797,14 @@ def remote_report(r, addrs, model=None, tokens_in=None, tokens_out=None, tokens_
     import time
     ctx = task_context()
     held = claims()
-    worker = next((held[a] for a in addrs if held.get(a)), None) or WORKER
-    statuses, out = tasks.check_many(ctx, addrs, worker)
+    by_worker = {}                  # a build leaves out files other workers hold, so one per worker
+    for a in addrs:
+        by_worker.setdefault(held.get(a) or WORKER, []).append(a)
+    statuses, out = {}, ""
+    for worker, group in by_worker.items():
+        st, o = tasks.check_many(ctx, group, worker)
+        statuses.update(st)
+        out += o
     reportable = ("MATCH",) if only_match else ("MATCH", "DIFF")
     failed = []
     for a in addrs:
