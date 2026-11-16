@@ -9,12 +9,6 @@ function size(b) {
   if (b >= 1e3) return (b / 1e3).toFixed(1) + " KB";
   return n0(Math.round(b)) + " B";
 }
-function big(n) {
-  if (n >= 1e9) return (n / 1e9).toFixed(1) + " B";
-  if (n >= 1e6) return (n / 1e6).toFixed(1) + " M";
-  if (n >= 1e3) return (n / 1e3).toFixed(1) + " K";
-  return n0(n);
-}
 const pct = (a, b, d = 2) => (b ? (100 * a / b) : 0).toFixed(d) + "%";
 
 // one colour per model, stable across every chart
@@ -282,9 +276,6 @@ function render(s) {
   $("c-todo-foot").textContent = `functions · ${size(s.todo_bytes)} left · ${n0(s.ready)} ready, ${n0(s.claimed)} claimed`;
   $("c-today").textContent = "+" + n0(s.matched_today);
   $("c-today-foot").textContent = `functions · +${size(s.matched_today_bytes)} · ${n0(s.models_on_board)} model${s.models_on_board === 1 ? "" : "s"} on the board`;
-  const t = s.tokens, tt = t.input + t.output + t.cached;
-  $("c-tok").textContent = big(tt);
-  $("c-tok-foot").textContent = tt ? `${big(t.output)} generated · ${pct(t.cached, tt, 0)} cached re-reads` : "reported with each submission";
 
   boardRows = s.leaderboard; renderBoard();
 
@@ -348,30 +339,6 @@ function render(s) {
     row.appendChild(el("span", { class: "figs" }, `${n0(k.matched)} / ${n0(k.total)} · ${size(k.bytes - k.matched_bytes)} left`));
     tiers.appendChild(row);
   }
-
-  // cost
-  hbars($("ch-tokens"), s.cost.ledger.map((r) => ({
-    label: r.source, parts: [
-      { v: r.input / 1e6, colour: "var(--m0)" },
-      { v: r.output / 1e6, colour: "var(--m1)" },
-      { v: r.cached / 1e6, colour: "var(--m7)" }],
-    tip: () => {
-      const all = r.input + r.output + r.cached;
-      return { title: r.source, rows: [
-        { swatch: "var(--m0)", label: "input", value: `${big(r.input)} · ${pct(r.input, all, 0)}` },
-        { swatch: "var(--m1)", label: "output", value: `${big(r.output)} · ${pct(r.output, all, 0)}` },
-        { swatch: "var(--m7)", label: "cached", value: `${big(r.cached)} · ${pct(r.cached, all, 0)}` }],
-        note: `${big(all)} tokens in all` };
-    } })),
-    (v) => v.toFixed(2) + " M");
-  fillRows($("t-ledger").tBodies[0], s.cost.ledger.map((r) => {
-    const all = r.input + r.output + r.cached;
-    return [{ t: r.source, swatch: modelColour(r.source) }, { t: big(r.input), cls: "num" },
-      { t: big(r.output), cls: "num" }, { t: pct(r.cached, all, 0), cls: "num" }];
-  }), 4, "No token reports yet.");
-  const spend = s.cost.spend.map((r) => [{ t: r.day, cls: "mono" }, { t: r.source }, { t: "$" + r.dollars.toFixed(2), cls: "num" }]);
-  if (spend.length) spend.push([{ t: "Total", cls: "mono" }, { t: "" }, { t: "$" + s.cost.total_dollars.toFixed(2), cls: "num" }]);
-  fillRows($("t-spend").tBodies[0], spend, 3, "No spend recorded yet.");
 
   // log
   const log = $("log-list"); log.textContent = "";

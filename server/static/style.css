@@ -197,7 +197,6 @@ footer.site { border-top: 1px solid var(--rule); color: var(--faint); font-size:
 footer.site a { color: var(--muted); }
 
 .mt { margin-top: 14px; }
-.sw-m0 { background: var(--m0); } .sw-m1 { background: var(--m1); } .sw-m7 { background: var(--m7); }
 .prose h3 { font: 600 17px/1.3 var(--sans, inherit); margin: 22px 0 6px; }
 .prose .lede { font-size: 18px; color: var(--muted); margin: 0 0 6px; }
 .prose .updated { font: 12px/1.4 var(--mono); color: var(--faint); margin: 0 0 18px; }
