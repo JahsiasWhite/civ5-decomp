@@ -1,0 +1,2 @@
+0x006ca4a0 ?Thunk_006ca4a0@@YAXXZ
+0x00530900 _Target_00530900

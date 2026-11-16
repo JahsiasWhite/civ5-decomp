@@ -1,0 +1,2 @@
+0x0075cc70 ?Thunk_0075cc70@@YAXXZ
+0x00547ff0 _Target_00547ff0
