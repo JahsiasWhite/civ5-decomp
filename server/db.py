@@ -140,6 +140,10 @@ class DB:
             have = {r["name"] for r in self.q(f"PRAGMA table_info({table})")}
             if col not in have:
                 self.conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")
+        # matches nobody reported used to be credited to "maintainer"; now they carry no
+        # model and show as "unspecified" (idempotent)
+        for table in ("functions", "events"):
+            self.conn.execute(f"UPDATE {table} SET model='' WHERE model='maintainer'")
 
     # ------------------------------------------------------------ helpers
     def q(self, sql, args=()):
@@ -317,7 +321,7 @@ class DB:
     def apply_credits(self, models):
         """{addr: model} from `// c5d-model:` lines in the matched source files. Credits a
         matched function nobody reported (the maintainer committed it directly),
-        replacing the "maintainer" default, also for older matches. A contributor's
+        replacing the empty ("unspecified") default, also for older matches. A contributor's
         own report always wins. Returns how many credits changed."""
         changed = 0
         with self.tx():
@@ -339,8 +343,10 @@ class DB:
                 "UPDATE functions SET by_user=?, updated=? WHERE status='matched' AND by_user IS NULL",
                 (user_id, time.time())).rowcount
 
-    def apply_verified(self, statuses, default_model="maintainer"):
-        """Maintainer verify: {addr: 'MATCH'|'DIFF'|...} from a full local match run."""
+    def apply_verified(self, statuses, default_model=""):
+        """Maintainer verify: {addr: 'MATCH'|'DIFF'|...} from a full local match run. A
+        match nobody reported keeps no model (shown as "unspecified"): report with
+        --model before the commit reaches main to credit one."""
         changed = kept = kept_bytes = rejected = 0
         today = utc_day()
         with self.tx():
@@ -510,7 +516,8 @@ class DB:
             cum_b += r["b"]
             trend.append({"day": r["d"], "functions": cum_f, "bytes": cum_b, "new_bytes": r["b"]})
         by_model_day = [dict(r) for r in self.q(
-            "SELECT matched_day day, model, SUM(size) bytes FROM functions "
+            "SELECT matched_day day, CASE WHEN model='' THEN 'unspecified' ELSE model END model, "
+            "SUM(size) bytes FROM functions "
             "WHERE status='matched' AND matched_day IS NOT NULL GROUP BY day, model ORDER BY day")]
 
         # ---- squad: matches by the model that wrote them

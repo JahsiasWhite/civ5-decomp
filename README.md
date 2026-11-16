@@ -24,8 +24,10 @@ Reported functions that aren't verified within 14 days go back to the pool, so d
 batch sit unmerged.
 
 **Credit:** a reported function is credited to the `--model` given to `remote report`. A
-function nobody reported (the maintainer committed it directly) shows as `maintainer`.
-Don't put credit lines in source files.
+function nobody reported (the maintainer committed it directly) shows as `unspecified`, so
+report a batch with `--model` **before** its commit reaches `main`: once verify has marked a
+function matched, a later report doesn't change its credit. Don't put credit lines in
+source files.
 
 ## Ground rules
 

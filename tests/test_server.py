@@ -357,8 +357,12 @@ def test_admin_milestone(srv):
 def test_admin_verify_model_credits(srv):
     base, db = srv
     boss, alice = make_user(db, "boss"), make_user(db, "alice")
-    # 0x401000: matched earlier with no report ("maintainer"); 0x401010: alice reported it
+    # 0x401000: matched earlier with no report ("unspecified"); 0x401010: alice reported it
     req(base, "POST", "/api/admin/verify", {"statuses": {"0x00401000": "MATCH"}}, token=boss)
+    assert db.one("SELECT model FROM functions WHERE addr=?", (0x401000,))["model"] == ""
+    _, s = req(base, "GET", "/api/stats")
+    assert [r["model"] for r in s["squad"]["all"]] == ["unspecified"]
+    assert {r["model"] for r in s["trend_by_model"]} == {"unspecified"}
     req(base, "POST", "/api/claim", {"addr": "0x00401010"}, token=alice)
     req(base, "POST", "/api/report", {"addr": "0x00401010", "status": "MATCH", "model": "m-alice"},
         token=alice)
@@ -368,7 +372,7 @@ def test_admin_verify_model_credits(srv):
                   {"statuses": {"0x00401010": "MATCH"}, "models": models}, token=boss)
     assert code == 200 and j["credited"] == 1
     m = {r["addr"]: r["model"] for r in db.q("SELECT addr, model FROM functions")}
-    assert m[0x401000] == "claude-opus-5-5"          # retroactive: replaces "maintainer"
+    assert m[0x401000] == "claude-opus-5-5"          # retroactive: replaces "unspecified"
     assert m[0x401010] == "m-alice"                  # a contributor's own report wins
     assert m[0x401020] == ""
     _, j = req(base, "POST", "/api/admin/verify", {"statuses": {}, "models": models}, token=boss)
@@ -642,3 +646,13 @@ def test_admin_verify_readiness_and_requeue(srv):
     _, j = req(base, "POST", "/api/claim", {"n": 25}, token=a)
     got = {c["addr"] for c in j["claims"]}
     assert {"0x00401080", "0x00401090", "0x00401000"} <= got and "0x00401010" not in got
+
+
+def test_old_maintainer_credit_becomes_unspecified(srv, tmp_path):
+    _base, db = srv
+    db.conn.execute("UPDATE functions SET status='matched', model='maintainer' WHERE addr=?", (0x401000,))
+    db.log("verify", None, 0x401000, "MATCH", model="maintainer")
+    import db as dbmod
+    again = dbmod.DB(tmp_path / "t.sqlite")                 # reopening migrates
+    assert again.one("SELECT model FROM functions WHERE addr=?", (0x401000,))["model"] == ""
+    assert not again.q("SELECT 1 FROM events WHERE model='maintainer'")
