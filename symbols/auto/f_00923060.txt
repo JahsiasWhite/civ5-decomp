@@ -1,0 +1,2 @@
+0x00923060 ?MSS_AIL_allocate_sample_handle@@YAHPAX@Z
+0x009d6d58 __imp__AIL_allocate_sample_handle@4

@@ -1,0 +1,3 @@
+0x0075f860 ?LuaError_0075f860@@YAHPAX@Z
+0x00a56214 _aLuaMsg_00a56214
+0x00923a0c _luaL_error

@@ -1,0 +1,1 @@
+0x00672d20 ?GetVal@Class_00672d20@@QAEHXZ

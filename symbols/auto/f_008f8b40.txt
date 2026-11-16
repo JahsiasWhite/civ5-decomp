@@ -1,0 +1,1 @@
+0x008f8b40 ?GetCurrentItem@Class_008f8b40@@QAEPADXZ

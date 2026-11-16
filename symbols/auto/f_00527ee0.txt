@@ -1,0 +1,1 @@
+0x00527ee0 ?GetOffset@Class_00527ee0@@QAEPADXZ

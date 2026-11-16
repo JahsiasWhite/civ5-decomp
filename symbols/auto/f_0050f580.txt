@@ -1,0 +1,3 @@
+0x0050f580 ?LuaError_0050f580@@YAHPAX@Z
+0x00a56380 _aDontCallThis_00a56380
+0x00923a0c _luaL_error
