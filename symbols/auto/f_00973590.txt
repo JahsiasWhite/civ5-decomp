@@ -1,0 +1,2 @@
+0x00973590 ?GetOpenSSLEcdhMethod@@YAPAHXZ
+0x00caffa8 ?g_OpenSSLEcdhMethod@@3HA

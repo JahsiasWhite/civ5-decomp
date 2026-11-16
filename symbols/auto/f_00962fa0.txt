@@ -1,0 +1,2 @@
+0x00962fa0 ?GetGlobal_00cafd90@@YAPAHXZ
+0x00cafd90 ?g_Global_00cafd90@@3HA

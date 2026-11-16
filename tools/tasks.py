@@ -29,7 +29,16 @@ RULES = """\
   layouts in `include/` (one header per class), reusing existing headers.
   When the "Class" section below names the function's class, use and extend
   the header it points to; a new class header gets a `// c5d-vtable: 0x...`
-  line near the top so later tasks on that class find it.
+  line near the top so later tasks on that class find it. Name a header after
+  its class (`include/<ClassName>.h`). Don't change a layout other matched
+  functions rely on (field offsets, member order, signatures): CI rebuilds
+  everything that includes a changed header and fails if one stops matching.
+- Mark every name you give (function, class, struct, field, global) on the line
+  before its definition: `// src: <TAG> [0x<address>]`, TAG one of `EXE`
+  (exports, RTTI, strings in the exe), `SDK` (Civ V SDK / names given below),
+  `LIB` (byte-identical library code), `COMMUNITY`, or
+  `GUESS (confidence: high|medium|low)` for a name you made up from what the
+  code does. Keep markers already in a header; add ones for what you add.
 - Never paste disassembly, hex bytes or Ghidra output into source files or
   comments. Source must be hand-written C++.
 - Compiler: Visual C++ 2008 SP1, `/O2 /Ob1`, linked with `/GL` + `/LTCG`.

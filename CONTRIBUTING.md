@@ -114,6 +114,53 @@ Tips:
 - Known open problem: the allocator cluster (`FSBAAllocate` and friends) still differs only in which
   register the linker picks. Skip those unless you want to research it.
 
+### Headers
+
+Class and struct layouts go in `include/`, one header per class, named after it
+(`include/<ClassName>.h`): that's how later tasks on the same class find it. Extend an
+existing header instead of declaring the type again. Changing a header is safe as long as
+everything that already matched still does: the `verify` check rebuilds every source that
+includes a changed header and fails the pull request if one of its functions stops matching.
+
+### Mark where a name comes from
+
+Every name you give a function, class, struct, field or global gets a marker saying where it
+came from, on the line before its definition or declaration (or at the end of its line):
+
+```cpp
+// src: GUESS 0x008e6f80 (confidence: low)
+void* UnkRecord6C::GetBuffer6C()
+
+struct CvUnit
+{
+    // src: SDK
+    int m_iX;
+```
+
+Then a group of names can be found, and replaced or taken out, with one search
+(`grep -rn "// src: GUESS"`). The address is the function's or global's own; leave it out for
+types and fields.
+
+| Tag | Where the name comes from |
+|---|---|
+| `EXE` | The game's own executable: exported names, RTTI type names, strings that name the function, the Lua function tables |
+| `SDK` | The Civ V SDK (`third_party/`, `names/sdk_vtables.csv`): interface and class names, method names, field names. Names and layouts only, never copied code |
+| `LIB` | A byte-identical function in a library the game links (Lua 5.1, the Visual C++ 2008 runtime, ...) |
+| `COMMUNITY` | Community projects and documentation (modding wikis, other mods). Names only, never their code |
+| `GUESS` | No source has a name: a best guess from what the code does |
+
+A `GUESS` also rates how likely it is to be right:
+
+| Confidence | Meaning |
+|---|---|
+| `high` | The code leaves one reading: a string names it, or its callers and callees make it unambiguous |
+| `medium` | What it does is clear; why is inferred |
+| `low` | Only the shape is known (a getter for an offset, a loop over entries): a neutral label, often with the address or offset in it (`UnkRecord6C`, `m_data6C`) |
+
+Use the most reliable source that gives the name, in the order of the table. Renaming a
+`GUESS` to a sourced name replaces the marker; a better guess keeps `GUESS` and updates
+the confidence.
+
 ## 5. Report and open a pull request
 
 ```bash
