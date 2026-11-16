@@ -379,7 +379,7 @@ def cmd_match(args):
             sys.exit("--obj needs the game exe; fingerprint mode only runs the LTCG link")
         from fingerprint import FingerprintImage
         image = FingerprintImage()
-        if image.exe_sha256 != CFG["target_sha256"]:
+        if image.build_hash != CFG["target_build_hash"]:
             sys.exit("data/fingerprints.csv was made from a different exe than config.json targets")
         print("fingerprint mode (no game exe): checking against data/fingerprints.csv")
     else:
@@ -494,7 +494,7 @@ def cmd_fingerprint(_args):
     """Write data/fingerprints.csv + .json from the game exe (see tools/fingerprint.py)."""
     import fingerprint
     from binfmt import PEImage
-    n = fingerprint.export(PEImage(GAME_EXE), config.load_functions(), CFG["target_sha256"])
+    n = fingerprint.export(PEImage(GAME_EXE), config.load_functions(), CFG["target_build_hash"])
     print(f"wrote {n} fingerprints to {fingerprint.CSV_PATH.relative_to(ROOT)} "
           f"(+ {fingerprint.META_PATH.relative_to(ROOT)})")
     return 0
@@ -964,7 +964,7 @@ def require_setup(cmd, args=None):
         sys.exit(f"not set up yet ({', '.join(missing)} missing): run `python tools/c5d.py setup`")
     if cmd != "env":
         import setup_env
-        if not setup_env.exe_is_target(GAME_EXE, CFG["target_sha256"]):
+        if not setup_env.exe_is_target(GAME_EXE, CFG["target_build_hash"]):
             sys.exit(f"{GAME_EXE} is missing or is not the build this project targets "
                      f"({CFG.get('target_build', '')}); run `python tools/c5d.py setup`")
 

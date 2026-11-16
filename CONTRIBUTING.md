@@ -53,8 +53,10 @@ python tools/c5d.py setup
 
 Setup:
 1. installs the Python packages (`requirements.txt`)
-2. finds the game in your Steam libraries and checks the exe's SHA-256 against
-   `config.json`. A different build changes every address, so it has to match exactly.
+2. finds the game in your Steam libraries and checks the exe's build hash against
+   `config.json`. The hash covers the code and data sections only (Steam stamps every
+   download differently elsewhere in the file). A different build changes every address,
+   so it has to match exactly.
 3. finds Ghidra, Java and the compiler (plus the Windows SDK headers)
 4. saves your paths in `config.local.json` (git-ignored, so it never leaves your machine)
 5. builds the scope and work queue from the shared function list (`data/functions.csv`)

@@ -59,7 +59,7 @@ setup ──► scope ──► queue ──► task next / agent ──► matc
 
 | Command | What it does | Output |
 |---|---|---|
-| `c5d setup` | Finds the game (Steam libraries), checks the exe's SHA-256, finds Ghidra, Java and the VC++ 2008 compiler, writes `config.local.json`, builds scope + queue, runs a test match | `config.local.json` |
+| `c5d setup` | Finds the game (Steam libraries), checks the exe's build hash, finds Ghidra, Java and the VC++ 2008 compiler, writes `config.local.json`, builds scope + queue, runs a test match | `config.local.json` |
 | `c5d analyze` | Ghidra headless import and analysis (needed for task bundles), plus function export. The shared list is `data/functions.csv`; maintainers refresh it from this export. | `ghidra_proj/`, `build/functions.csv` |
 | `c5d scope` | Classifies every function: game code vs import stubs, thunks, CRT (byte signatures from the compiler's static libs), ATL/MFC names, compiler EH funclets. Manual ranges go in `scope_overrides.txt`. | `build/scope.csv` |
 | `c5d boundaries [--write]` | Finds functions Ghidra split in two (an early `ret`, then a tail reached only by a jump from the first part), and listed entries that sit inside another function's code (Ghidra misread a stretch of code; the real start may be missing, written as `new`), and adds them to `boundary_overrides.txt`. Every tool reads the function list through those fixes. | `boundary_overrides.txt` |
@@ -178,7 +178,7 @@ instead (`tools/fingerprint.py`):
 
 ## Configuration
 
-- `config.json` (committed): compiler flags, the target exe's SHA-256, pinned tool versions.
+- `config.json` (committed): compiler flags, the target exe's build hash, pinned tool versions.
 - `config.local.json` (git-ignored, written by `c5d setup`): this machine's game, Ghidra and
   MSVC paths, plus the server login, `model` and `agent_cmd`. Its keys override `config.json`.
 - `data/functions.csv` (committed): the shared function list (addresses, sizes, Ghidra names;
@@ -345,7 +345,7 @@ What the trial found and fixed:
 ## Layout
 
 ```
-config.json        shared settings: compiler flags, target exe SHA-256, tool versions
+config.json        shared settings: compiler flags, target exe build hash, tool versions
 config.local.json  this machine's paths, server login, agent_cmd (git-ignored; `c5d setup`)
 data/              functions.csv: the shared function list
 CONTRIBUTING.md    contributor setup guide

@@ -3,7 +3,7 @@
 Checks, in order:
   1. Python packages (requirements.txt)
   2. The game: found through Steam's library folders, and the exe must be the exact
-     build this project targets (SHA-256 in config.json)
+     build this project targets (build hash in config.json)
   3. Ghidra (+ Java 17 or newer)
   4. Visual C++ 2008 SP1 compiler (cl 15.00.30729.01) + Windows SDK headers
   5. Civ V SDK headers (third_party/, optional)
@@ -15,6 +15,7 @@ import json
 import os
 import re
 import shutil
+import struct
 import subprocess
 import sys
 from pathlib import Path
@@ -49,17 +50,47 @@ class Report:
 
 # ---------------------------------------------------------------- exe identity
 
-def sha256(path):
-    h = hashlib.sha256()
-    with open(path, "rb") as fh:
-        for chunk in iter(lambda: fh.read(1 << 20), b""):
-            h.update(chunk)
+# Steam hands every account (and every re-download) a differently stamped exe: the
+# per-user DRM rewrites a block of .rdata, the resources, the Rich header and the
+# signature, while the code and data the project works from stay byte-identical.
+# A whole-file SHA-256 therefore differs between contributors on the same build, so
+# the build is identified by the parts that cannot change without moving addresses.
+BUILD_SECTIONS = (".text", ".data", ".reloc")
+BUILD_HASH_VERSION = b"c5d-build1"
+
+
+def build_hash(path):
+    """SHA-256 over the exe's image base, entry point, section layout and the raw
+    bytes of BUILD_SECTIONS. Equal for every Steam download of one build, different
+    for any other build. Raises ValueError if `path` is not a 32-bit PE."""
+    d = Path(path).read_bytes()
+    pe = struct.unpack_from("<I", d, 0x3C)[0]
+    if d[pe:pe + 4] != b"PE\0\0":
+        raise ValueError(f"{path}: not a PE file")
+    nsec, = struct.unpack_from("<H", d, pe + 6)
+    opt_size, = struct.unpack_from("<H", d, pe + 20)
+    opt = pe + 24
+    entry, = struct.unpack_from("<I", d, opt + 16)
+    image_base, = struct.unpack_from("<I", d, opt + 28)
+    h = hashlib.sha256(BUILD_HASH_VERSION)
+    h.update(struct.pack("<II", image_base, entry))
+    found = set()
+    for i in range(nsec):
+        o = opt + opt_size + 40 * i
+        name = d[o:o + 8].rstrip(b"\0").decode("ascii", "replace")
+        vsize, rva, rawsize, rawptr = struct.unpack_from("<IIII", d, o + 8)
+        h.update(d[o:o + 8] + struct.pack("<III", rva, vsize, rawsize))
+        if name in BUILD_SECTIONS:
+            h.update(d[rawptr:rawptr + rawsize])
+            found.add(name)
+    if found != set(BUILD_SECTIONS):
+        raise ValueError(f"{path}: missing sections {sorted(set(BUILD_SECTIONS) - found)}")
     return h.hexdigest()
 
 
 def exe_is_target(path, expected):
-    """True if `path` hashes to `expected`. Cached by size + mtime in build/ so the
-    check costs nothing on every run."""
+    """True if `path`'s build_hash is `expected`. Cached by size + mtime in build/ so
+    the check costs nothing on every run."""
     path = Path(path)
     if not path.is_file():
         return False
@@ -68,7 +99,10 @@ def exe_is_target(path, expected):
     cache = ROOT / "build" / ".exe_verified"
     if cache.exists() and cache.read_text() == stamp:
         return True
-    if sha256(path) != expected:
+    try:
+        if build_hash(path) != expected:
+            return False
+    except (ValueError, struct.error):
         return False
     cache.parent.mkdir(exist_ok=True)
     cache.write_text(stamp)
@@ -223,7 +257,7 @@ def step_python(rep, install):
 
 def step_game(rep, cfg, arg):
     print("Game")
-    target, want = cfg["target_exe"], cfg["target_sha256"]
+    target, want = cfg["target_exe"], cfg["target_build_hash"]
     cands = [Path(arg)] if arg else []
     if not arg and cfg.get("game_dir"):
         cands.append(Path(cfg["game_dir"]))
@@ -236,9 +270,13 @@ def step_game(rep, cfg, arg):
             continue
         seen.append(exe)
         if exe_is_target(exe, want):
-            rep.ok(target, f"{d} (SHA-256 matches {cfg.get('target_build', 'the target build')})")
+            rep.ok(target, f"{d} (build hash matches {cfg.get('target_build', 'the target build')})")
             return {"game_dir": d.as_posix()}
-        rep.note(f"{exe}: different build (SHA-256 {sha256(exe)[:16]}...)")
+        try:
+            got = build_hash(exe)[:16] + "..."
+        except (ValueError, struct.error) as e:
+            got = str(e)
+        rep.note(f"{exe}: different build (build hash {got})")
     if seen:
         rep.bad(target, "found, but not the build this project targets",
                 "the project matches one exact build: " + cfg.get("target_build", "") +

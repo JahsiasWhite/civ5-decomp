@@ -1,6 +1,6 @@
 {
   "target_exe": "CivilizationV_DX11.exe",
-  "target_sha256": "47a9eaa71b7db7891d649c08df04fc34bc2ba8d3e9f86ea4421e27ab5dacd078",
+  "target_build_hash": "37f6137c4e94ea252b50abbce60bda734a931c3d6acd3661b6699fcbe46d76e0",
   "target_build": "Steam final build, 2014-11-19 (DX11 exe)",
   "ghidra_version": "10.3.2",
   "msvc_version": "15.00.30729.01",

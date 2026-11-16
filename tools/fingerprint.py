@@ -3,7 +3,7 @@
 `c5d fingerprint` (needs the exe) writes, for every function in data/functions.csv:
 
     data/fingerprints.csv   address, size, code hash, extent length, extent hash
-    data/fingerprints.json  image base, exe SHA-256, the import table (IAT slot -> name)
+    data/fingerprints.json  image base, build hash (setup_env.build_hash), the import table (IAT slot -> name)
                             and the export table (name -> address)
 
 A hash is SHA-256 over the function's original bytes (salted with its address,
@@ -33,7 +33,7 @@ def digest(va, data):
     return hashlib.sha256(SALT + va.to_bytes(4, "little") + bytes(data)).hexdigest()[:32]
 
 
-def export(image, rows, exe_sha256):
+def export(image, rows, build_hash):
     """Write fingerprints for every single-range function in `rows` (the function
     list, from config.load_functions()). Returns the row count."""
     entries = sorted(int(r["entry"], 16) for r in rows)
@@ -72,7 +72,7 @@ def export(image, rows, exe_sha256):
 
     meta = {
         "format": 1,
-        "exe_sha256": exe_sha256,
+        "build_hash": build_hash,
         "image_base": f"0x{image.image_base:08x}",
         "imports": {f"0x{va:08x}": name for va, name in sorted(image.imports().items())},
         "exports": {name: f"0x{va:08x}" for name, va in sorted(image.exports().items())},
@@ -91,7 +91,7 @@ class FingerprintImage:
         if not Path(csv_path).exists():
             raise FileNotFoundError(f"{csv_path} not found; run `c5d fingerprint` on a machine with the game")
         meta = json.loads(Path(meta_path).read_text(encoding="utf-8"))
-        self.exe_sha256 = meta["exe_sha256"]
+        self.build_hash = meta.get("build_hash")
         self.image_base = int(meta["image_base"], 16)
         self._imports = {int(k, 16): v for k, v in meta["imports"].items()}
         self._exports = {k: int(v, 16) for k, v in meta["exports"].items()}
