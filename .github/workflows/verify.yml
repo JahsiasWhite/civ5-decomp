@@ -100,8 +100,11 @@ jobs:
       - name: Report
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git diff --name-only "${{ github.event.pull_request.base.sha }}" HEAD > build/changed.txt
-            python tools/ci_report.py --changed build/changed.txt >> "$GITHUB_STEP_SUMMARY"
+            base="${{ github.event.pull_request.base.sha }}"
+            git diff --name-only "$base" HEAD > build/changed.txt
+            # the base branch's last committed results: what a header change must not break
+            git show "$base:progress/status.csv" > build/base_status.csv 2>/dev/null || rm -f build/base_status.csv
+            python tools/ci_report.py --changed build/changed.txt --base-status build/base_status.csv >> "$GITHUB_STEP_SUMMARY"
           else
             python tools/ci_report.py >> "$GITHUB_STEP_SUMMARY"
           fi
