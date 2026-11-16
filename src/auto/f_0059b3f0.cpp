@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Records the current tick count as a start time, resets the elapsed counter
 // and stores a duration value.
 

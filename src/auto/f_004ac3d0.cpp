@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // 0x004ac3d0: returns the address of a 0x6c-offset field inside the
 // currently selected 128-byte entry of an owner's entry array.
 

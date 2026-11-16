@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Compiler-generated vcall thunk for virtual slot 29 (vtable offset 0x74).
 // MSVC emits one when code takes the address of a virtual member function;
 // calling through the pointer-to-member lands here and jumps through the

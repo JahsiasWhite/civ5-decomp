@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // FSmallObjectAllocator members.
 #include "FSmallObjectAllocator.h"
 

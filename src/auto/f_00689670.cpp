@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Clears a one-byte flag stored after the object's first field.
 
 class FlagAt4Holder

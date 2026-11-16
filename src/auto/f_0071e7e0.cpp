@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Pushes an integer id followed by a fixed-width 128-character name onto the Lua stack.
 
 struct lua_State;

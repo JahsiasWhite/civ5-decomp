@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Clears a handful of counters/pointers on an object with a large inline
 // buffer (the last field sits past an ~8KB block).
 

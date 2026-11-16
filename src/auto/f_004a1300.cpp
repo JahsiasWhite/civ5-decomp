@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Clears the record; the argument is unused.
 
 #include "UnkResetRecord.h"

@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Returns the address of one record in an inline array of large
 // (0x2d60-byte) records owned by the object.
 

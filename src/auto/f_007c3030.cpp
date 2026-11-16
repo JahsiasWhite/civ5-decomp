@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // c5d-cflags: +/Oy-
 
 struct BlockLayout_7c3030

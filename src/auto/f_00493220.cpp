@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Swaps two 2-component float vectors (std::swap-style helper).
 
 struct Vec2f

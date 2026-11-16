@@ -1,4 +1,3 @@
-﻿// c5d-model: claude-opus-5-5
 // Packs a floating-point RGBA colour (components 0..1) into a 32-bit ARGB value.
 
 struct FColorRGBAf

@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // c5d-review: vtable pointer written through a declared array instead of a real
 // virtual class; replace once the class and its virtual methods are known.
 // Constructs a small polymorphic object: installs its vtable and clears the

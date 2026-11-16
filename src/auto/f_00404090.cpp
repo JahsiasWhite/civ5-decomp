@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Adds the "LuaEvent" function to the table below the top of the stack: a C
 // closure whose upvalue is a table with weak values (metatable __mode = "v").
 

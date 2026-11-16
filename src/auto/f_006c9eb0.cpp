@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Case-insensitive comparison of a held C string against another string.
 
 #include <string.h>

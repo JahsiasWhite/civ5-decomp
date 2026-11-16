@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Releases the eight slot resources held in the owner's slot table,
 // skipping the shared default resource.
 

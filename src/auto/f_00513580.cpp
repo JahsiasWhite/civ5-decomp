@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Counts how many of eight pointer slots are non-null.
 
 struct EightSlotSet

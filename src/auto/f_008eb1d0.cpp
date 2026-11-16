@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Returns a field of the owned object when its pointer list is non-empty.
 
 struct Holder008eb1d0Inner

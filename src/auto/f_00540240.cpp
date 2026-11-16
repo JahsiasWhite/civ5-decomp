@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Pushes an unsigned 32-bit value (stored at offset 4 of an object) onto the Lua stack.
 
 struct lua_State;

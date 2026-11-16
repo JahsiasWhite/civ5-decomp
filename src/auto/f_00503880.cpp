@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Returns the screen angle (radians) for one of the six hex directions.
 
 float GetHexDirectionAngle(int eDirection)

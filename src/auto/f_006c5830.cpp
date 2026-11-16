@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Free function taking an object pointer: true when the counter at 0x2b88 has
 // reached its limit at 0x2b84 and the pending value at 0x2d48 is not positive.
 // Owning class is not yet identified, so only the touched fields are laid out.

@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Depends on the project-wide _SECURE_SCL=0 / _HAS_EXCEPTIONS=0 (config.json):
 // without them _Uninit_copy keeps a try/catch and isn't inlined here.
 //

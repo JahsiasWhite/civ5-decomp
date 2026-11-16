@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Small engine exports used by the gameplay DLL.
 #include <stddef.h>
 #include <malloc.h>

@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Getter returning three fields of an unidentified object through out-params.
 
 class CTripleFieldOwner_0061b050

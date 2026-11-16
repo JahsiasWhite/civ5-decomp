@@ -1,4 +1,3 @@
-﻿// c5d-model: claude-opus-5-5
 // Returns nonzero when the value at offset 0x20 exceeds the threshold at offset 0x28.
 
 class FloatRangeObject

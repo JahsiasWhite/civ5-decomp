@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Constructor of a small record: leaves the first word alone and zeroes the
 // five words after it (the +0x14 word is cleared before +0x10).
 

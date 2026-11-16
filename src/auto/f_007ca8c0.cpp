@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // c5d-review: arguments and fields are volatile only to keep the loads and stores
 // in source order; probably the area's real compiler flags differ (try c5d-cflags).
 // c5d-cflags: +/Oy-   (this area of the exe keeps frame pointers)

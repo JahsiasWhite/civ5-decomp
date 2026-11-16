@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // __tostring for typed userdata: "Metatable for type: " followed by the
 // metatable's CTypeName, or "Unknown" when it has none.
 

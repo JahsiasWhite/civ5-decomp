@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Leftmost-node walk of a red-black tree whose nodes carry a large payload
 // (the _Isnil flag sits at offset 0xd1). Equivalent to std::_Tree::_Min.
 

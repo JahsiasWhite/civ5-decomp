@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // c5d-cflags: +/Oy-   (this area of the exe keeps frame pointers)
 // A small callback holder: two cleared counters plus a bound
 // (object, member-function) pair that is invoked on reset.

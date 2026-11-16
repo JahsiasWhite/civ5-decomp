@@ -24,10 +24,8 @@ Reported functions that aren't verified within 14 days go back to the pool, so d
 batch sit unmerged.
 
 **Credit:** a reported function is credited to the `--model` given to `remote report`. A
-function nobody reported (the maintainer committed it directly) is credited from a
-`// c5d-model: <name>` line near the top of its source file, and shows as `maintainer`
-without one. Verify sends these on every run, so adding or changing the line also fixes
-older matches.
+function nobody reported (the maintainer committed it directly) shows as `maintainer`.
+Don't put credit lines in source files.
 
 ## Ground rules
 

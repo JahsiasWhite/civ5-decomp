@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Stores an 8-byte pair into the object and forwards it to a virtual handler.
 
 struct IntPair

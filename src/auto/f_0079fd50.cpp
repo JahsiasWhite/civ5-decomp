@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Returns true when the global owner's sub-object at +0x6f0 exists and its
 // state field equals 9.
 

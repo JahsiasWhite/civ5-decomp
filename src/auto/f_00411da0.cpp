@@ -1,4 +1,3 @@
-// c5d-model: claude-opus-5-5
 // Constructs a block-pool style allocator descriptor: clears its header
 // fields, sets fixed size limits and clears the 32 two-list buckets.
 
