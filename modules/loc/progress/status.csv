@@ -1,0 +1,7 @@
+address,symbol,status,bytes,source,since
+0x10001fb0,?GetType@Language@Localization@@QBEPBDXZ,MATCH,4,modules/loc/src/localization/Language.cpp,2026-11-17
+0x10001fe0,?GetPluralityRule@Language@Localization@@QBEPAVIPluralityRule@2@XZ,MATCH,4,modules/loc/src/localization/Language.cpp,2026-11-17
+0x100020d0,?GetParameterTransforms@Language@Localization@@QBEABVParameterTransforms@2@XZ,MATCH,4,modules/loc/src/localization/Language.cpp,2026-11-17
+0x10007190,?GetBufferLength@SharedString@Localization@@QBEIXZ,MATCH,4,modules/loc/src/localization/SharedString.cpp,2026-11-17
+0x100071a0,?GetOffset@SharedString@Localization@@QBEIXZ,MATCH,4,modules/loc/src/localization/SharedString.cpp,2026-11-17
+0x100071b0,?GetLength@SharedString@Localization@@QBEIXZ,MATCH,4,modules/loc/src/localization/SharedString.cpp,2026-11-17

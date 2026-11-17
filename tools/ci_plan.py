@@ -30,9 +30,10 @@ import ci_report  # noqa: E402
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE_EXT = (".cpp", ".c")
 # changed paths that don't force a full run (anything else does): shared headers and
-# each module's sources and symbol files (modules/<id>/src/, symbols/, symbols.txt)
-PARTIAL_OK = re.compile(r"^(include/|modules/[^/]+/(src/|symbols/|symbols\.txt$))")
-SOURCE_TREE = re.compile(r"^(include/|modules/[^/]+/src/)")
+# each module's sources, own headers and symbol files (modules/<id>/src/, include/,
+# symbols/, symbols.txt)
+PARTIAL_OK = re.compile(r"^(include/|modules/[^/]+/(src/|include/|symbols/|symbols\.txt$))")
+SOURCE_TREE = re.compile(r"^(include/|modules/[^/]+/(src|include)/)")
 MODULE_SRC = re.compile(r"^modules/[^/]+/src/")
 IGNORED_EXT = (".md",)
 

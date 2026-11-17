@@ -1,0 +1,10 @@
+# Manual scope overrides: <start> <end-exclusive> <category>
+# Categories other than "game" are out of scope (see modules/exe/scope_overrides.txt).
+
+# ICU 4.4 (data package icudt44l), statically linked. Open source, so not decompiled here.
+# Every Localization:: export sits below 0x1000f36e; ICU's own strings start at
+# 0x100100c0. The ~3 KB between them mixes helpers called from Firaxis code with ones
+# called only from ICU, so the block starts at 0x10010020, the first function called
+# only from ICU, and the unclear part stays in scope. It runs to the end of .text (CRT
+# functions in it are still classified as crt first). Found 2026-11-17.
+0x10010020 0x10088b85 icu

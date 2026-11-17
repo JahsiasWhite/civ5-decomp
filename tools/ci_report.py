@@ -39,14 +39,17 @@ def include_graph(root=ROOT):
     next to the including file first, then include/ (the /I path). Unresolved ones (SDK,
     system) are left out."""
     root = Path(root)
-    dirs = [root / "include"] + sorted((root / "modules").glob("*/src"))
+    dirs = ([root / "include"] + sorted((root / "modules").glob("*/src"))
+            + sorted((root / "modules").glob("*/include")))
     files = [p for d in dirs if d.is_dir()
              for p in d.rglob("*") if p.suffix in (".cpp", ".c") + HEADER_EXT]
     graph = {}
     for f in files:
         deps = set()
         for name in INCLUDE_RE.findall(f.read_text(encoding="utf-8", errors="replace")):
-            for cand in (f.parent / name, root / "include" / name):
+            rel = f.resolve().relative_to(root.resolve()).parts
+            mod_inc = [root / rel[0] / rel[1] / "include" / name] if rel[0] == "modules" else []
+            for cand in (f.parent / name, root / "include" / name, *mod_inc):
                 if cand.is_file():
                     deps.add(_rel(cand, root))
                     break

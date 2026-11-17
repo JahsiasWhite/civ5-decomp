@@ -116,3 +116,27 @@ def test_hybrid_dll_swap_and_restore(tmp_path, monkeypatch):
     with pytest.raises(SystemExit):
         hybrid.run_with_dll(built, game, "Cv.dll", "Game.exe", state, "h")
     assert dll.read_bytes() == b"someone else's mod"
+
+
+def test_module_headers_are_tracked(tmp_path):
+    """modules/<id>/include is on the compiler's INCLUDE after include/, so the CI include
+    graph and the object cache's dependency digest must both see headers there."""
+    import ci_report
+    import objcache
+
+    def write(rel, text):
+        p = tmp_path / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(text)
+        return p
+    write("include/Shared.h", "int s;\n")
+    write("modules/db/include/Private.h", '#include "Shared.h"\n')
+    src = write("modules/db/src/a.cpp", '#include "Private.h"\nint x;\n')
+    write("modules/loc/src/b.cpp", '#include "Private.h"\n')          # another module can't see it
+    g = ci_report.include_graph(tmp_path)
+    assert g["modules/db/src/a.cpp"] == {"modules/db/include/Private.h"}
+    assert g["modules/db/include/Private.h"] == {"include/Shared.h"}
+    assert g["modules/loc/src/b.cpp"] == set()
+    before = objcache.includes_digest(tmp_path, src)
+    write("modules/db/include/Private.h", '#include "Shared.h"\nint changed;\n')
+    assert objcache.includes_digest(tmp_path, src) != before

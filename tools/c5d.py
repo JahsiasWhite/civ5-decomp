@@ -228,7 +228,8 @@ def msvc_env():
     env = dict(os.environ)
     env["PATH"] = str(vc / "bin") + os.pathsep + env.get("PATH", "")
     env["INCLUDE"] = ";".join(config.winpath(p) for p in
-                              [ROOT / "include", vc / "include", winsdk_dir() / "Include"])
+                              [ROOT / "include", M.root / "include",     # shared, then this module's
+                               vc / "include", winsdk_dir() / "Include"])
     return config.tool_env(env)
 
 

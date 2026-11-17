@@ -1,0 +1,8 @@
+address,symbol,status,bytes,source,since
+0x10006d40,?SingleQuery@Results@Database@@QBE_NXZ,MATCH,4,modules/db/src/database/Results.cpp,2026-11-17
+0x10007ed0,?GetText@Results@Database@@QAEPBDPBD@Z,MATCH,40,modules/db/src/database/Results.cpp,2026-11-17
+0x10007f50,?GetInt@Results@Database@@QAEHPBD@Z,MATCH,40,modules/db/src/database/Results.cpp,2026-11-17
+0x1000c0d0,?Connection@ResultsCache@Database@@QAEAAV02@XZ,MATCH,3,modules/db/src/database/ResultsCache.cpp,2026-11-17
+0x100714c0,?ErrorMessage@XMLSerializer@Database@@QBEPBDXZ,MATCH,7,modules/db/src/database/XMLSerializer.cpp,2026-11-17
+0x10071560,?UseTransactions@XMLSerializer@Database@@QBE_NXZ,MATCH,7,modules/db/src/database/XMLSerializer.cpp,2026-11-17
+0x10071570,?UseTransactions@XMLSerializer@Database@@QAEX_N@Z,MATCH,13,modules/db/src/database/XMLSerializer.cpp,2026-11-17
