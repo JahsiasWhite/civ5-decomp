@@ -1,6 +1,9 @@
 "use strict";
 const $ = (id) => document.getElementById(id);
 const hex = (a) => "0x" + Number(a).toString(16).padStart(8, "0");
+// each module's binary, shown when hovering its label
+const MOD_FILES = { exe: "CivilizationV_DX11.exe", db: "CvGameDatabaseWin32Final Release.dll",
+                    loc: "CvLocalizationWin32Final Release.dll" };
 
 function post(path, body) {
   return fetch(path, {
@@ -26,7 +29,7 @@ function show(me) {
     const tr = document.createElement("tr");
     // the function as module:addr with its module's coloured label
     const m = c.module || "exe", fn = document.createElement("td"), tag = document.createElement("span");
-    tag.className = `mod mod-${m}`; tag.textContent = m;
+    tag.className = `mod mod-${m}`; tag.textContent = m; tag.title = MOD_FILES[m] || m;
     fn.className = "addr fn"; fn.append(tag, document.createTextNode(`${m}:${hex(c.addr)}`)); tr.appendChild(fn);
     for (const [v, cls] of [[c.worker, ""], [c.size, "num"],
                             [new Date(c.expires * 1000).toLocaleTimeString(), ""]]) {

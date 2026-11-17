@@ -23,7 +23,15 @@ const modelColour = (() => {
 // one colour per binary (exe / db / loc), the same on every chart and label
 const MODS = ["exe", "db", "loc"];
 const modColour = (m) => (MODS.includes(m) ? `var(--mod-${m})` : "var(--faint)");
-function modTag(m) { return el("span", { class: `mod mod-${MODS.includes(m) ? m : "x"}` }, m); }
+// each module's binary, shown when hovering its label; render() refreshes it from /api/stats
+const MOD_FILES = { exe: "CivilizationV_DX11.exe", db: "CvGameDatabaseWin32Final Release.dll",
+                    loc: "CvLocalizationWin32Final Release.dll" };
+// hover=false where the row already has its own tooltip naming the binary (What is left)
+function modTag(m, hover = true) {
+  const attrs = { class: `mod mod-${MODS.includes(m) ? m : "x"}` };
+  if (hover) attrs.title = MOD_FILES[m] || m;
+  return el("span", attrs, m);
+}
 
 function el(tag, attrs, text) {
   const e = document.createElement(tag);
@@ -288,10 +296,11 @@ function render(s) {
   $("c-bytes-foot").textContent = `of ${size(s.bytes)} in scope · ${pct(s.matched_bytes, s.bytes, 3)}`;
   // the meter: one segment per module, each its share of all bytes in scope
   const mods = Object.entries(s.modules || {});
+  for (const [m, v] of mods) if (v.file) MOD_FILES[m] = v.file;
   const meter = $("c-bytes-meter"); meter.textContent = "";
   for (const [m, v] of mods) {
     if (!v.matched_bytes) continue;
-    const seg = el("i", { title: `${m}: ${size(v.matched_bytes)}` });
+    const seg = el("i", { title: `${MOD_FILES[m] || m}: ${size(v.matched_bytes)}` });
     seg.style.background = modColour(m);
     seg.style.width = Math.max(100 * v.matched_bytes / (s.bytes || 1), 0.5) + "%";
     meter.appendChild(seg);
@@ -368,7 +377,7 @@ function render(s) {
     const ts = s.tiers.filter((t) => t.module === m);
     const sum = (k) => ts.reduce((a, t) => a + t[k], 0);
     tierRow(left, { label: m, total: sum("total"), matched: sum("matched"), open: sum("open"), untried: sum("untried"),
-                    bytes: sum("bytes"), matched_bytes: sum("matched_bytes") }, modTag(m), v.file);
+                    bytes: sum("bytes"), matched_bytes: sum("matched_bytes") }, modTag(m, false), v.file);
   }
   const filter = $("tier-filter"); filter.textContent = "";
   for (const m of ["all", ...mods.map(([m]) => m)]) {
