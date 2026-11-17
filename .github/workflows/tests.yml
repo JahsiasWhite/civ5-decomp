@@ -35,14 +35,16 @@ jobs:
       - name: Regenerated data comes with boundary fixes
         run: |
           changed=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" HEAD)
-          if echo "$changed" | grep -qx "boundary_overrides.txt"; then
+          for mod in $(ls modules); do
+            d="modules/$mod"
+            echo "$changed" | grep -qx "$d/boundary_overrides.txt" || continue
             missing=""
-            for f in data/callgraph.csv data/fingerprints.csv; do
+            for f in "$d/data/callgraph.csv" "$d/data/fingerprints.csv"; do
               echo "$changed" | grep -qx "$f" || missing="$missing $f"
             done
             if [ -n "$missing" ]; then
-              echo "::error file=boundary_overrides.txt::boundary_overrides.txt changed but not:$missing. Run \`python tools/c5d.py scope\`, \`queue\` and \`fingerprint\` and commit the results."
+              echo "::error file=$d/boundary_overrides.txt::$d/boundary_overrides.txt changed but not:$missing. Run \`python tools/c5d.py scope\`, \`queue\` and \`fingerprint\` and commit the results."
               exit 1
             fi
-          fi
+          done
           echo "ok"

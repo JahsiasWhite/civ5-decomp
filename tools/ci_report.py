@@ -22,6 +22,8 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+import config  # noqa: E402  (tools/ is on sys.path wherever these run)
+
 ROOT = Path(__file__).resolve().parent.parent
 INCLUDE_RE = re.compile(r'^\s*#\s*include\s*"([^"]+)"', re.M)
 HEADER_EXT = (".h", ".hpp", ".inl")
@@ -32,12 +34,14 @@ def _rel(p, root):
 
 
 def include_graph(root=ROOT):
-    """{file: {files it #includes "..."}} over src/ and include/, as repo-relative posix
-    paths. A quoted include resolves like cl does here: next to the including file
-    first, then include/ (the /I path). Unresolved ones (SDK, system) are left out."""
+    """{file: {files it #includes "..."}} over every module's src/ (modules/<id>/src) and
+    include/, as repo-relative posix paths. A quoted include resolves like cl does here:
+    next to the including file first, then include/ (the /I path). Unresolved ones (SDK,
+    system) are left out."""
     root = Path(root)
-    files = [p for d in ("src", "include") if (root / d).is_dir()
-             for p in (root / d).rglob("*") if p.suffix in (".cpp", ".c") + HEADER_EXT]
+    dirs = [root / "include"] + sorted((root / "modules").glob("*/src"))
+    files = [p for d in dirs if d.is_dir()
+             for p in d.rglob("*") if p.suffix in (".cpp", ".c") + HEADER_EXT]
     graph = {}
     for f in files:
         deps = set()
@@ -115,7 +119,7 @@ def _regression_table(regressed):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--status", default=str(ROOT / "progress" / "status.csv"))
+    p.add_argument("--status", default=str(config.module().status_csv))
     p.add_argument("--changed", default=None)
     p.add_argument("--base-status", default=None,
                    help="progress/status.csv before the change: the PR's base (header "

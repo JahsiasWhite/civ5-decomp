@@ -22,9 +22,11 @@ import hashlib
 import json
 from pathlib import Path
 
+import config  # noqa: E402  (tools/ is on sys.path wherever these run)
+
 ROOT = Path(__file__).resolve().parent.parent
-CSV_PATH = ROOT / "data" / "fingerprints.csv"
-META_PATH = ROOT / "data" / "fingerprints.json"
+CSV_PATH = config.module().data / "fingerprints.csv"
+META_PATH = config.module().data / "fingerprints.json"
 MAX_EXTENT = 4096          # switch tables live right after the code; cap the hashed tail
 SALT = b"c5d-fp1"
 

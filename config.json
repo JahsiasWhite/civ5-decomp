@@ -1,7 +1,21 @@
 {
-  "target_exe": "CivilizationV_DX11.exe",
-  "target_build_hash": "37f6137c4e94ea252b50abbce60bda734a931c3d6acd3661b6699fcbe46d76e0",
-  "target_build": "Steam final build, 2014-11-19 (DX11 exe)",
+  "modules": {
+    "exe": {
+      "file": "CivilizationV_DX11.exe",
+      "build_hash": "37f6137c4e94ea252b50abbce60bda734a931c3d6acd3661b6699fcbe46d76e0",
+      "build": "Steam final build, 2014-11-19 (DX11 exe)"
+    },
+    "db": {
+      "file": "CvGameDatabaseWin32Final Release.dll",
+      "build_hash": "e3c0d6affee8036b3d0e94ecb67c359db337bf8cf2cc33849b7fd909b79d4d0f",
+      "build": "Steam final build, 2014-11-19 (game database DLL)"
+    },
+    "loc": {
+      "file": "CvLocalizationWin32Final Release.dll",
+      "build_hash": "050ec4dba67f090c114dd10fb29d4e24d2e6eefd11eac951ae87e678ecd8e174",
+      "build": "Steam final build, 2014-11-19 (localization DLL)"
+    }
+  },
   "ghidra_version": "10.3.2",
   "msvc_version": "15.00.30729.01",
   "cflags": [

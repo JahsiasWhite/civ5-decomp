@@ -19,6 +19,8 @@ import sys
 import time
 from pathlib import Path
 
+import config  # noqa: E402  (tools/ is on sys.path wherever these run)
+
 import capstone
 
 ATTEMPTS = "attempts.jsonl"
@@ -130,7 +132,8 @@ def write_bundle(ctx, row, queue_by_addr, names, symbols_by_addr, imports, last_
     addr, size = int(row["entry"], 16), int(row["size"])
     d = ctx.build / "tasks" / f"{addr:08x}"
     d.mkdir(parents=True, exist_ok=True)
-    src = f"src/auto/f_{addr:08x}.cpp"
+    m = config.module()
+    src = m.rel(m.src / "auto" / f"f_{addr:08x}.cpp")
     asm, refs = disasm_text(ctx.image, addr, size, {**names, **imports})
     ref_lines = []
     for v in sorted(refs):
@@ -159,7 +162,7 @@ def write_bundle(ctx, row, queue_by_addr, names, symbols_by_addr, imports, last_
         f"cluster size {row['cluster_size']}",
         "",
         RULES.format(src=src, addr=f"0x{addr:08x}", worker=worker,
-                     symfile=f"symbols/auto/f_{addr:08x}.txt"),
+                     symfile=m.rel(m.symbols_dir / "auto" / f"f_{addr:08x}.txt")),
         *class_section(ctx, addr, queue_by_addr),
         "## Disassembly (reference only)",
         "```", asm, "```",

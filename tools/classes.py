@@ -37,6 +37,8 @@ import struct
 from collections import Counter, defaultdict
 from pathlib import Path
 
+import config  # noqa: E402  (tools/ is on sys.path wherever these run)
+
 ROOT = Path(__file__).resolve().parent.parent
 INCLUDE = ROOT / "include"
 VTABLE_MARK = re.compile(r"c5d-vtable:\s*(0x[0-9a-fA-F]+)")
@@ -64,7 +66,7 @@ class ClassIndex:
         self._find_vtables()
         self._group()
         self._read_headers(include_dir)
-        self._name_classes(names_csv or ROOT / "names" / "sdk_vtables.csv")
+        self._name_classes(names_csv or config.module().names / "sdk_vtables.csv")
 
     # ------------------------------------------------------------ discovery
     def owner(self, va):

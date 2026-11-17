@@ -1,5 +1,6 @@
 # Verify matches without the game: compile everything with VC++ 2008 SP1 under Wine
-# and compare against data/fingerprints.csv (see tools/fingerprint.py).
+# and compare against modules/exe/data/fingerprints.csv (see tools/fingerprint.py).
+# Only the exe so far; the DLL modules join the run in a later step.
 #
 # - pull requests: a check that fails if a function in the PR's files doesn't MATCH, or
 #   one in a file including a changed header stops matching
@@ -11,24 +12,18 @@ name: verify
 on:
   pull_request:
     paths:
-      - "src/**"
+      - "modules/**"
       - "include/**"
-      - "symbols/**"
-      - "symbols.txt"
       - "tools/**"
-      - "data/**"
       - "config.json"
       - ".github/workflows/verify.yml"
       - ".github/ci/**"
   push:
     branches: [main]
     paths:
-      - "src/**"
+      - "modules/**"
       - "include/**"
-      - "symbols/**"
-      - "symbols.txt"
       - "tools/**"
-      - "data/**"
       - "config.json"
       - ".github/workflows/verify.yml"
       - ".github/ci/**"
@@ -146,7 +141,9 @@ jobs:
             base="${{ github.event.pull_request.base.sha }}"
             git diff --name-only "$base" HEAD > build/changed.txt
             # the base branch's last committed results: what a header change must not break
-            git show "$base:progress/status.csv" > build/base_status.csv 2>/dev/null || rm -f build/base_status.csv
+            # (status.csv moved to modules/exe/progress/; older commits have it at progress/)
+            git show "$base:modules/exe/progress/status.csv" > build/base_status.csv 2>/dev/null ||
+              git show "$base:progress/status.csv" > build/base_status.csv 2>/dev/null || rm -f build/base_status.csv
             python tools/ci_report.py --status build/status.csv --changed build/changed.txt \
               --base-status build/base_status.csv >> "$GITHUB_STEP_SUMMARY"
           else
@@ -154,7 +151,9 @@ jobs:
             # scheduled run): a function that matched there and doesn't now fails the run
             before="${{ github.event.before }}"
             case "$before" in ""|0000000000000000000000000000000000000000) before=HEAD;; esac
-            git show "$before:progress/status.csv" > build/base_status.csv 2>/dev/null || rm -f build/base_status.csv
+            # (status.csv moved to modules/exe/progress/; older commits have it at progress/)
+            git show "$before:modules/exe/progress/status.csv" > build/base_status.csv 2>/dev/null ||
+              git show "$before:progress/status.csv" > build/base_status.csv 2>/dev/null || rm -f build/base_status.csv
             python tools/ci_report.py --status build/status.csv --base-status build/base_status.csv >> "$GITHUB_STEP_SUMMARY"
           fi
 

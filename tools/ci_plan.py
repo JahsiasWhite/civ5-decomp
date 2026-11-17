@@ -19,6 +19,7 @@ Full run whenever the inputs aren't only sources, headers and symbol files:
 - nothing to start from (e.g. only a symbols file changed)
 """
 import argparse
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -28,9 +29,11 @@ import ci_report  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE_EXT = (".cpp", ".c")
-# changed paths that don't force a full run (anything else does)
-PARTIAL_OK = ("src/", "include/", "symbols/")
-PARTIAL_OK_FILES = {"symbols.txt"}
+# changed paths that don't force a full run (anything else does): shared headers and
+# each module's sources and symbol files (modules/<id>/src/, symbols/, symbols.txt)
+PARTIAL_OK = re.compile(r"^(include/|modules/[^/]+/(src/|symbols/|symbols\.txt$))")
+SOURCE_TREE = re.compile(r"^(include/|modules/[^/]+/src/)")
+MODULE_SRC = re.compile(r"^modules/[^/]+/src/")
 IGNORED_EXT = (".md",)
 
 
@@ -55,13 +58,13 @@ def plan(rows, graph):
     for status, path in rows:
         if path.endswith(IGNORED_EXT):
             continue
-        if not (path.startswith(PARTIAL_OK) or path in PARTIAL_OK_FILES):
+        if not PARTIAL_OK.match(path):
             return "full", f"{path} changed"
-        if path.startswith(("src/", "include/")) and status not in ("M", "A"):
+        if SOURCE_TREE.match(path) and status not in ("M", "A"):
             return "full", f"{path} deleted, renamed or copied"
         changed.add(path)
     headers = {p for p in changed if p.endswith(ci_report.HEADER_EXT)}
-    seeds = {p for p in changed if p.startswith("src/") and p.endswith(SOURCE_EXT)}
+    seeds = {p for p in changed if MODULE_SRC.match(p) and p.endswith(SOURCE_EXT)}
     seeds |= ci_report.sources_including(headers, graph)
     if not seeds:
         return "full", "no changed sources or headers to start from"

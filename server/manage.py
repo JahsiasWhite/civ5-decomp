@@ -1,7 +1,7 @@
 """Maintainer commands for the coordination server's database.
 
-  python server/manage.py import    load/refresh functions from build/queue.csv
-  python server/manage.py verify    apply progress/status.csv (run `c5d match` first)
+  python server/manage.py import    load/refresh functions from build/<module>/queue.csv
+  python server/manage.py verify    apply modules/<module>/progress/status.csv (run `c5d match` first)
   python server/manage.py token <login> [--display NAME]
                                     create/refresh an API token (e.g. for yourself)
   python server/manage.py stats     print the dashboard numbers
@@ -255,17 +255,17 @@ def main():
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(dest="cmd", required=True)
     i = sub.add_parser("import")
-    i.add_argument("--queue", default=str(ROOT / "build" / "queue.csv"))
-    i.add_argument("--status", default=str(ROOT / "progress" / "status.csv"))
+    i.add_argument("--queue", default=None, help="default: build/<module>/queue.csv")
+    i.add_argument("--status", default=None, help="default: modules/<module>/progress/status.csv")
     i.set_defaults(fn=cmd_import)
     v = sub.add_parser("verify")
-    v.add_argument("--status", default=str(ROOT / "progress" / "status.csv"))
+    v.add_argument("--status", default=None, help="default: modules/<module>/progress/status.csv")
     v.set_defaults(fn=cmd_verify)
-    pu = sub.add_parser("push", help="send progress/status.csv to the live server")
-    pu.add_argument("--status", default=str(ROOT / "progress" / "status.csv"))
-    pu.add_argument("--queue", default=str(ROOT / "build" / "queue.csv"),
-                    help="readiness from here when there is no call graph")
-    pu.add_argument("--callgraph", default=str(ROOT / "data" / "callgraph.csv"))
+    pu = sub.add_parser("push", help="send a module's progress/status.csv to the live server")
+    pu.add_argument("--status", default=None, help="default: modules/<module>/progress/status.csv")
+    pu.add_argument("--queue", default=None,
+                    help="readiness from here when there is no call graph (default: build/<module>/queue.csv)")
+    pu.add_argument("--callgraph", default=None, help="default: modules/<module>/data/callgraph.csv")
     pu.add_argument("--server", default=None, help="default: server in config.local.json")
     pu.add_argument("--token", default=None, help="default: token in config.local.json")
     pu.set_defaults(fn=cmd_push, no_db=True)
@@ -304,6 +304,14 @@ def main():
         sp_.add_argument("--module", default="exe", choices=list(MODULES),
                          help="which binary these functions belong to (default: exe)")
     args = p.parse_args()
+    if hasattr(args, "module"):                     # file defaults follow the module
+        sys.path.insert(0, str(ROOT / "tools"))
+        import config
+        m = config.module(args.module)
+        for key, path in (("status", m.status_csv), ("queue", m.build / "queue.csv"),
+                          ("callgraph", m.data / "callgraph.csv")):
+            if getattr(args, key, "unset") is None:
+                setattr(args, key, str(path))
     args.fn(None if getattr(args, "no_db", False) else open_db(), args)
 
 

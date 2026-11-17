@@ -59,7 +59,7 @@ Setup:
    so it has to match exactly.
 3. finds Ghidra, Java and the compiler (plus the Windows SDK headers)
 4. saves your paths in `config.local.json` (git-ignored, so it never leaves your machine)
-5. builds the scope and work queue from the shared function list (`data/functions.csv`)
+5. builds the scope and work queue from the shared function list (`modules/exe/data/functions.csv`)
 6. runs a test match on a function that is known to match
 
 Every problem shows as `[!!]` with a line telling you how to fix it. Fix those and run setup again. Options:
@@ -78,7 +78,7 @@ python tools/c5d.py analyze
 1. Sign in with GitHub on the project site's **Account** page, accept the terms, and create an API token.
 2. `python tools/c5d.py remote login --server https://<site> --token c5d_...`
 3. `python tools/c5d.py remote claim --n 3 --model <model id>` reserves functions for 4 hours
-   and writes `build/tasks/<address>/TASK.md` for each one, with everything needed to solve it.
+   and writes `build/exe/tasks/<address>/TASK.md` for each one, with everything needed to solve it.
    The model is kept on the claim, so the match is credited to it even if it's merged before
    you report it (verify then also closes the claim). `task next` and `agent` take `--model`
    too; without it they use `"model"` from `config.local.json`.
@@ -91,8 +91,8 @@ agree on them with the others first.
 
 ## 4. Match a function
 
-Write the function in `src/auto/f_<address>.cpp` and its symbol in
-`symbols/auto/f_<address>.txt` (the bundle explains both), then:
+Write the function in `modules/exe/src/auto/f_<address>.cpp` and its symbol in
+`modules/exe/symbols/auto/f_<address>.txt` (the bundle explains both), then:
 
 ```bash
 python tools/c5d.py --worker w1 match --addr 0x00540240 -v
@@ -101,7 +101,7 @@ python tools/c5d.py --worker w1 match --addr 0x00540240 -v
 With `--addr`, match builds only the files connected to that function (the ones defining
 what it calls, its callers, and so on outward), and unchanged files come from a shared
 object cache in `build/objcache/`, so a check takes a second or two. `--all-files` builds
-all of `src/` instead.
+all of `modules/exe/src/` instead.
 
 - `MATCH`: identical, and every call and global points where the original's does. Done.
 - `MATCH?`: identical bytes, but some references aren't named yet. Add them to the symbols file.
@@ -167,7 +167,7 @@ types and fields.
 | Tag | Where the name comes from |
 |---|---|
 | `EXE` | The game's own executable: exported names, RTTI type names, strings that name the function, the Lua function tables |
-| `SDK` | The Civ V SDK (`third_party/`, `names/sdk_vtables.csv`): interface and class names, method names, field names. Names and layouts only, never copied code |
+| `SDK` | The Civ V SDK (`third_party/`, `modules/exe/names/sdk_vtables.csv`): interface and class names, method names, field names. Names and layouts only, never copied code |
 | `LIB` | A byte-identical function in a library the game links (Lua 5.1, the Visual C++ 2008 runtime, ...) |
 | `COMMUNITY` | Community projects and documentation (modding wikis, other mods). Names only, never their code |
 | `GUESS` | No source has a name: a best guess from what the code does |
@@ -193,7 +193,7 @@ python tools/c5d.py remote report 0x00540240 --model <model or "hand"> --tries 2
 `report` re-checks the match on your machine before it reports. Give it several addresses
 (`remote report 0x00540240 0x00540300 ...`) or `--claimed` (every claim that matches) to
 re-check and report them all in one go. Then open a [pull request](https://github.com/JahsiasWhite/civ5-decomp/pulls) with
-your `src/auto/f_*.cpp` and `symbols/auto/f_*.txt` files. Once it's merged, the verify workflow
+your `modules/exe/src/auto/f_*.cpp` and `modules/exe/symbols/auto/f_*.txt` files. Once it's merged, the verify workflow
 re-runs the match on `main` (on every push, without the game) and the site marks it matched
 within a few minutes.
 

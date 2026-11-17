@@ -17,6 +17,7 @@ import config
 
 ROOT = config.ROOT
 CFG = config.load()        # config.json overlaid with config.local.json (see tools/config.py)
+M = config.module()        # the binary worked on: modules/<id>/ files, build/<id>/ output
 
 GAME_EXE = Path(CFG.get("game_dir") or "<run c5d setup>") / CFG["target_exe"]
 GHIDRA = Path(CFG.get("ghidra_dir") or "<run c5d setup>")
@@ -24,7 +25,7 @@ HEADLESS = GHIDRA / "support" / "analyzeHeadless.bat"
 MSVC_CL = Path(CFG.get("msvc_bin") or "<run c5d setup>") / "cl.exe"
 PROJ_DIR = ROOT / CFG["ghidra_project_dir"]
 PROJ_NAME = CFG["ghidra_project_name"]
-BUILD = ROOT / "build"
+BUILD = M.build
 
 
 def ok(flag, label, detail=""):
@@ -79,7 +80,7 @@ def cmd_analyze(args):
     if not HEADLESS.is_file():
         sys.exit(f"Ghidra not found: {HEADLESS}")
     PROJ_DIR.mkdir(exist_ok=True)
-    BUILD.mkdir(exist_ok=True)
+    BUILD.mkdir(parents=True, exist_ok=True)
     # Ghidra's own export. Everyone works from the committed data/functions.csv so
     # addresses agree across Ghidra versions; maintainers refresh it from this file.
     out_csv = BUILD / "functions.csv"
@@ -122,7 +123,7 @@ def load_symbols():
     Workers each write their own symbols/auto/f_<addr>.txt so parallel tasks
     never edit the same file."""
     syms = {}
-    files = [ROOT / "symbols.txt"] + sorted((ROOT / "symbols").rglob("*.txt"))
+    files = [M.symbols_txt] + sorted(M.symbols_dir.rglob("*.txt"))
     for f in files:
         if not f.exists():
             continue
@@ -169,7 +170,7 @@ def default_sources():
     half-written file must not break everyone else's LTCG link)."""
     held = claims()
     out = []
-    for p in sorted((ROOT / "src").rglob("*.cpp")):
+    for p in sorted(M.src.rglob("*.cpp")):
         if p.parent.name == "auto" and p.stem.startswith("f_"):
             try:
                 owner = held.get(int(p.stem[2:], 16))
@@ -217,7 +218,7 @@ def flags_for(src, base):
     return flags
 
 
-OBJ_CACHE = BUILD / "objcache"          # shared by all workers; see tools/objcache.py
+OBJ_CACHE = config.BUILD_ROOT / "objcache"   # shared by all workers and modules; see tools/objcache.py
 
 
 def disasm(code, va):
@@ -438,11 +439,12 @@ def cmd_match(args):
     if fp_mode:
         if args.obj:
             sys.exit("--obj needs the game exe; fingerprint mode only runs the LTCG link")
+        import fingerprint
         from fingerprint import FingerprintImage
         image = FingerprintImage()
         if image.build_hash != CFG["target_build_hash"]:
-            sys.exit("data/fingerprints.csv was made from a different exe than config.json targets")
-        print("fingerprint mode (no game exe): checking against data/fingerprints.csv")
+            sys.exit(f"{M.rel(fingerprint.CSV_PATH)} was made from a different build than config.json targets")
+        print(f"fingerprint mode (no game exe): checking against {M.rel(fingerprint.CSV_PATH)}")
     else:
         image = PEImage(GAME_EXE)
     around = list(args.around or ())
@@ -524,7 +526,7 @@ def cmd_match(args):
     return 0 if totals["DIFF"] == 0 and totals["ERROR"] == 0 else 1
 
 
-STATUS_CSV = ROOT / "progress" / "status.csv"
+STATUS_CSV = M.status_csv
 
 
 def load_status():
@@ -565,7 +567,7 @@ def load_names():
     for r in config.load_functions():
         if not r["name"].startswith("FUN_"):
             names[int(r["entry"], 16)] = r["name"]
-    for f in sorted((ROOT / "names").glob("*.csv")):
+    for f in sorted(M.names.glob("*.csv")):
         with open(f, newline="") as fh:
             for r in csv.DictReader(fh):
                 names.setdefault(int(r["address"], 16), r["name"])
@@ -590,7 +592,7 @@ def cmd_queue(args):
     if not (BUILD / "scope.csv").exists():
         sys.exit("run `c5d scope` first")
     rows = workqueue.build(PEImage(GAME_EXE), BUILD / "scope.csv", load_status(), load_names(),
-                           BUILD / "queue.csv", callgraph_csv=ROOT / "data" / "callgraph.csv")
+                           BUILD / "queue.csv", callgraph_csv=M.data / "callgraph.csv")
     todo = [r for r in rows if r["status"] != "MATCH"]
     ready = [r for r in todo if r["pending_callees"] == 0]
     from collections import Counter
@@ -870,7 +872,7 @@ def review_files():
     {path: reason}. A marker means the bytes match but the source uses a trick
     the original surely didn't (a fake match) and should be revisited."""
     out = {}
-    for src in sorted((ROOT / "src").rglob("*.cpp")):
+    for src in sorted(M.src.rglob("*.cpp")):
         with open(src, encoding="utf-8", errors="replace") as f:
             for _, line in zip(range(40), f):
                 if "c5d-review:" in line:
@@ -977,7 +979,7 @@ def cmd_remote(args):
 
 def cmd_scope(_args):
     import scope
-    scope.run(LinkCtx(), ROOT, BUILD, GAME_EXE)
+    scope.run(LinkCtx(), M.root, BUILD, GAME_EXE)
     return 0
 
 
@@ -1006,7 +1008,7 @@ def cmd_boundaries(args):
         print(f"  0x{entry:08x} 0x{end:08x}{'' if listed else ' new'}  {why}")
     print(f"{len(found)} function(s) with wrong boundaries found")
     if args.write and found:
-        path = config.BOUNDARY_OVERRIDES
+        path = config.boundary_overrides_path()
         text = path.read_text(encoding="utf-8") if path.exists() else ""
         lines = [f"0x{e:08x} 0x{x:08x}{'' if listed else ' new'}  # auto (c5d boundaries): {why}\n"
                  for e, x, ab, listed, why in found]

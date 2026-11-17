@@ -385,10 +385,10 @@ def step_data(rep):
     else:
         rep.bad("function list", "data/functions.csv is missing", "git pull (it is committed)")
         return
-    build = ROOT / "build"
+    build = config.module().build
     for name, args in (("scope", ("scope",)), ("queue", ("queue", "--top", "0"))):
         out = build / f"{name}.csv"
-        inputs = [fcsv] + [p for p in (config.BOUNDARY_OVERRIDES,) if p.exists()]
+        inputs = [fcsv] + [p for p in (config.boundary_overrides_path(),) if p.exists()]
         if out.exists() and out.stat().st_mtime >= max(p.stat().st_mtime for p in inputs):
             rep.ok(f"build/{name}.csv", "up to date")
             continue
@@ -403,7 +403,7 @@ def step_data(rep):
 
 def step_test_match(rep):
     print("Test match")
-    status = ROOT / "progress" / "status.csv"
+    status = config.module().status_csv
     import csv
     rows = [r for r in csv.DictReader(open(status, newline=""))] if status.exists() else []
     known = next((r for r in rows if r["status"] == "MATCH"), None)

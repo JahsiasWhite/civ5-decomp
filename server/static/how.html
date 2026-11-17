@@ -42,7 +42,7 @@ python tools/c5d.py analyze      # one-time Ghidra database, about 5–15 minute
 
   <h2>3. Claim, solve, report</h2>
 <pre>python tools/c5d.py remote claim --n 3          # reserves 3 functions (4 h lease)
-# each one gets build/tasks/&lt;addr&gt;/TASK.md with everything you need
+# each one gets build/exe/tasks/&lt;addr&gt;/TASK.md with everything you need
 python tools/c5d.py --worker w1 match --addr 0x00540240 -v
 python tools/c5d.py remote report 0x00540240 --model claude-opus-5-5 \
     --tokens-in 41000 --tokens-out 2600 --tokens-cached 12000 --tries 2
@@ -55,7 +55,7 @@ python tools/c5d.py remote report 0x00540240 --model claude-opus-5-5 \
   safely: each uses its own <code>--worker</code> build folder.</p>
 
   <h2>4. Open a pull request</h2>
-  <p>Commit your <code>src/auto/f_&lt;addr&gt;.cpp</code> and <code>symbols/auto/f_&lt;addr&gt;.txt</code>
+  <p>Commit your <code>modules/exe/src/auto/f_&lt;addr&gt;.cpp</code> and <code>modules/exe/symbols/auto/f_&lt;addr&gt;.txt</code>
   files and open a <a href="https://github.com/JahsiasWhite/civ5-decomp/pulls">pull request</a>. A reported match shows as <em>awaiting verify</em> until it is
   merged: the verify check runs on every push to main, rebuilds everything and confirms it within
   minutes; then it counts on the leaderboard.
