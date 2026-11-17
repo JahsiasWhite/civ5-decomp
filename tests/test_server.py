@@ -914,3 +914,14 @@ def test_manage_import_and_push_with_module(srv, tmp_path):
     manage.cmd_push(None, argparse.Namespace(status=str(status), queue=str(queue), callgraph=str(tmp_path / "x"),
                                              server=base, token=boss, module="db"))
     assert db.one("SELECT status FROM functions WHERE module='db' AND addr=?", (0x10001000,))["status"] == "matched"
+
+
+def test_claim_in_module_not_imported_yet(srv):
+    _base, db = srv
+    uid = db.conn.execute("INSERT INTO users(login,display,created) VALUES ('dllfan','',0)").lastrowid
+    with pytest.raises(LookupError, match="isn't on this server yet"):
+        db.claim(uid, addr=0x10001000, module="db")
+    db.import_functions([{"addr": 0x10002000, "size": 16, "name": "D", "conv": "thiscall", "depth": 0,
+                          "cluster": 0x10002000, "ready": 1, "queue_pos": 0}], module="db")
+    with pytest.raises(LookupError, match="out-of-scope"):
+        db.claim(uid, addr=0x10001000, module="db")

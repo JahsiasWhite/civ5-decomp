@@ -48,15 +48,15 @@ def open_db():
 
 
 def read_merges(module="exe"):
-    """Boundary fixes from boundary_overrides.txt, resolved against data/functions.csv:
-    [{"addr": int, "size": int, "absorbed": [int], "new": bool}]. Only the exe has them
-    until the tools learn about modules."""
-    if module != "exe":
-        return []
+    """Boundary fixes from modules/<module>/boundary_overrides.txt, resolved against that
+    module's data/functions.csv: [{"addr": int, "size": int, "absorbed": [int], "new": bool}]."""
     sys.path.insert(0, str(ROOT / "tools"))
     import config
-    return [{"addr": m["entry"], "size": m["size"], "absorbed": m["absorbed"], "new": m["new"]}
-            for m in config.boundary_merges()]
+    m = config.module(module)
+    rows = config._read_function_rows(config.functions_csv(module))
+    overrides = config.read_boundary_overrides(m.boundary_overrides)
+    return [{"addr": x["entry"], "size": x["size"], "absorbed": x["absorbed"], "new": x["new"]}
+            for x in config.boundary_merges(rows, overrides)]
 
 
 def cmd_import(db, args):

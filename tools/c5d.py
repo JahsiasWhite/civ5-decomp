@@ -1135,7 +1135,14 @@ def cmd_build(args):
     if args.clean:
         if M.id != config.DEFAULT_MODULE:
             return hybrid.clean_dll(CFG["game_dir"], M.file, state, M.build_hash)
-        return hybrid.clean_game(CFG["game_dir"], CFG["target_exe"], state)
+        rc = hybrid.clean_game(CFG["game_dir"], CFG["target_exe"], state)
+        # the exe's clean leaves the install as shipped: put back DLLs a module run swapped in
+        for other in config.all_modules():
+            other_state = other.build / "hybrid"
+            if other.id != M.id and hybrid.has_dll_backup(other_state, other.file):
+                print(f"{other.id}: ", end="")
+                rc = hybrid.clean_dll(CFG["game_dir"], other.file, other_state, other.build_hash) or rc
+        return rc
     load_func_sizes()
     syms = load_symbols()
     image = PEImage(GAME_EXE)

@@ -313,6 +313,9 @@ class DB:
             if addr is not None:
                 f = self.one("SELECT status FROM functions WHERE module=? AND addr=?", (module, addr))
                 if not f:
+                    # a module nobody imported yet is not "untracked": claims must wait for it
+                    if not self.one("SELECT 1 FROM functions WHERE module=? LIMIT 1", (module,)):
+                        raise LookupError(f"module {module} isn't on this server yet")
                     raise LookupError("unknown or out-of-scope function")
                 if f["status"] == "matched":
                     raise ValueError("already matched")

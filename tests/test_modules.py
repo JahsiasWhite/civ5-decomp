@@ -21,6 +21,8 @@ import config  # noqa: E402
     (["match", "--obj", "modules\\loc\\src\\auto\\f.cpp"], "loc"),
     (["match", "--addr", "0x00401000"], None),
     (["task", "next", "--n", "8"], None),
+    (["match", "--flag", "/Imodules/loc/include", "--addr", "0x00401000"], None),   # an option value
+    (["match", "--around-from", "build/modules/db/around.txt"], None),
 ])
 def test_module_from_argv(argv, want):
     assert config.module_from_argv(argv) == want
@@ -48,7 +50,23 @@ def test_module_paths_and_selection(monkeypatch):
     with pytest.raises(SystemExit):
         config.module()
     assert [m.id for m in config.all_modules()] == ["exe", "db", "loc"]
-    assert config.module_of("modules/loc/src/a.cpp") == "loc" and config.module_of("include/x.h") is None
+
+
+def test_module_entry_beats_leftover_local_keys(monkeypatch):
+    monkeypatch.setattr(config, "load_local", lambda: {"target_exe": "CivilizationV_DX11.exe",
+                                                       "target_build_hash": "stale"})
+    cfg = config.load("db")
+    assert cfg["target_exe"] == config.module("db").file
+    assert cfg["target_build_hash"] == config.module("db").build_hash
+
+
+def test_manage_reads_each_modules_boundary_fixes():
+    sys.path.insert(0, str(ROOT / "server"))
+    import manage
+    for mid in ("db", "loc"):
+        m = config.module(mid)
+        want = len(config.read_boundary_overrides(m.boundary_overrides))
+        assert want and len(manage.read_merges(mid)) == want
 
 
 def test_remote_adds_module_to_function_calls(monkeypatch):
@@ -116,6 +134,18 @@ def test_hybrid_dll_swap_and_restore(tmp_path, monkeypatch):
     with pytest.raises(SystemExit):
         hybrid.run_with_dll(built, game, "Cv.dll", "Game.exe", state, "h")
     assert dll.read_bytes() == b"someone else's mod"
+    # the game still has the DLL open: a clear message, not a traceback
+    dll.write_bytes(b"original")
+
+    real_copy = hybrid.shutil.copy2
+
+    def locked(src, dst, *a, **k):
+        if Path(dst) == dll:
+            raise PermissionError("in use")
+        return real_copy(src, dst, *a, **k)
+    monkeypatch.setattr(hybrid.shutil, "copy2", locked)
+    with pytest.raises(SystemExit, match="in use"):
+        hybrid.run_with_dll(built, game, "Cv.dll", "Game.exe", tmp_path / "state2", "h")
 
 
 def test_module_headers_are_tracked(tmp_path):

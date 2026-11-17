@@ -31,14 +31,15 @@ def save_local(updates):
 
 def load(module_id=None):
     """config.json overlaid with config.local.json. target_exe / target_build_hash /
-    target_build are filled in from the current module's entry in "modules" (see
-    module()), so code written for one binary keeps working."""
+    target_build always come from the current module's entry in "modules" (see module()),
+    so code written for one binary keeps working and a leftover key can't point a DLL run
+    at the exe."""
     cfg = json.loads(SHARED.read_text())
     cfg.update(load_local())
     m = cfg["modules"][current_module_id(module_id, cfg)]
-    cfg.setdefault("target_exe", m["file"])
-    cfg.setdefault("target_build_hash", m.get("build_hash", ""))
-    cfg.setdefault("target_build", m.get("build", ""))
+    cfg["target_exe"] = m["file"]
+    cfg["target_build_hash"] = m.get("build_hash", "")
+    cfg["target_build"] = m.get("build", "")
     return cfg
 
 
@@ -101,7 +102,9 @@ def split_addr(text):
 
 def module_from_argv(argv):
     """The module a command line names: --module X / --module=X, else the module of the
-    first qualified address (db:0x...) anywhere in it. None if neither."""
+    first qualified address (db:0x...) or source file (modules/<id>/....cpp) in it. Only
+    whole arguments count, so an option value that merely mentions a module's folder
+    (`--flag /Imodules/loc/include`) doesn't switch modules. None if neither."""
     for i, a in enumerate(argv):
         if a == "--module" and i + 1 < len(argv):
             return argv[i + 1]
@@ -112,6 +115,8 @@ def module_from_argv(argv):
         mid, sep, rest = a.partition(":")
         if sep and mid.isalpha() and rest.lower().startswith("0x"):
             return mid
+        if a.startswith("-") or not a.lower().endswith((".cpp", ".c")):
+            continue
         parts = a.replace("\\", "/").split("/")       # a source file under modules/<id>/
         if MODULES_DIR.name in parts[:-2]:
             i = parts.index(MODULES_DIR.name)
@@ -129,13 +134,6 @@ def module(module_id=None):
 def all_modules():
     cfg = json.loads(SHARED.read_text())
     return [Module(mid, spec) for mid, spec in cfg["modules"].items()]
-
-
-def module_of(path):
-    """The module whose directory holds `path` (repo-relative or absolute), else None."""
-    p = Path(path)
-    parts = (p.resolve().relative_to(ROOT.resolve()) if p.is_absolute() else p).parts
-    return parts[1] if len(parts) > 2 and parts[0] == MODULES_DIR.name else None
 
 
 IS_WINDOWS = os.name == "nt"

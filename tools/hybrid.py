@@ -355,7 +355,11 @@ def run_with_dll(hybrid_dll, game_dir, dll_name, exe_name, state_dir, build_hash
         print(f"note: the patched {dll_name} jumps to absolute addresses and has no relocations for "
               "them, so it only works if Windows loads it at its preferred base (0x10000000). Both "
               "game DLLs prefer that base, so one of them is moved; if this one is, the game crashes.")
-    shutil.copy2(hybrid_dll, live)
+    try:
+        shutil.copy2(hybrid_dll, live)
+    except PermissionError:
+        raise SystemExit(f"can't replace {live}: it's in use. Close the game (an earlier "
+                         "hybrid run may still be open) and try again.")
     appid = game_dir / "steam_appid.txt"
     if not appid.exists():
         appid.write_text(STEAM_APP_ID)
@@ -367,6 +371,11 @@ def run_with_dll(hybrid_dll, game_dir, dll_name, exe_name, state_dir, build_hash
     return live
 
 
+def has_dll_backup(state_dir, dll_name):
+    """True if a DLL module's run swapped its DLL in and `--clean` hasn't put it back."""
+    return _dll_backup(state_dir, dll_name).exists()
+
+
 def clean_dll(game_dir, dll_name, state_dir, build_hash):
     import setup_env
     game_dir, state_dir = Path(game_dir), Path(state_dir)
@@ -376,7 +385,11 @@ def clean_dll(game_dir, dll_name, state_dir, build_hash):
         if not setup_env.exe_is_target(backup, build_hash):
             raise SystemExit(f"{backup} is not the original build; not restoring it. "
                              "Use Steam's Verify integrity of game files instead.")
-        shutil.copy2(backup, live)
+        try:
+            shutil.copy2(backup, live)
+        except PermissionError:
+            raise SystemExit(f"can't restore {live}: it's in use. Close the game and run "
+                             "`--clean` again.")
         backup.unlink()
         done.append(f"restored {live}")
     marker = state_dir / "created_steam_appid"

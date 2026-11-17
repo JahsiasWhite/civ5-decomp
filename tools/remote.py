@@ -114,6 +114,10 @@ class ServerClaims:
             if e.status == 409:
                 print(f"0x{addr:08x}: skipped ({str(e).removeprefix('server: ')})", flush=True)
                 return False
+            if e.status == 404 and "isn't on this server" in str(e):
+                raise SystemExit(f"{e}. Its functions haven't been imported there, so nobody else "
+                                 "can see your claims; wait for the import, or pass --local if "
+                                 "you've agreed the work with the others.")
             if e.status == 404:             # server doesn't track it: nobody else can claim it
                 return True
             raise SystemExit(f"{e}\nCouldn't claim 0x{addr:08x} on the server, so stopping rather "
