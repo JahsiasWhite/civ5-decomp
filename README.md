@@ -340,6 +340,15 @@ What the trial found and fixed:
   (hundreds of inlined `FMalloc` expansions), so it should resolve as more callers
   are decompiled. Next experiments: decompile `GetSmallObjectAllocator` (the first
   caller in the same file), and try reordering functions or files within the link.
+- **Open problem: LTCG stack alignment.** Some original functions start with
+  `push ebp / mov ebp, esp / and esp, -8`, which realigns the stack to 8 bytes so the
+  function and its callees get aligned `double`/SSE slots. LTCG decides this at link
+  time from the whole call graph, not from the function's own source. Our partial build
+  sees a different graph, so it emits the same body without the realignment. No source
+  change inside the function fixes this. Release such tasks rather than forcing them.
+  Seen on `0x0074b3b0` (removed) and the `atexit` initializer `0x009c4640` (released).
+  Like the register-choice problem, it may resolve as more of the surrounding code is
+  decompiled. Microsoft doesn't document the exact rule.
 
 ## Phases
 

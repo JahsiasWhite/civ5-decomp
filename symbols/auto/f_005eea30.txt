@@ -1,0 +1,2 @@
+0x005eea30 ?Reset@StateBlock_005eea30@@QAEXXZ
+0x00a30674 ?g_defaultDuration@@3MA
