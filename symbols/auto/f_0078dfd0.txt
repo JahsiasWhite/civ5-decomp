@@ -1,0 +1,1 @@
+0x0078dfd0 ?GetRelativePtr@SelfRelativeBlock@@QAEPADXZ

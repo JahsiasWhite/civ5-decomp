@@ -1,12 +1,27 @@
-// c5d-model: Gemini 4 Hydrogen
-// c5d-review: virtual tail-call thunk forwarding to field_0x8 slot 0x8
+// Forwards its arguments to a function in the object's table of callbacks
+// (a C-style interface: a struct of function pointers).
+
 // src: GUESS (confidence: low) [0x0093e950]
-__declspec(naked) void Thunk_0093e950() {
-    __asm {
-        mov eax, dword ptr [esp + 0x10]
-        mov ecx, dword ptr [eax + 0x8]
-        mov dword ptr [esp + 0x10], eax
-        mov ecx, dword ptr [ecx + 0x8]
-        jmp ecx
-    }
+struct Obj_0093e950;
+
+// src: GUESS (confidence: low)
+struct Funcs_0093e950
+{
+    char pad[8];
+    // src: GUESS (confidence: low)
+    int (*fn)(int, int, int, Obj_0093e950*, int);
+};
+
+// src: GUESS (confidence: low)
+struct Obj_0093e950
+{
+    char pad[8];
+    // src: GUESS (confidence: low)
+    const Funcs_0093e950* funcs;
+};
+
+// src: GUESS (confidence: low) [0x0093e950]
+int Forward_0093e950(int a1, int a2, int a3, Obj_0093e950* obj, int a5)
+{
+    return obj->funcs->fn(a1, a2, a3, obj, a5);
 }

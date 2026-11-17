@@ -107,6 +107,12 @@ all of `src/` instead.
 - `MATCH?`: identical bytes, but some references aren't named yet. Add them to the symbols file.
 - `DIFF`: shows the two disassemblies side by side, with `!!` on the lines that differ.
 
+**Inline asm is never a match.** Don't write `__asm` blocks or `__declspec(naked)`
+functions. They reproduce the original bytes by construction, so a `MATCH` from one proves
+nothing about the source. If C++ won't match, release the task instead of committing asm.
+The only exception is code that was genuinely asm in the original (a CRT routine, for
+example). Mark it with `// c5d-review:` saying why, and mention it in your pull request.
+
 You can work by hand, with an AI agent, or both. Point the agent at the `TASK.md`, or set
 `agent_cmd` in `config.local.json` and run `c5d agent`. Different `--worker` ids keep parallel
 runs out of each other's way.
@@ -125,6 +131,9 @@ printed. If you run an agent another way, pass `--tokens-in/--tokens-out/--token
 Tips:
 - Most code uses `/arch:SSE2 /fp:fast`. If a function only matches with other settings, add a
   `// c5d-cflags: -/arch:SSE2` line near the top of the file (see README).
+- When only registers or instruction order differ, try a different parameter count first
+  (callees often take more arguments than the code touches), then the return type, then
+  `c5d-cflags` such as `+/Oy-` (frame pointers) or `+/hotpatch`.
 - Known open problem: the allocator cluster (`FSBAAllocate` and friends) still differs only in which
   register the linker picks. Skip those unless you want to research it.
 

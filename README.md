@@ -247,15 +247,18 @@ the first 40 lines of a source file to change its flags:
 
 A **fake match** has identical bytes, but its source uses a trick the original surely
 didn't: `volatile` to pin instruction order, an array standing in for a vtable, a
-`#pragma`, inline asm. They're normal early on and don't block progress. Mark them in the
-first 40 lines of the file so they can be found and fixed once more of the class or file
-is known:
+`#pragma`. They're normal early on and don't block progress. Mark them in the first 40
+lines of the file so they can be found and fixed once more of the class or file is known:
 
 ```cpp
 // c5d-review: fields are volatile only to keep the stores in order
 ```
 
 `c5d status` counts them in PROGRESS.md; `git grep c5d-review` lists them.
+
+Inline asm (`__asm`, `__declspec(naked)`) isn't a fake match. It isn't a match at all,
+because it reproduces the bytes by construction. If C++ won't match, release the task. The
+only exception is code that was genuinely asm in the original; see CONTRIBUTING.md.
 
 ## Trial: 20 functions, 20 parallel agents (2026-11-15)
 

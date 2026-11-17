@@ -1,1 +1,1 @@
-0x00927cb0 ?Thunk_00927cb0@@YAXXZ
+0x00927cb0 ?Forward_00927cb0@@YAHPAUObj_00927cb0@@@Z
