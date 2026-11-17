@@ -1,0 +1,3 @@
+0x008302c0 ??0Derived_008302c0@@QAE@ABV0@@Z
+0x00b8971c ??_7Base_008302c0@@6B@
+0x00b8971c ??_7Derived_008302c0@@6B@

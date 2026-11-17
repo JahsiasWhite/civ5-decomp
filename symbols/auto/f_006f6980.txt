@@ -1,0 +1,2 @@
+0x006f6980 ?GetLuaBool_006f6980@@YAXPAUlua_State@@PA_N@Z
+0x00923946 _lua_toboolean
