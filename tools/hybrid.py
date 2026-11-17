@@ -327,3 +327,64 @@ def clean_game(game_dir, target_exe, state_dir):
     if not removed:
         print("nothing to clean")
     return 0
+
+
+# ---------------------------------------------------------------- run with a DLL module
+#
+# The exe looks a DLL up by its file name, so a hybrid DLL can't sit beside the original
+# the way the hybrid exe does: it replaces the game's copy for the run. The original is
+# saved first (once, and only if it really is the targeted build) and `--clean` puts it
+# back. Steam's "Verify integrity of game files" also restores it.
+
+def _dll_backup(state_dir, dll_name):
+    return Path(state_dir) / "original" / dll_name
+
+
+def run_with_dll(hybrid_dll, game_dir, dll_name, exe_name, state_dir, build_hash, patched=False):
+    import setup_env
+    game_dir, state_dir = Path(game_dir), Path(state_dir)
+    live = game_dir / dll_name
+    backup = _dll_backup(state_dir, dll_name)
+    if not backup.exists():
+        if not setup_env.exe_is_target(live, build_hash):
+            raise SystemExit(f"{live} is not the original build and there is no backup of it in "
+                             f"{backup.parent}: restore it first (Steam: Verify integrity of game files)")
+        backup.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(live, backup)
+    if patched:
+        print(f"note: the patched {dll_name} jumps to absolute addresses and has no relocations for "
+              "them, so it only works if Windows loads it at its preferred base (0x10000000). Both "
+              "game DLLs prefer that base, so one of them is moved; if this one is, the game crashes.")
+    shutil.copy2(hybrid_dll, live)
+    appid = game_dir / "steam_appid.txt"
+    if not appid.exists():
+        appid.write_text(STEAM_APP_ID)
+        (state_dir / "created_steam_appid").write_text(str(appid))
+    exe = game_dir / exe_name
+    print(f"replaced {live} (original saved to {backup}); starting {exe} (Steam must be running). "
+          "`c5d build --clean` puts the original back.")
+    subprocess.Popen([str(exe)], cwd=str(game_dir))
+    return live
+
+
+def clean_dll(game_dir, dll_name, state_dir, build_hash):
+    import setup_env
+    game_dir, state_dir = Path(game_dir), Path(state_dir)
+    live, backup = game_dir / dll_name, _dll_backup(state_dir, dll_name)
+    done = []
+    if backup.exists():
+        if not setup_env.exe_is_target(backup, build_hash):
+            raise SystemExit(f"{backup} is not the original build; not restoring it. "
+                             "Use Steam's Verify integrity of game files instead.")
+        shutil.copy2(backup, live)
+        backup.unlink()
+        done.append(f"restored {live}")
+    marker = state_dir / "created_steam_appid"
+    if marker.exists():
+        appid = Path(marker.read_text())
+        if appid.exists():
+            appid.unlink()
+            done.append(f"removed {appid}")
+        marker.unlink()
+    print("\n".join(done) if done else "nothing to clean")
+    return 0

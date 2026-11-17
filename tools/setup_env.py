@@ -96,7 +96,7 @@ def exe_is_target(path, expected):
         return False
     st = path.stat()
     stamp = f"{path}|{st.st_size}|{st.st_mtime_ns}|{expected}"
-    cache = ROOT / "build" / ".exe_verified"
+    cache = ROOT / "build" / f".verified_{path.name}"         # one per binary
     if cache.exists() and cache.read_text() == stamp:
         return True
     try:
@@ -271,6 +271,7 @@ def step_game(rep, cfg, arg):
         seen.append(exe)
         if exe_is_target(exe, want):
             rep.ok(target, f"{d} (build hash matches {cfg.get('target_build', 'the target build')})")
+            check_other_modules(rep, cfg, d, target)
             return {"game_dir": d.as_posix()}
         try:
             got = build_hash(exe)[:16] + "..."
@@ -285,6 +286,21 @@ def step_game(rep, cfg, arg):
         rep.bad(target, "Civilization V not found in any Steam library",
                 "install it through Steam, or pass --game \"<folder containing the exe>\"")
     return {}
+
+
+def check_other_modules(rep, cfg, game_dir, done):
+    """The other binaries in config.json "modules" (the DLLs) must be the same build too
+    before anyone works on them. A mismatch only matters for that module, so it's a note."""
+    for mid, spec in cfg.get("modules", {}).items():
+        f = spec["file"]
+        if f == done:
+            continue
+        path = Path(game_dir) / f
+        if exe_is_target(path, spec.get("build_hash", "")):
+            rep.ok(f"{mid}: {f}", "build hash matches")
+        else:
+            rep.note(f"{mid}: {path} is missing or a different build; `--module {mid}` won't work "
+                     "until Steam verifies the game files")
 
 
 def step_ghidra(rep, cfg, arg):

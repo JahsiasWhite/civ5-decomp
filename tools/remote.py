@@ -6,7 +6,11 @@ import json
 import urllib.error
 import urllib.request
 
+import config
 from config import load_local, save_local  # noqa: F401  (config.local.json)
+
+# calls about one function; they carry the module this run works on (see Remote.call)
+FUNCTION_CALLS = ("/api/claim", "/api/release", "/api/report")
 
 
 class RemoteError(SystemExit):
@@ -23,14 +27,20 @@ def logged_in():
 
 
 class Remote:
-    def __init__(self, server=None, token=None):
+    def __init__(self, server=None, token=None, module=None):
         loc = load_local()
+        # functions are (module, addr) on the server; a call that doesn't name a module
+        # means the exe, so only other modules need to say so (older servers know only the exe)
+        self.module = config.current_module_id(module)
         self.server = (server or loc.get("server") or "").rstrip("/")
         self.token = token or loc.get("token")
         if not self.server or not self.token:
             raise SystemExit("not logged in: run `c5d remote login --server URL --token TOKEN`")
 
     def call(self, method, path, body=None):
+        if (method == "POST" and path in FUNCTION_CALLS and self.module != config.DEFAULT_MODULE
+                and "module" not in (body or {})):
+            body = {**(body or {}), "module": self.module}
         req = urllib.request.Request(
             self.server + path, method=method,
             data=json.dumps(body or {}).encode() if method == "POST" else None,

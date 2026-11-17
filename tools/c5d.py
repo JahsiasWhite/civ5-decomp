@@ -16,6 +16,12 @@ from pathlib import Path
 import config
 
 ROOT = config.ROOT
+if __name__ == "__main__":
+    # The module decides every path below, so it is picked before anything is loaded:
+    # --module X, or the module of a qualified address on the command line (db:0x...).
+    _mid = config.module_from_argv(sys.argv[1:])
+    if _mid:
+        os.environ["C5D_MODULE"] = _mid
 CFG = config.load()        # config.json overlaid with config.local.json (see tools/config.py)
 M = config.module()        # the binary worked on: modules/<id>/ files, build/<id>/ output
 
@@ -26,6 +32,21 @@ MSVC_CL = Path(CFG.get("msvc_bin") or "<run c5d setup>") / "cl.exe"
 PROJ_DIR = ROOT / CFG["ghidra_project_dir"]
 PROJ_NAME = CFG["ghidra_project_name"]
 BUILD = M.build
+
+
+def addr_arg(text):
+    """An address on the command line: 0x10001234, or qualified as db:0x10001234. A
+    qualified one must be in the module this run works on (see --module)."""
+    mid, a = config.split_addr(text)
+    if mid and mid != M.id:
+        sys.exit(f"{text}: this run works on {M.id}; for {mid} use `c5d --module {mid} ...`, or "
+                 "give only qualified addresses so the module comes from them")
+    return a
+
+
+def fn_label(a):
+    """How a function is printed: plain for the exe, module-qualified otherwise."""
+    return f"0x{a:08x}" if M.id == config.DEFAULT_MODULE else f"{M.id}:0x{a:08x}"
 
 
 def ok(flag, label, detail=""):
@@ -84,8 +105,9 @@ def cmd_analyze(args):
     # Ghidra's own export. Everyone works from the committed data/functions.csv so
     # addresses agree across Ghidra versions; maintainers refresh it from this file.
     out_csv = BUILD / "functions.csv"
-    have_project = (PROJ_DIR / f"{PROJ_NAME}.gpr").exists()
+    have_project = (PROJ_DIR / f"{PROJ_NAME}.gpr").exists() and ghidra_has_program(M.file)
 
+    # one Ghidra project; each module's binary is its own program in it
     cmd = [str(HEADLESS), str(PROJ_DIR), PROJ_NAME]
     if have_project and not args.reimport:
         cmd += ["-process", CFG["target_exe"], "-noanalysis"]
@@ -100,14 +122,25 @@ def cmd_analyze(args):
     return run_headless(cmd).returncode
 
 
+def ghidra_has_program(name):
+    """True if the Ghidra project already holds a program called `name`."""
+    index = PROJ_DIR / f"{PROJ_NAME}.rep" / "idata" / "~index.dat"
+    try:
+        return name.encode() in index.read_bytes()
+    except OSError:
+        return False
+
+
 def cmd_dump(args):
-    if not (PROJ_DIR / f"{PROJ_NAME}.gpr").exists():
-        sys.exit("No Ghidra project yet; run `analyze` first.")
+    if not (PROJ_DIR / f"{PROJ_NAME}.gpr").exists() or not ghidra_has_program(M.file):
+        sys.exit(f"{M.file} isn't in the Ghidra project yet; run `python tools/c5d.py"
+                 + ("" if M.id == config.DEFAULT_MODULE else f" --module {M.id}") + " analyze` first.")
     out = BUILD / "dump"
+    addrs = [f"0x{addr_arg(x):08x}" for x in args.addrs]
     cmd = [str(HEADLESS), str(PROJ_DIR), PROJ_NAME,
            "-process", CFG["target_exe"], "-noanalysis", "-readOnly",
            "-scriptPath", str(ROOT / "tools" / "ghidra"),
-           "-postScript", "DumpFunctions.py", str(out), *args.addrs]
+           "-postScript", "DumpFunctions.py", str(out), *addrs]
     r = run_headless(cmd, capture_output=True, text=True)
     for line in r.stdout.splitlines():
         if "DumpFunctions:" in line:
@@ -682,14 +715,14 @@ def cmd_task(args):
                                            ctx.imports, worker=worker)
             print(f"{r['entry']}  {r['size']:>5}b  {r['conv']:<8} {worker:<5} -> {path.relative_to(ROOT)}")
     elif args.action == "check":
-        a = int(args.addr, 16)
+        a = addr_arg(args.addr)
         status, out = tasks.check(ctx, a, claims().get(a))
         tasks.log_attempt(BUILD, {"addr": f"0x{a:08x}", "status": status, "agent": "manual",
                                   "time": __import__("time").time()})
         print(out if args.verbose else status)
     else:                                   # release
         import remote
-        a = int(args.addr, 16)
+        a = addr_arg(args.addr)
         remote.ServerClaims.from_config(args.local, for_release=True).release(a)
         release(a)
     return 0
@@ -935,7 +968,8 @@ def cmd_remote(args):
         me = r.call("GET", "/api/me")
         print(f"{me['login']}  terms accepted: {me['accepted_terms']}  claims: {len(me['claims'])}")
         for c in me["claims"]:
-            print(f"  0x{c['addr']:08x}  {c['worker']:<6} {c['size']:>6}b  {c['name']}")
+            mid = c.get("module", config.DEFAULT_MODULE)
+            print(f"  {mid + ':':<5}0x{c['addr']:08x}  {c['worker']:<6} {c['size']:>6}b  {c['name']}")
         return 0
     if args.action == "claim":
         body = {"n": args.n, "worker_prefix": args.worker_prefix, "min_size": args.min_size,
@@ -945,19 +979,24 @@ def cmd_remote(args):
         if args.addr:
             if len(args.addr) > 1:
                 sys.exit("claim takes at most one address")
-            body["addr"] = args.addr[0]
+            body["addr"] = f"0x{addr_arg(args.addr[0]):08x}"
         remote_claim(r, body)
         return 0
     if args.action == "report":
         if args.claimed:
             if args.addr:
                 sys.exit("give addresses or --claimed, not both")
-            addrs = [c["addr"] for c in r.call("GET", "/api/me")["claims"]]
+            mine = r.call("GET", "/api/me")["claims"]
+            addrs = [c["addr"] for c in mine if c.get("module", config.DEFAULT_MODULE) == M.id]
+            others = sorted({c.get("module", config.DEFAULT_MODULE) for c in mine} - {M.id})
+            if others:
+                print(f"note: also holding claims in {', '.join(others)}; report those with "
+                      f"--module <id> --claimed")
             if not addrs:
-                print("no claims to report")
+                print(f"no {M.id} claims to report")
                 return 0
         elif args.addr:
-            addrs = [int(x, 16) for x in args.addr]
+            addrs = [addr_arg(x) for x in args.addr]
         else:
             sys.exit("usage: c5d remote report <addr> [<addr> ...] | --claimed")
         if len(addrs) > 1 and any(v is not None for v in (args.tokens_in, args.tokens_out,
@@ -970,11 +1009,29 @@ def cmd_remote(args):
         if not args.addr:
             sys.exit("usage: c5d remote release <addr> [<addr> ...]")
         for x in args.addr:
-            a = int(x, 16)
+            a = addr_arg(x)
             r.call("POST", "/api/release", {"addr": f"0x{a:08x}"})
             release(a)
-            print(f"0x{a:08x}: released")
+            print(f"{fn_label(a)}: released")
         return 0
+
+
+def cmd_exports(_args):
+    """modules/<id>/symbols/exports.txt from the binary's export table. A DLL exports its
+    classes under their decorated C++ names, which is exactly what the symbol map needs, so
+    every exported function starts out named and its callers can link against it."""
+    from binfmt import PEImage
+    img = PEImage(GAME_EXE)
+    exports = img.exports()                 # {name: va}
+    rows = sorted((va, name) for name, va in exports.items()
+                  if name.startswith("?") or name.startswith("_") or name.isidentifier())
+    out = M.symbols_dir / "exports.txt"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    lines = [f"# {M.file} export table (written by `c5d exports`; don't edit by hand)\n"]
+    lines += [f"0x{va:08x} {name}\n" for va, name in rows]
+    out.write_text("".join(lines), encoding="utf-8")
+    print(f"wrote {len(rows)} exported names to {M.rel(out)}")
+    return 0
 
 
 def cmd_scope(_args):
@@ -1049,6 +1106,8 @@ def cmd_build(args):
     from binfmt import PEImage
     state = BUILD / "hybrid"
     if args.clean:
+        if M.id != config.DEFAULT_MODULE:
+            return hybrid.clean_dll(CFG["game_dir"], M.file, state, M.build_hash)
         return hybrid.clean_game(CFG["game_dir"], CFG["target_exe"], state)
     load_func_sizes()
     syms = load_symbols()
@@ -1078,7 +1137,12 @@ def cmd_build(args):
     if r["errors"] or (not r["patched"] and not r["identical"]):
         return 1
     if args.run:
-        hybrid.run_in_game(r["out"], CFG["game_dir"], state)
+        if M.id != config.DEFAULT_MODULE:
+            exe = config.module(config.DEFAULT_MODULE).file
+            hybrid.run_with_dll(r["out"], CFG["game_dir"], M.file, exe, state, M.build_hash,
+                                patched=bool(r["patched"]))
+        else:
+            hybrid.run_in_game(r["out"], CFG["game_dir"], state)
     return 0
 
 
@@ -1112,7 +1176,10 @@ def require_setup(cmd, args=None):
 def main():
     p = argparse.ArgumentParser(prog="c5d")
     p.add_argument("--worker", default=None,
-                   help="worker id: isolated build dir (build/work/<id>) so workers can run in parallel")
+                   help="worker id: isolated build dir (build/<module>/work/<id>) so workers can run in parallel")
+    p.add_argument("--module", default=None, choices=[m.id for m in config.all_modules()],
+                   help="which binary to work on (default: exe, or the module of a qualified "
+                        "address such as db:0x10001000). Its files are in modules/<id>/")
     sub = p.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("setup", help="find and check the game, Ghidra and VC++ 2008; write config.local.json")
     s.add_argument("--game", help="folder containing CivilizationV_DX11.exe (default: search Steam libraries)")
@@ -1137,15 +1204,15 @@ def main():
                    help="re-import and re-analyze even if the project exists")
     a.set_defaults(fn=cmd_analyze)
     d = sub.add_parser("dump", help="dump disassembly + decompile for addresses to build/dump")
-    d.add_argument("addrs", nargs="+", help="function entry addresses, e.g. 0x00813940")
+    d.add_argument("addrs", nargs="+", help="function entry addresses, e.g. 0x00813940 or db:0x10001000")
     d.set_defaults(fn=cmd_dump)
     m = sub.add_parser("match", help="compile sources and compare against the original exe")
     m.add_argument("sources", nargs="*", help=".cpp files (default: all of src/)")
     m.add_argument("--only", action="append", help="only functions whose name contains this")
     m.add_argument("--all-files", action="store_true",
                    help="with --addr: build all of src/, not just the files connected to it")
-    m.add_argument("--addr", action="append", type=lambda s: int(s, 16),
-                   help="only the function at this address (repeatable)")
+    m.add_argument("--addr", action="append", type=addr_arg,
+                   help="only the function at this address, e.g. 0x00401000 or db:0x10001000 (repeatable)")
     m.add_argument("--flag", action="append", help="extra cl.exe flag for this run (repeatable)")
     m.add_argument("-v", "--verbose", action="store_true", help="always show disassembly and relocations")
     m.add_argument("--obj", action="store_true",
@@ -1209,6 +1276,9 @@ def main():
                     help="without --remote: claim only on this machine (see `task --local`)")
     ag.set_defaults(fn=cmd_agent)
     sub.add_parser("status", help="write PROGRESS.md").set_defaults(fn=cmd_status)
+    ex = sub.add_parser("exports", help="write the module's exported names to "
+                        "modules/<id>/symbols/exports.txt (DLLs export their C++ classes)")
+    ex.set_defaults(fn=cmd_exports)
     rm = sub.add_parser("remote", help="coordination server: login | status | claim | report | release")
     rm.add_argument("action", choices=["login", "status", "claim", "report", "release"])
     rm.add_argument("addr", nargs="*",

@@ -90,6 +90,36 @@ class Module:
         return f"Module({self.id!r})"
 
 
+def split_addr(text):
+    """"db:0x10001234" -> ("db", 0x10001234); "0x00401000" -> (None, 0x401000)."""
+    text = str(text).strip()
+    mid, sep, rest = text.partition(":")
+    if sep:
+        return mid.strip(), int(rest, 16)
+    return None, int(text, 16)
+
+
+def module_from_argv(argv):
+    """The module a command line names: --module X / --module=X, else the module of the
+    first qualified address (db:0x...) anywhere in it. None if neither."""
+    for i, a in enumerate(argv):
+        if a == "--module" and i + 1 < len(argv):
+            return argv[i + 1]
+        if a.startswith("--module="):
+            return a.split("=", 1)[1]
+    for a in argv:
+        a = a.split("=", 1)[1] if a.startswith("--") and "=" in a else a
+        mid, sep, rest = a.partition(":")
+        if sep and mid.isalpha() and rest.lower().startswith("0x"):
+            return mid
+        parts = a.replace("\\", "/").split("/")       # a source file under modules/<id>/
+        if MODULES_DIR.name in parts[:-2]:
+            i = parts.index(MODULES_DIR.name)
+            if i + 2 < len(parts):
+                return parts[i + 1]
+    return None
+
+
 def module(module_id=None):
     cfg = json.loads(SHARED.read_text())
     mid = current_module_id(module_id, cfg)
