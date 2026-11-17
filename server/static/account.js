@@ -24,7 +24,11 @@ function show(me) {
   }
   for (const c of me.claims) {
     const tr = document.createElement("tr");
-    for (const [v, cls] of [[hex(c.addr), "addr"], [c.worker, ""], [c.size, "num"],
+    // the function as module:addr with its module's coloured label
+    const m = c.module || "exe", fn = document.createElement("td"), tag = document.createElement("span");
+    tag.className = `mod mod-${m}`; tag.textContent = m;
+    fn.className = "addr fn"; fn.append(tag, document.createTextNode(`${m}:${hex(c.addr)}`)); tr.appendChild(fn);
+    for (const [v, cls] of [[c.worker, ""], [c.size, "num"],
                             [new Date(c.expires * 1000).toLocaleTimeString(), ""]]) {
       const td = document.createElement("td"); td.textContent = v; if (cls) td.className = cls; tr.appendChild(td);
     }

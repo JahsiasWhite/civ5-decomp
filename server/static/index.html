@@ -30,7 +30,8 @@
 
   <div class="cards">
     <div class="card"><div class="label">Bytes matched</div><div class="value" id="c-bytes">–</div>
-      <div class="foot" id="c-bytes-foot"></div><div class="meter"><i id="c-bytes-meter"></i></div></div>
+      <div class="foot" id="c-bytes-foot"></div><div class="meter" id="c-bytes-meter"></div>
+      <div class="mods" id="c-bytes-mods"></div></div>
     <div class="card"><div class="label">Functions matched</div><div class="value" id="c-fn">–</div>
       <div class="foot" id="c-fn-foot"></div></div>
     <div class="card"><div class="label">Still to chart</div><div class="value" id="c-todo">–</div>
@@ -69,7 +70,7 @@
       <svg class="chart" id="ch-squad" viewBox="0 0 1060 200" role="img" aria-label="Bytes matched by model"></svg></div>
     <div class="grid three mt">
       <div class="panel table-wrap"><h3>All matches</h3><table id="t-squad-all">
-        <thead><tr><th>Model or tool</th><th class="num">Functions</th><th class="num">KB</th><th class="num">Share</th></tr></thead><tbody></tbody></table></div>
+        <thead><tr><th>Model or tool</th><th class="num">Functions</th><th class="num">KB</th><th class="num">Share</th><th>Modules</th></tr></thead><tbody></tbody></table></div>
       <div class="panel table-wrap"><h3>Last 24 hours</h3><table id="t-squad-day">
         <thead><tr><th>Model or tool</th><th class="num">Functions</th><th class="num">KB</th></tr></thead><tbody></tbody></table></div>
       <div class="panel table-wrap"><h3>Hit rate by model</h3><table id="t-squad-tries">
@@ -82,6 +83,8 @@
   <section class="block" id="map">
     <div class="block-head"><span class="tag">Map</span><h2>What is left</h2></div>
     <div class="panel">
+      <div id="mods-left"></div>
+      <div class="filter" id="tier-filter" role="group" aria-label="Show size tiers for"></div>
       <div id="tiers"></div>
       <div class="legend"><span><i class="swatch k-matched"></i>Matched</span><span><i class="swatch k-open"></i>Tried, still open</span><span><i class="swatch k-untried"></i>Never tried</span></div>
     </div>

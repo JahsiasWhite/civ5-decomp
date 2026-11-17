@@ -488,7 +488,7 @@ def test_admin_verify_credits_direct_commits_to_pusher(srv):
     assert sum(r["bytes"] for r in s["leaderboard"]) == s["matched_bytes"]
     assert sum(r["functions"] for r in s["leaderboard"]) == s["matched"]
     for r in s["leaderboard"]:                       # hover breakdown adds up to the row
-        assert [b["label"] for b in r["bands"]] == [t["label"] for t in s["tiers"]]
+        assert [b["label"] for b in r["bands"]] == [t["label"] for t in s["tiers"] if t["module"] == "all"]
         assert sum(b["functions"] for b in r["bands"]) == r["functions"]
         assert sum(b["bytes"] for b in r["bands"]) == r["bytes"]
         assert "uid" not in r
@@ -715,3 +715,202 @@ def test_verify_credits_and_closes_open_claims(srv):
     # a second verify finds nothing left to close
     assert req(base, "POST", "/api/admin/verify", {"statuses": {"0x00401000": "MATCH"}},
                token=boss)[1]["closed"] == 0
+
+
+# ------------------------------------------------------------ modules (exe / db / loc)
+
+def add_dll(db, module="db", n=4, ready=1):
+    """n functions at the same addresses in a DLL (both DLLs load at 0x10000000)."""
+    db.import_functions([{"addr": 0x10001000 + i * 0x10, "size": 100 + i, "name": f"D{i}", "conv": "thiscall",
+                          "depth": 0, "cluster": 0x10001000 + i * 0x10, "ready": ready, "queue_pos": i}
+                         for i in range(n)], module=module)
+
+
+OLD_SCHEMA = """
+CREATE TABLE functions (addr INTEGER PRIMARY KEY, size INTEGER NOT NULL, name TEXT NOT NULL DEFAULT '',
+    conv TEXT NOT NULL DEFAULT '', depth INTEGER NOT NULL DEFAULT 0, cluster INTEGER NOT NULL DEFAULT 0,
+    ready INTEGER NOT NULL DEFAULT 0, queue_pos INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'todo', by_user INTEGER, updated REAL);
+CREATE INDEX ix_functions_queue ON functions(status, ready, queue_pos);
+CREATE TABLE users (id INTEGER PRIMARY KEY, login TEXT UNIQUE NOT NULL, display TEXT NOT NULL DEFAULT '',
+    token_hash TEXT UNIQUE, accepted_terms REAL, created REAL NOT NULL);
+CREATE TABLE claims (addr INTEGER PRIMARY KEY REFERENCES functions(addr),
+    user_id INTEGER NOT NULL REFERENCES users(id), worker TEXT NOT NULL DEFAULT '',
+    claimed REAL NOT NULL, expires REAL NOT NULL);
+CREATE TABLE events (id INTEGER PRIMARY KEY, ts REAL NOT NULL, user_id INTEGER, addr INTEGER,
+    kind TEXT NOT NULL, status TEXT NOT NULL DEFAULT '', detail TEXT NOT NULL DEFAULT '');
+INSERT INTO users(id, login, created) VALUES (1, 'alice', 0);
+INSERT INTO functions(addr, size, status, ready, queue_pos) VALUES (4198400, 20, 'matched', 1, 0),
+    (4198416, 30, 'todo', 1, 1);
+INSERT INTO claims VALUES (4198416, 1, 'w1', 0, 9e12);
+INSERT INTO events(ts, user_id, addr, kind) VALUES (0, 1, 4198416, 'claim');
+"""
+
+
+def test_old_schema_migrates_to_module_keys(tmp_path):
+    """A DB from before modules (addr alone as the key) opens with every row in the exe,
+    claims and all, and keeps working."""
+    import sqlite3
+    import db as dbmod
+    p = tmp_path / "old.sqlite"
+    c = sqlite3.connect(p)
+    c.executescript(OLD_SCHEMA)
+    c.commit()
+    c.close()
+    db = dbmod.DB(p)
+    assert db.columns("functions")[:2] == ["module", "addr"]
+    rows = db.q("SELECT module, addr, status, model, tried FROM functions ORDER BY addr")
+    assert [tuple(r) for r in rows] == [("exe", 0x401000, "matched", "", 0), ("exe", 0x401010, "todo", "", 0)]
+    assert [tuple(r) for r in db.q("SELECT module, addr, user_id, model FROM claims")] == [("exe", 0x401010, 1, "")]
+    assert db.one("SELECT module FROM events")["module"] == "exe"
+    assert not db.q("PRAGMA foreign_key_check")
+    assert db.one("PRAGMA foreign_keys")[0] == 1
+    # the same address can now exist in another module, and reopening doesn't migrate again
+    add_dll(db, n=1)
+    db.import_functions([{"addr": 0x401000, "size": 9, "name": "", "conv": "", "depth": 0, "cluster": 0,
+                          "ready": 1, "queue_pos": 0}], module="loc")
+    again = dbmod.DB(p)
+    assert again.one("SELECT COUNT(*) c FROM functions")["c"] == 4
+    assert again.my_claims(1)[0]["module"] == "exe"
+
+
+def test_same_address_in_two_dlls_is_two_functions(srv):
+    base, db = srv
+    add_dll(db, "db")
+    add_dll(db, "loc")
+    a, b = make_user(db, "alice"), make_user(db, "bob")
+    code, j = req(base, "POST", "/api/claim", {"addr": "db:0x10001000"}, token=a)
+    assert code == 200 and j["claims"] == [{"module": "db", "addr": "0x10001000", "worker": "w1"}]
+    # loc's 0x10001000 is a different function, free for someone else
+    code, j = req(base, "POST", "/api/claim", {"addr": "0x10001000", "module": "loc"}, token=b)
+    assert code == 200 and j["claims"][0]["module"] == "loc"
+    assert req(base, "POST", "/api/claim", {"addr": "db:0x10001000"}, token=b)[0] == 409
+    # report and release name the module too; the other module's claim isn't yours
+    assert req(base, "POST", "/api/report", {"addr": "loc:0x10001000", "status": "MATCH"}, token=a)[0] == 403
+    assert req(base, "POST", "/api/report", {"addr": "db:0x10001000", "status": "MATCH", "model": "m"},
+               token=a)[0] == 200
+    assert req(base, "POST", "/api/release", {"addr": "0x10001000", "module": "loc"}, token=b)[0] == 200
+    f = {(r["module"], r["addr"]): r["status"] for r in db.q("SELECT module, addr, status FROM functions")}
+    assert f[("db", 0x10001000)] == "reported" and f[("loc", 0x10001000)] == "todo"
+    assert db.one("SELECT module FROM events WHERE kind='report'")["module"] == "db"
+
+
+def test_clients_without_module_only_get_exe(srv):
+    """Older clients (no module field) treat every address as the exe's: never hand them
+    a DLL function, even when the exe queue is empty."""
+    base, db = srv
+    add_dll(db, "db")
+    tok = make_user(db, "alice")
+    _, j = req(base, "POST", "/api/claim", {"n": 25}, token=tok)
+    assert len(j["claims"]) == 8 and {c["module"] for c in j["claims"]} == {"exe"}
+    _, j = req(base, "POST", "/api/claim", {"n": 25}, token=tok)
+    assert j["claims"] == []
+    _, j = req(base, "POST", "/api/claim", {"n": 25, "module": "db"}, token=tok)
+    assert [c["addr"] for c in j["claims"]] == ["0x10001000", "0x10001010", "0x10001020", "0x10001030"]
+    assert len(req(base, "GET", "/api/claims", token=tok)[1]) == 12     # one limit across modules
+
+
+def test_module_validation(srv):
+    base, db = srv
+    tok = make_user(db, "alice")
+    for body in ({"addr": "0x10001000"},                    # the exe's range ends below the DLLs
+                 {"addr": "db:0x00401000"},                 # and the DLLs' starts at 0x10000000
+                 {"addr": "dll:0x10001000"}, {"n": 1, "module": "dll"}):
+        assert req(base, "POST", "/api/claim", body, token=tok)[0] == 400, body
+    assert req(base, "POST", "/api/claim", {"addr": "db:0x10009990"}, token=tok)[0] == 404
+
+
+def test_admin_verify_across_modules(srv):
+    base, db = srv
+    add_dll(db, "db")
+    add_dll(db, "loc")
+    boss, alice = make_user(db, "boss"), make_user(db, "alice")
+    req(base, "POST", "/api/claim", {"addr": "loc:0x10001010", "model": "m-loc"}, token=alice)
+    runs = db.one("SELECT COUNT(*) c FROM runs")["c"]
+    payload = {"module": "db",                               # unqualified keys are db's
+               "statuses": {"0x10001000": "MATCH", "loc:0x10001010": "MATCH", "exe:0x00401000": "MATCH",
+                            "0x10001020": "DIFF"},
+               "ready": {"0x10001030": 0, "loc:0x10001030": 0},
+               "merges": [{"addr": "loc:0x10001000", "size": 32, "absorbed": ["0x10001020"]}],
+               "models": {"0x10001000": "model-x"}}
+    code, j = req(base, "POST", "/api/admin/verify", payload, token=boss)
+    assert code == 200, j
+    assert (j["received"], j["changed"], j["closed"], j["credited"], j["ready_changed"], j["merged_away"]) == \
+        (4, 4, 1, 1, 2, 1)
+    f = {(r["module"], r["addr"]): (r["status"], r["model"]) for r in db.q("SELECT * FROM functions")}
+    assert f[("db", 0x10001000)] == ("matched", "model-x")
+    assert f[("loc", 0x10001010)] == ("matched", "m-loc")           # the closed claim credits its model
+    assert f[("exe", 0x401000)][0] == "matched"
+    assert f[("db", 0x10001020)][0] == "diff"                       # absorbed in loc, not in db
+    assert ("loc", 0x10001020) not in f
+    assert db.one("SELECT COUNT(*) c FROM runs")["c"] == runs + 1    # one push, one run
+    bad = {"statuses": {}, "merges": [{"addr": "db:0x10001000", "size": 8, "absorbed": ["loc:0x10001010"]}]}
+    assert req(base, "POST", "/api/admin/verify", bad, token=boss)[0] == 400
+    assert req(base, "POST", "/api/admin/verify", {"statuses": {}, "module": "nope"}, token=boss)[0] == 400
+
+
+def test_stats_per_module(srv):
+    base, db = srv
+    s = req(base, "GET", "/api/stats")[1]
+    assert list(s["modules"]) == ["exe", "db", "loc"]                 # always all three
+    assert s["modules"]["db"]["functions"] == 0 and s["modules"]["db"]["joined"] is None
+    add_dll(db, "db")
+    boss, alice = make_user(db, "boss"), make_user(db, "alice")
+    req(base, "POST", "/api/claim", {"addr": "db:0x10001010"}, token=alice)
+    req(base, "POST", "/api/report", {"addr": "db:0x10001010", "status": "MATCH", "model": "m"}, token=alice)
+    req(base, "POST", "/api/admin/verify",
+        {"statuses": {"exe:0x00401000": "MATCH", "db:0x10001010": "MATCH"}}, token=boss)
+    s = req(base, "GET", "/api/stats")[1]
+    # headline numbers are the combined totals; the modules add up to them
+    for k in ("functions", "bytes", "matched", "matched_bytes", "todo", "todo_bytes", "claimed", "ready",
+              "matched_today"):
+        assert s[k] == sum(m[k] for m in s["modules"].values()), k
+    d = s["modules"]["db"]
+    assert (d["functions"], d["matched"], d["matched_bytes"]) == (4, 1, 101)
+    assert d["joined"] and d["file"].startswith("CvGameDatabase")
+    assert any(m["text"].startswith("CvGameDatabase") for m in s["log"])
+    # tiers: "all" first, then each module, each set adding up to that module's totals
+    for m in ["all", "exe", "db", "loc"]:
+        ts = [t for t in s["tiers"] if t["module"] == m]
+        want = s if m == "all" else s["modules"][m]
+        assert len(ts) == 5 and sum(t["total"] for t in ts) == want["functions"]
+        assert sum(t["matched_bytes"] for t in ts) == want["matched_bytes"]
+    lb = {r["who"]: r for r in s["leaderboard"]}
+    assert lb["alice"]["modules"] == [{"module": "db", "functions": 1, "bytes": 101}]
+    assert lb["boss"]["modules"] == [{"module": "exe", "functions": 1, "bytes": 20}]
+    p = s["trend"][-1]
+    assert p["modules"] == {"exe": {"functions": 1, "bytes": 20}, "db": {"functions": 1, "bytes": 101}}
+    assert p["functions"] == 2 and p["new_functions"] == 2 and len(s["trend"]) == 1
+    sq = {r["model"]: r for r in s["squad"]["all"]}
+    assert sq["m"]["modules"] == {"db": {"functions": 1, "bytes": 101}}
+
+
+def test_dll_join_milestone_once(tmp_path):
+    import db as dbmod
+    db = dbmod.DB(tmp_path / "j.sqlite")
+    db.import_functions([{"addr": 0x401000, "size": 9, "name": "", "conv": "", "depth": 0, "cluster": 0,
+                          "ready": 1, "queue_pos": 0}])
+    assert db.q("SELECT * FROM milestones") == []                     # the exe doesn't "join"
+    add_dll(db, "loc", n=3)
+    add_dll(db, "loc", n=5)                                           # re-import: no second entry
+    rows = db.q("SELECT key, text FROM milestones")
+    assert [r["key"] for r in rows] == ["module:loc"] and "(3 functions)" in rows[0]["text"]
+
+
+def test_manage_import_and_push_with_module(srv, tmp_path):
+    base, db = srv
+    import argparse
+    import manage
+    boss = make_user(db, "boss")
+    queue = tmp_path / "queue.csv"
+    queue.write_text("entry,size,name,status,conv,entry_regs,depth,callees,pending_callees,callers,"
+                     "cluster,cluster_size\n"
+                     "0x10001000,28,D0,todo,stack,,0,0,0,0,0x10001000,1\n")
+    status = tmp_path / "status.csv"
+    status.write_text("address,symbol,status,bytes,source,since\n")
+    manage.cmd_import(db, argparse.Namespace(queue=str(queue), status=str(status), module="db"))
+    assert db.one("SELECT module FROM functions WHERE addr=?", (0x10001000,))["module"] == "db"
+    status.write_text("address,symbol,status,bytes,source,since\n0x10001000,?D0@@YAXXZ,MATCH,28,,2026-11-16\n")
+    manage.cmd_push(None, argparse.Namespace(status=str(status), queue=str(queue), callgraph=str(tmp_path / "x"),
+                                             server=base, token=boss, module="db"))
+    assert db.one("SELECT status FROM functions WHERE module='db' AND addr=?", (0x10001000,))["status"] == "matched"

@@ -34,7 +34,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
-from db import DB  # noqa: E402
+from db import DB, MODULES  # noqa: E402
 
 
 def db_path():
@@ -47,9 +47,12 @@ def open_db():
     return DB(p)
 
 
-def read_merges():
+def read_merges(module="exe"):
     """Boundary fixes from boundary_overrides.txt, resolved against data/functions.csv:
-    [{"addr": int, "size": int, "absorbed": [int], "new": bool}]."""
+    [{"addr": int, "size": int, "absorbed": [int], "new": bool}]. Only the exe has them
+    until the tools learn about modules."""
+    if module != "exe":
+        return []
     sys.path.insert(0, str(ROOT / "tools"))
     import config
     return [{"addr": m["entry"], "size": m["size"], "absorbed": m["absorbed"], "new": m["new"]}
@@ -57,6 +60,7 @@ def read_merges():
 
 
 def cmd_import(db, args):
+    module = getattr(args, "module", "exe")
     rows = []
     with open(args.queue, newline="") as fh:
         for i, r in enumerate(csv.DictReader(fh)):
@@ -64,9 +68,9 @@ def cmd_import(db, args):
                          "conv": r["conv"], "depth": int(r["depth"]),
                          "cluster": int(r["cluster"], 16), "ready": int(r["pending_callees"] == "0"),
                          "queue_pos": i})
-    db.import_functions(rows)
-    print(f"imported {len(rows)} functions")
-    resized, removed, _ = db.apply_merges(read_merges())   # import already added `new` ones
+    db.import_functions(rows, module=module)
+    print(f"imported {len(rows)} {module} functions")
+    resized, removed, _ = db.apply_merges(read_merges(module), module=module)   # import added `new` ones
     if resized or removed:
         print(f"boundary fixes: {resized} resized, {removed} split-off pieces removed")
     cmd_verify(db, args)
@@ -111,10 +115,11 @@ def read_models(path):
 
 
 def cmd_verify(db, args):
-    statuses = read_statuses(args.status)
-    print(f"claims: {db.credit_claims(statuses)} closed (matched while claimed)")
-    print(f"verify: {db.apply_verified(statuses)} status changes from {args.status}")
-    print(f"credits: {db.apply_credits(read_models(args.status))} changed from c5d-model lines")
+    module = getattr(args, "module", "exe")
+    statuses, m = read_statuses(args.status), module
+    print(f"claims: {db.credit_claims(statuses, module=m)} closed (matched while claimed)")
+    print(f"verify: {db.apply_verified(statuses, module=m)} {m} status changes from {args.status}")
+    print(f"credits: {db.apply_credits(read_models(args.status), module=m)} changed from c5d-model lines")
     for text in db.check_milestones():
         print(f"milestone: {text}")
 
@@ -140,10 +145,12 @@ def cmd_push(_db, args):
     data/callgraph.csv when it exists, else from build/queue.csv."""
     if not Path(args.status).exists():
         raise SystemExit(f"{args.status} not found: run `python tools/c5d.py match` first")
-    payload = {"statuses": {f"0x{a:08x}": s for a, s in read_statuses(args.status).items()},
+    module = getattr(args, "module", "exe")
+    payload = {"module": module,
+               "statuses": {f"0x{a:08x}": s for a, s in read_statuses(args.status).items()},
                "merges": [{"addr": f"0x{m['addr']:08x}", "size": m["size"],
                            "absorbed": [f"0x{a:08x}" for a in m["absorbed"]], "new": m["new"]}
-                          for m in read_merges()],
+                          for m in read_merges(module)],
                "models": {f"0x{a:08x}": m for a, m in read_models(args.status).items()}}
     q, cg = Path(args.queue), Path(args.callgraph)
     if cg.exists():
@@ -234,11 +241,13 @@ def cmd_milestone(_db, args):
 
 def cmd_credit(db, args):
     """Back-fill which model/tool wrote already-matched functions (and when)."""
+    module = getattr(args, "module", "exe")
     addrs = [int(a, 16) for a in args.addr]
     with db.tx():
         for a in addrs:
             db.conn.execute("UPDATE functions SET model=?, matched_day=COALESCE(?, matched_day) "
-                            "WHERE addr=? AND status='matched'", (args.model, args.day, a))
+                            "WHERE module=? AND addr=? AND status='matched'",
+                            (args.model, args.day, module, a))
     print(f"credited {len(addrs)} function(s) to {args.model}")
 
 
@@ -291,6 +300,9 @@ def main():
     cr.add_argument("addr", nargs="+")
     cr.add_argument("--day", default=None, help="matched day YYYY-MM-DD")
     cr.set_defaults(fn=cmd_credit)
+    for sp_ in (i, v, pu, cr):
+        sp_.add_argument("--module", default="exe", choices=list(MODULES),
+                         help="which binary these functions belong to (default: exe)")
     args = p.parse_args()
     args.fn(None if getattr(args, "no_db", False) else open_db(), args)
 
