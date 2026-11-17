@@ -1,0 +1,2 @@
+0x006ca270 ?PushFloatToLua@@YAXPAUlua_State@@PBM@Z
+0x00923958 _lua_pushnumber

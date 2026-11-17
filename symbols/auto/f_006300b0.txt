@@ -1,0 +1,1 @@
+0x006300b0 ?ClaimSlot@SlotSet_006300b0@@QAEHXZ

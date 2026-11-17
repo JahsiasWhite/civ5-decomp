@@ -25,5 +25,6 @@ int lua_setmetatable(lua_State* L, int objindex);
 void lua_pushnil(lua_State* L);
 void lua_concat(lua_State* L, int n);
 void lua_pushinteger(lua_State* L, int n);
+void lua_pushnumber(lua_State* L, double n);
 int luaL_error(lua_State* L, const char* fmt, ...);
 }
