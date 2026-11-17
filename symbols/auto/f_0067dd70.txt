@@ -1,0 +1,1 @@
+0x0067dd70 ?GetCount@VecOwner_0067dd70@@QBEHXZ

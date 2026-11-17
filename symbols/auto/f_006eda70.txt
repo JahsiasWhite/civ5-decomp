@@ -1,0 +1,5 @@
+0x004cf810 ?FuncA_004cf810@@YAXXZ
+0x00519eb0 ?FuncB_00519eb0@@YAXXZ
+0x006eda70 ?InitPair_006eda70@@YAXXZ
+0x008e2cd0 ?RegisterPair_008e2cd0@@YAXP6AXXZ0@Z
+0x00da1d00 ?g_count_00da1d00@@3HA

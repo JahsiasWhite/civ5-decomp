@@ -1,0 +1,13 @@
+0x00447b70 ?l_Enable_00447b70@@YAHPAUlua_State@@@Z
+0x00462e60 ?l_IncrementMarker_00462e60@@YAHPAUlua_State@@@Z
+0x004a2140 ?l_IsEnabled_004a2140@@YAHPAUlua_State@@@Z
+0x0058b040 ?RegisterMemoryTrackerLib_0058b040@@YAHPAUlua_State@@@Z
+0x005aa130 ?l_DumpLuaAllocations_005aa130@@YAHPAUlua_State@@@Z
+0x00717f00 ?l_Report_00717f00@@YAHPAUlua_State@@@Z
+0x007239b0 ?l_DumpAllocations_007239b0@@YAHPAUlua_State@@@Z
+0x00a6a370 ?g_str_IsEnabled_00a6a370@@3QBDB
+0x00a6a37c ?g_str_Enable_00a6a37c@@3QBDB
+0x00a6a384 ?g_str_IncrementMarker_00a6a384@@3QBDB
+0x00a6a394 ?g_str_DumpAllocations_00a6a394@@3QBDB
+0x00a6a3a4 ?g_str_Report_00a6a3a4@@3QBDB
+0x00a6a3ac ?g_str_DumpLuaAllocations_00a6a3ac@@3QBDB

@@ -1,0 +1,3 @@
+0x008ef910 ?CallbackB_008ef910@@YAXXZ
+0x008ef950 ?CallbackA_008ef950@@YAXXZ
+0x008ef990 ?InitOut@Host_008ef990@@QAEXPAUPairOut_008ef990@@@Z
