@@ -916,6 +916,29 @@ def test_manage_import_and_push_with_module(srv, tmp_path):
     assert db.one("SELECT status FROM functions WHERE module='db' AND addr=?", (0x10001000,))["status"] == "matched"
 
 
+def test_manage_push_several_modules_is_one_run(srv, tmp_path, monkeypatch):
+    base, db = srv
+    import argparse
+    import manage
+    monkeypatch.setattr(manage, "read_merges", lambda module="exe": [])
+    boss = make_user(db, "boss")
+    row = {"size": 16, "name": "F", "conv": "stack", "depth": 0, "ready": 1, "queue_pos": 0}
+    db.import_functions([{**row, "addr": 0x401000, "cluster": 0x401000}])
+    db.import_functions([{**row, "addr": 0x10001000, "cluster": 0x10001000}], module="db")
+    db.import_functions([{**row, "addr": 0x10001000, "cluster": 0x10001000}], module="loc")
+    for mid, addr in (("exe", 0x401000), ("db", 0x10001000)):
+        (tmp_path / mid).mkdir()
+        (tmp_path / mid / "status.csv").write_text(
+            f"address,symbol,status,bytes,source,since\n0x{addr:08x},F,MATCH,16,,2026-11-17\n")
+    runs = db.one("SELECT COUNT(*) c FROM runs")["c"]
+    manage.cmd_push(None, argparse.Namespace(modules="exe,db", status_pattern=str(tmp_path / "{module}" / "status.csv"),
+                                             server=base, token=boss, module="exe"))
+    st = {(r["module"], r["addr"]): r["status"] for r in db.q("SELECT module, addr, status FROM functions")}
+    assert st[("exe", 0x401000)] == "matched" and st[("db", 0x10001000)] == "matched"
+    assert st[("loc", 0x10001000)] == "todo"                          # same address, other module
+    assert db.one("SELECT COUNT(*) c FROM runs")["c"] == runs + 1     # one push, one run
+
+
 def test_claim_in_module_not_imported_yet(srv):
     _base, db = srv
     uid = db.conn.execute("INSERT INTO users(login,display,created) VALUES ('dllfan','',0)").lastrowid

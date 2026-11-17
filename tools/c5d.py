@@ -830,6 +830,22 @@ def remote_claim(r, body, ctx=None):
     -> [(queue row, worker, bundle path)]."""
     import tasks
     got = r.call("POST", "/api/claim", body)["claims"]
+    # A claim names its module; one without a name is the exe (a server from before the
+    # modules ignores `module` and hands out exe functions). Claims for another module than
+    # this run's are given back at once rather than held unworked for hours.
+    wrong = [c for c in got if c.get("module", config.DEFAULT_MODULE) != M.id]
+    for c in wrong:
+        mid = c.get("module", config.DEFAULT_MODULE)
+        try:
+            r.call("POST", "/api/release", {"addr": c["addr"], "module": mid})
+            print(f"{mid}:{c['addr']}: released (the server handed out a {mid} function to a {M.id} run)")
+        except SystemExit as e:
+            print(f"{mid}:{c['addr']}: the server handed out a {mid} function and releasing it failed "
+                  f"({e}); run `c5d remote status` and release it")
+    got = [c for c in got if c not in wrong]
+    if wrong and not got:
+        sys.exit(f"the server gave no {M.id} functions: it may not know about modules yet "
+                 "(see `c5d remote status`)")
     if not got:
         print("nothing available to claim with those filters")
         return []

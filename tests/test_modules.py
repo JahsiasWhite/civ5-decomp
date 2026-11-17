@@ -107,6 +107,24 @@ def test_remote_adds_module_to_function_calls(monkeypatch):
     assert sent[0][1] == {"addr": "0x00401000"}          # the exe needs no module (older servers)
 
 
+def test_claims_for_another_module_are_given_back(monkeypatch):
+    # a server from before the modules ignores `module` and hands a db run exe functions
+    import c5d
+    monkeypatch.setattr(c5d, "M", config.module("db"))
+    calls = []
+
+    class FakeRemote:
+        def call(self, method, path, body=None):
+            calls.append((path, body))
+            if path == "/api/claim":
+                return {"claims": [{"addr": "0x00401000", "worker": "w1"}]}     # no module: the exe
+            return {"released": True}
+
+    with pytest.raises(SystemExit, match="gave no db functions"):
+        c5d.remote_claim(FakeRemote(), {"n": 1})
+    assert calls[1] == ("/api/release", {"addr": "0x00401000", "module": "exe"})
+
+
 def test_hybrid_dll_swap_and_restore(tmp_path, monkeypatch):
     import hybrid
     import setup_env

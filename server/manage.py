@@ -139,29 +139,60 @@ def ready_from_callgraph(path, status_path):
     return {f"0x{a:08x}": int(r) for a, r in ready.items()}
 
 
+def module_payload(module, status, queue, callgraph, qualify=False):
+    """One module's part of a push: statuses, merges, models and (when known) ready. With
+    `qualify`, keys of modules other than the exe are written "db:0x..." so several
+    modules can share one payload."""
+    if not Path(status).exists():
+        raise SystemExit(f"{status} not found: run `python tools/c5d.py match` first")
+    pre = f"{module}:" if qualify and module != "exe" else ""
+
+    def key(k):                                     # "0x..." -> "db:0x..." when qualifying
+        return pre + k
+
+    part = {"statuses": {key(f"0x{a:08x}"): s for a, s in read_statuses(status).items()},
+            "merges": [{"addr": key(f"0x{m['addr']:08x}"), "size": m["size"],
+                        "absorbed": [key(f"0x{a:08x}") for a in m["absorbed"]], "new": m["new"]}
+                       for m in read_merges(module)],
+            "models": {key(f"0x{a:08x}"): m for a, m in read_models(status).items()}}
+    q, cg = Path(queue), Path(callgraph)
+    if cg.exists():
+        part["ready"] = {key(k): v for k, v in ready_from_callgraph(cg, status).items()}
+    elif q.exists():
+        if q.stat().st_mtime < Path(status).stat().st_mtime:
+            print(f"warning: {q} is older than {status}; run `python tools/c5d.py queue` "
+                  "so newly unblocked functions are handed out", file=sys.stderr)
+        part["ready"] = {key(k): v for k, v in read_ready(q).items()}
+    else:
+        print(f"warning: neither {cg} nor {q} found; {module} readiness not sent", file=sys.stderr)
+    return part
+
+
 def cmd_push(_db, args):
     """Send the match results, boundary fixes and which functions are now ready (all
     callees matched) to the live server (POST /api/admin/verify). Readiness comes from
-    data/callgraph.csv when it exists, else from build/queue.csv."""
-    if not Path(args.status).exists():
-        raise SystemExit(f"{args.status} not found: run `python tools/c5d.py match` first")
-    module = getattr(args, "module", "exe")
-    payload = {"module": module,
-               "statuses": {f"0x{a:08x}": s for a, s in read_statuses(args.status).items()},
-               "merges": [{"addr": f"0x{m['addr']:08x}", "size": m["size"],
-                           "absorbed": [f"0x{a:08x}" for a in m["absorbed"]], "new": m["new"]}
-                          for m in read_merges(module)],
-               "models": {f"0x{a:08x}": m for a, m in read_models(args.status).items()}}
-    q, cg = Path(args.queue), Path(args.callgraph)
-    if cg.exists():
-        payload["ready"] = ready_from_callgraph(cg, args.status)
-    elif q.exists():
-        if q.stat().st_mtime < Path(args.status).stat().st_mtime:
-            print(f"warning: {q} is older than {args.status}; run `python tools/c5d.py queue` "
-                  "so newly unblocked functions are handed out", file=sys.stderr)
-        payload["ready"] = read_ready(q)
+    data/callgraph.csv when it exists, else from build/queue.csv.
+
+    --modules exe,db,loc sends several modules in one push (one verify run on the
+    server); each module's status file is --status-pattern with {module} filled in."""
+    if getattr(args, "modules", None):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import config
+        payload = {"module": "exe", "statuses": {}, "merges": [], "models": {}}
+        for mid in [m.strip() for m in args.modules.split(",") if m.strip()]:
+            if mid not in MODULES:
+                raise SystemExit(f"unknown module {mid!r} (one of: {', '.join(MODULES)})")
+            m = config.module(mid)
+            part = module_payload(mid, args.status_pattern.format(module=mid), m.build / "queue.csv",
+                                  m.data / "callgraph.csv", qualify=True)
+            payload["statuses"].update(part["statuses"])
+            payload["merges"] += part["merges"]
+            payload["models"].update(part["models"])
+            if "ready" in part:
+                payload.setdefault("ready", {}).update(part["ready"])
     else:
-        print(f"warning: neither {cg} nor {q} found; readiness not sent", file=sys.stderr)
+        module = getattr(args, "module", "exe")
+        payload = {"module": module, **module_payload(module, args.status, args.queue, args.callgraph)}
     sys.path.insert(0, str(ROOT / "tools"))
     from remote import Remote
     r = Remote(args.server, args.token).call("POST", "/api/admin/verify", payload)
@@ -268,6 +299,10 @@ def main():
     pu.add_argument("--callgraph", default=None, help="default: modules/<module>/data/callgraph.csv")
     pu.add_argument("--server", default=None, help="default: server in config.local.json")
     pu.add_argument("--token", default=None, help="default: token in config.local.json")
+    pu.add_argument("--modules", default=None,
+                    help="comma-separated modules to send together in one push (instead of --module)")
+    pu.add_argument("--status-pattern", default="modules/{module}/progress/status.csv",
+                    help="with --modules: each module's status file ({module} is filled in)")
     pu.set_defaults(fn=cmd_push, no_db=True)
     b = sub.add_parser("backup", help="online copy of the DB into --dir")
     b.add_argument("--dir", required=True)

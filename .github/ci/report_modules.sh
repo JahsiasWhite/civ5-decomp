@@ -12,9 +12,12 @@ kind=${1:?pr or push}
 base=${2:?commit to compare against}
 mkdir -p build
 if [ "$kind" = "pr" ]; then
-  # files the PR adds or edits; a file that was only moved (a rename) isn't new work, so its
-  # functions needn't all MATCH here (main's regression check still covers them)
-  git diff --name-only -M --diff-filter=ACMT "$base" HEAD > build/changed.txt
+  # files the PR adds or edits (under their new name); a file that was only moved (an exact
+  # rename, R100) isn't new work, so its functions needn't all MATCH here (main's
+  # regression check still covers them), but one moved and edited is
+  git diff --name-status -M "$base" HEAD | tr -d '\r' | awk -F'\t' '
+    $1 ~ /^[AMT]/ { print $2 }
+    $1 ~ /^C/ || ($1 ~ /^R/ && $1 != "R100") { print $3 }' > build/changed.txt
 fi
 rc=0
 for m in $(tr -d '\r' < build/modules_ran.txt 2>/dev/null); do
