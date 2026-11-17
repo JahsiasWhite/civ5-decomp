@@ -7,8 +7,11 @@
 struct lua_State;
 typedef int (*lua_CFunction)(lua_State* L);
 
+#define LUA_GLOBALSINDEX (-10002)
+
 extern "C" {
 void lua_settop(lua_State* L, int idx);
+void lua_pushvalue(lua_State* L, int idx);
 int lua_isstring(lua_State* L, int idx);
 void lua_pushstring(lua_State* L, const char* s);
 void lua_pushlstring(lua_State* L, const char* s, unsigned int len);
@@ -16,6 +19,7 @@ void lua_pushboolean(lua_State* L, int b);
 void lua_pushcclosure(lua_State* L, lua_CFunction fn, int n);
 void lua_createtable(lua_State* L, int narr, int nrec);
 void lua_getfield(lua_State* L, int idx, const char* k);
+void lua_setfield(lua_State* L, int idx, const char* k);
 void lua_rawset(lua_State* L, int idx);
 int lua_setmetatable(lua_State* L, int objindex);
 void lua_pushnil(lua_State* L);

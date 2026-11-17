@@ -1,0 +1,3 @@
+0x00803ae0 ?GetScaled@Host_00803ae0@@QBEMXZ
+0x009f2de4 __real@4f800000
+0x00b89f2c __real@435e0000

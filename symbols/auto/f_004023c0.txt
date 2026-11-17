@@ -1,0 +1,12 @@
+0x004023c0 ?SetupEventTable_004023c0@@YAXPAUlua_State@@H@Z
+0x00a634f8 ?g_str_Event_00a634f8@@3QBDB
+0x00a63500 ?g_str_index_00a63500@@3QBDB
+0x00a63508 ?g_str_newindex_00a63508@@3QBDB
+0x0092391c _lua_pushstring
+0x00923934 _lua_createtable
+0x0092395e _lua_rawset
+0x00923970 _lua_pushvalue
+0x009239dc _lua_setmetatable
+0x00a634f8 ??_C@_06JLOLGKIG@_Event?$AA@
+0x00a63500 ??_C@_07NHABFFHN@__index?$AA@
+0x00a63508 ??_C@_0L@GADKNKH@__newindex?$AA@
