@@ -30,4 +30,6 @@ int luaL_error(lua_State* L, const char* fmt, ...);
 lua_State* lua_newthread(lua_State* L);
 int lua_setfenv(lua_State* L, int idx);
 void* lua_newuserdata(lua_State* L, unsigned int sz);
+int lua_type(lua_State* L, int idx);
+int lua_checkstack(lua_State* L, int sz);
 }
