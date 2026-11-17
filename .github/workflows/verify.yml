@@ -88,17 +88,57 @@ jobs:
           case "$banner" in *15.00.30729.01*) ;; *) echo "::error::wrong or broken compiler: $banner"; exit 1;; esac
           printf '{"msvc_bin": "%s", "winsdk_dir": "%s"}\n' "$PWD/msvc/VC/bin" "$PWD/msvc/WinSDK" > config.local.json
 
-      - name: Match everything against the fingerprints
+      # Objects from earlier runs (tools/objcache.py). Entries are keyed on the compiler,
+      # flags, source and the headers it includes, so an old one can't be wrong, only
+      # unused; a full match prunes those before the cache is saved again (a partial
+      # pull-request run doesn't, and only adds the objects it compiled).
+      # Cache entries are immutable, so each run saves under a new key and restores the
+      # newest one (this branch's, else main's).
+      - name: Restore the object cache
+        uses: actions/cache/restore@v4
+        with:
+          path: build/objcache
+          key: objcache-v1-${{ github.run_id }}
+          restore-keys: objcache-v1-
+
+      # Pull requests build only the sources they're judged on and the files connected
+      # to them (tools/ci_plan.py says when that isn't enough); main builds everything.
+      - name: Plan the build
+        id: plan
+        run: |
+          mkdir -p build
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            python tools/ci_plan.py --base "${{ github.event.pull_request.base.sha }}" \
+              --around-out build/around.txt >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=full" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Match against the fingerprints
         id: match
         run: |
           mkdir -p build
+          scope=""
+          if [ "${{ steps.plan.outputs.mode }}" = "partial" ]; then
+            scope="--around-from build/around.txt"
+          fi
           set +e
-          python tools/c5d.py match --fingerprints > build/match.txt 2>&1
+          python tools/c5d.py match --fingerprints $scope --status-out build/status.csv > build/match.txt 2>&1
           set -e
           tail -n 40 build/match.txt
           # DIFFs are normal; a run that never got to the summary (compile/link failure) is not
           grep -q "fingerprint mode\]" build/match.txt || { echo "::error::match run failed"; exit 1; }
           echo "::notice title=Match results::$(tail -n 1 build/match.txt | sed 's/^\[[^]]*\] *//')"
+          grep "pruned .* from build/objcache" build/match.txt || true
+          du -sh build/objcache 2>/dev/null || true
+
+      # saved even when Report fails on a regression: the objects are still good
+      - name: Save the object cache
+        if: ${{ !cancelled() && steps.match.outcome == 'success' }}
+        uses: actions/cache/save@v4
+        with:
+          path: build/objcache
+          key: objcache-v1-${{ github.run_id }}
 
       - name: Report
         run: |
@@ -107,14 +147,15 @@ jobs:
             git diff --name-only "$base" HEAD > build/changed.txt
             # the base branch's last committed results: what a header change must not break
             git show "$base:progress/status.csv" > build/base_status.csv 2>/dev/null || rm -f build/base_status.csv
-            python tools/ci_report.py --changed build/changed.txt --base-status build/base_status.csv >> "$GITHUB_STEP_SUMMARY"
+            python tools/ci_report.py --status build/status.csv --changed build/changed.txt \
+              --base-status build/base_status.csv >> "$GITHUB_STEP_SUMMARY"
           else
             # results before this push (the commit before it; the current commit for the
             # scheduled run): a function that matched there and doesn't now fails the run
             before="${{ github.event.before }}"
             case "$before" in ""|0000000000000000000000000000000000000000) before=HEAD;; esac
             git show "$before:progress/status.csv" > build/base_status.csv 2>/dev/null || rm -f build/base_status.csv
-            python tools/ci_report.py --base-status build/base_status.csv >> "$GITHUB_STEP_SUMMARY"
+            python tools/ci_report.py --status build/status.csv --base-status build/base_status.csv >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - uses: actions/upload-artifact@v4
@@ -123,7 +164,8 @@ jobs:
           name: match-results
           path: |
             build/match.txt
-            progress/status.csv
+            build/status.csv
+            build/around.txt
 
       # also after a regression in Report: the site never downgrades a match, so the new
       # matches in the same run still get counted

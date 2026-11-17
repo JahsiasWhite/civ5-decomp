@@ -58,13 +58,9 @@ def build(ctx, sources, include_syms):
     out = ctx.build / "ltcg"
     out.mkdir(parents=True, exist_ok=True)
     import objcache
-    objs = []
-    for src in sources:
-        try:
-            objs.append(objcache.compile(ctx.objcache, ctx.root, ctx.tool, ctx.cl,
-                                         [*ctx.flags_for(src), "/GL"], src, ctx.env, ctx.wp))
-        except RuntimeError as e:
-            raise RuntimeError(f"compile failed: {src}\n{e}")
+    objs = objcache.compile_many(ctx.objcache, ctx.root, ctx.tool, ctx.cl,
+                                 [([*ctx.flags_for(src), "/GL"], src) for src in sources],
+                                 ctx.env, ctx.wp)
 
     dll, mapf = out / "test.dll", out / "test.map"
     base = [*ctx.tool(ctx.link), "/nologo", "/DLL", "/NOENTRY", "/LTCG", "/OPT:REF", "/OPT:ICF",

@@ -164,6 +164,7 @@ address,symbol,status,bytes,source,since
 0x005e81a0,??0Host_005e81a0@@QAE@XZ,MATCH,23,src/auto/f_005e81a0.cpp,2026-11-16
 0x005e88c0,?VirtualCall@Host_005e88c0@@QAEXH@Z,MATCH,23,src/auto/f_005e88c0.cpp,2026-11-16
 0x005eb560,?HasIndex4c@IndexOwner_005eb560@@QBE_NXZ,MATCH,10,src/auto/f_005eb560.cpp,2026-11-16
+0x005eea30,?Reset@StateBlock_005eea30@@QAEXXZ,MATCH,24,src/auto/f_005eea30.cpp,2026-11-16
 0x005f8990,?CopyData@Host_005f8990@@QAEXPBUDataBlock_005f8990@@@Z,MATCH,24,src/auto/f_005f8990.cpp,2026-11-16
 0x005faa60,?GetKindFlags@KindQueryObject@@QAEHXZ,MATCH,40,src/auto/f_005faa60.cpp,2026-11-15
 0x005fcca0,?Reset@Class_005fcca0@@QAEXXZ,MATCH,16,src/auto/f_005fcca0.cpp,2026-11-16

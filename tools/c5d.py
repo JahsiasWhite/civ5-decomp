@@ -220,18 +220,6 @@ def flags_for(src, base):
 OBJ_CACHE = BUILD / "objcache"          # shared by all workers; see tools/objcache.py
 
 
-def compile_cpp(src, extra_flags=()):
-    """Compile one .cpp (or reuse an unchanged earlier compile); return the obj path."""
-    import objcache
-    try:
-        return objcache.compile(OBJ_CACHE, ROOT, config.tool_cmd, MSVC_CL,
-                                [*flags_for(src, CFG["cflags"]), *extra_flags], src,
-                                msvc_env(), config.winpath)
-    except RuntimeError as e:
-        print(e)
-        sys.exit(f"compile failed: {src}")
-
-
 def disasm(code, va):
     try:
         import capstone
@@ -344,11 +332,19 @@ def print_diff(res):
 def compile_all(sources, flags):
     """Compile each file normally once: gives the list of functions it defines
     (and is the whole comparison in --obj mode)."""
+    import objcache
     from binfmt import CoffObject
-    return [(src, CoffObject(compile_cpp(src, flags))) for src in sources]
+    sources = list(sources)
+    try:
+        objs = objcache.compile_many(OBJ_CACHE, ROOT, config.tool_cmd, MSVC_CL,
+                                     [([*flags_for(s, CFG["cflags"]), *flags], s) for s in sources],
+                                     msvc_env(), config.winpath)
+    except RuntimeError as e:
+        sys.exit(str(e))
+    return [(src, CoffObject(obj)) for src, obj in zip(sources, objs)]
 
 
-def connected_files(per_file, syms, addrs):
+def connected_files(per_file, syms, addrs, seeds=()):
     """The files the LTCG result for `addrs` can depend on: the files defining them plus
     everything connected to those through game symbols (a name in the symbol files) that
     one file references and another defines. Callers count as well as callees, because
@@ -376,7 +372,9 @@ def connected_files(per_file, syms, addrs):
     for i in range(len(per_file)):
         for n in defines[i] | refs[i]:
             users.setdefault(n, set()).add(i)
-    todo = [i for i, d in enumerate(defines) if d & wanted]
+    seeds = {Path(s).resolve() for s in seeds}  # files to start from, as well as addrs
+    todo = [i for i, d in enumerate(defines)
+            if d & wanted or (d and per_file[i][0].resolve() in seeds)]
     if not todo:
         return per_file
     keep = set(todo)
@@ -447,6 +445,12 @@ def cmd_match(args):
         print("fingerprint mode (no game exe): checking against data/fingerprints.csv")
     else:
         image = PEImage(GAME_EXE)
+    around = list(args.around or ())
+    if args.around_from:
+        around += [l.strip() for l in Path(args.around_from).read_text().splitlines() if l.strip()]
+    around = [ROOT / a for a in around]
+    if around and (args.sources or args.addr or args.obj or args.all_files):
+        sys.exit("--around/--around-from can't be combined with sources, --addr, --obj or --all-files")
     sources = [Path(s) for s in args.sources] or default_sources()
     totals = {"MATCH": 0, "MATCH?": 0, "DIFF": 0, "ERROR": 0, "UNVERIFIED": 0}
     results = {}
@@ -454,6 +458,10 @@ def cmd_match(args):
     per_file = compile_all(sources, args.flag or ())
     if args.addr and not args.sources and not args.obj and not getattr(args, "all_files", False):
         per_file = connected_files(per_file, syms, set(args.addr))
+        sources = [src for src, _obj in per_file]
+    elif around:
+        # every function in the files connected to these (not only theirs) is compared
+        per_file = connected_files(per_file, syms, set(), seeds=around)
         sources = [src for src, _obj in per_file]
     test_img = lmap = None
     if not args.obj:
@@ -500,8 +508,17 @@ def cmd_match(args):
                 print(f"         {res['size_note']}")
             if (res["status"] == "DIFF" or args.verbose) and not fp_mode:
                 print_diff(res)
-    if not args.obj and not args.only and not args.addr:
+    if not args.obj and not args.only and not args.addr and not around:
         record_status(results)
+    if args.status_out and not args.obj and not args.only and not args.addr:
+        record_status(results, Path(args.status_out))     # also a partial (--around) run
+    if not args.sources and not args.addr and not args.obj and not args.flag and not around:
+        # every source went through both compiles (plain and /GL) with the normal flags,
+        # so anything else in the cache is stale; see objcache.prune
+        import objcache
+        n, freed = objcache.prune(OBJ_CACHE)
+        if n:
+            print(f"pruned {n} stale object(s) from build/objcache ({freed / 1e6:.1f} MB)")
     print(f"\n[{'obj' if args.obj else 'ltcg'}{' fingerprint' if fp_mode else ''} mode]  "
           + "  ".join(f"{k}: {v}" for k, v in totals.items()))
     return 0 if totals["DIFF"] == 0 and totals["ERROR"] == 0 else 1
@@ -521,17 +538,18 @@ def load_status():
     return out
 
 
-def record_status(results):
-    """Replace progress/status.csv with the results of a full match run."""
+def record_status(results, path=STATUS_CSV):
+    """Replace progress/status.csv (or `path`) with the results of a match run.
+    "since" carries over from progress/status.csv."""
     import csv
     import datetime
-    STATUS_CSV.parent.mkdir(exist_ok=True)
+    path.parent.mkdir(parents=True, exist_ok=True)
     old = {}
     if STATUS_CSV.exists():
         with open(STATUS_CSV, newline="") as fh:
             old = {int(r["address"], 16): r for r in csv.DictReader(fh)}
     today = datetime.date.today().isoformat()
-    with open(STATUS_CSV, "w", newline="") as fh:
+    with open(path, "w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["address", "symbol", "status", "bytes", "source", "since"])
         for va in sorted(results):
@@ -1130,6 +1148,14 @@ def main():
     m.add_argument("-v", "--verbose", action="store_true", help="always show disassembly and relocations")
     m.add_argument("--obj", action="store_true",
                    help="fast per-file mode (no /GL + /LTCG link); fine for simple leaf functions")
+    m.add_argument("--around", action="append", metavar="PATH",
+                   help="build only the files connected to this source (repeatable) and "
+                        "compare every function in them; CI uses it for pull requests")
+    m.add_argument("--around-from", metavar="FILE",
+                   help="like --around, for each path listed in FILE (one per line)")
+    m.add_argument("--status-out", metavar="FILE",
+                   help="also write the results as a status CSV here (works with --around, "
+                        "which leaves progress/status.csv alone)")
     m.add_argument("--fingerprints", action="store_true",
                    help="check against data/fingerprints.csv instead of the exe "
                         "(automatic when the exe isn't there, e.g. in CI)")
