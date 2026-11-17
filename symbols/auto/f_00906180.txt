@@ -1,0 +1,2 @@
+0x00906180 ?Lookup_00906180@@YGPAXI@Z
+0x00ca18b0 ?g_table_00ca18b0@@3PAPAXA

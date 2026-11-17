@@ -1,0 +1,1 @@
+0x008e4c40 ?GetVec@Host_008e4c40@@QBE?AUVec3_008e4c40@@XZ
