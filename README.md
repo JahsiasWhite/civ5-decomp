@@ -256,7 +256,7 @@ lines of the file so they can be found and fixed once more of the class or file 
 
 `c5d status` counts them in PROGRESS.md; `git grep c5d-review` lists them.
 
-Inline asm (`__asm`, `__declspec(naked)`) isn't a fake match. It isn't a match at all,
+Inline asm (`__asm`, `__declspec(naked)`, `_emit`) isn't a fake match. It isn't a match at all,
 because it reproduces the bytes by construction. If C++ won't match, release the task. The
 only exception is code that was genuinely asm in the original; see CONTRIBUTING.md.
 
