@@ -1,0 +1,25 @@
+# Function boundary fixes: <entry> <end-exclusive> [new]  # why
+#
+# Ghidra sometimes splits one function in two, usually at an early `ret` with more
+# code after it that is reached only by a jump from the first part. Neither piece
+# can match, because the compiler only emits whole functions. A line here makes
+# the function at <entry> span [entry, end) as one range, and drops every function
+# entry that starts inside it (split-off pieces, or entries Ghidra misread from the
+# middle of it). `new` marks a function Ghidra did not list at all; it is added.
+# All tools read data/functions.csv through this
+# (tools/config.py load_functions), so scope, queue, task bundles, fingerprints and
+# `manage.py push` (which updates the server) all see the fixed boundaries.
+#
+# `python tools/c5d.py boundaries` finds candidates (splits, and listed entries that
+# sit inside another function's code); `--write` appends them here.
+# After editing: `c5d scope`, `c5d queue` (rewrites data/callgraph.csv), `c5d fingerprint`,
+# then push to main.
+
+0x10069470 0x100694d9  # auto (c5d boundaries): tail 0x100694b5 reached only by jumps from inside
+0x10081640 0x100818f3  # auto (c5d boundaries): tail 0x10081801 reached only by jumps from inside
+0x10004220 0x10004506  # auto (c5d boundaries): entries inside it: 0x100044eb
+0x10007e40 0x10008125  # auto (c5d boundaries): entries inside it: 0x1000810a
+0x1000a5d0 0x1000a8af  # auto (c5d boundaries): entries inside it: 0x1000a88c
+0x1000bf90 0x1000c2a7  # auto (c5d boundaries): entries inside it: 0x1000c282
+0x1000e3d0 0x1000e6c9  # auto (c5d boundaries): entries inside it: 0x1000e6a3
+0x1000f590 0x1000f8bd  # auto (c5d boundaries): entries inside it: 0x1000f890

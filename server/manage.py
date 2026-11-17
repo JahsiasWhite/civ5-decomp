@@ -1,7 +1,7 @@
 """Maintainer commands for the coordination server's database.
 
-  python server/manage.py import    load/refresh functions from build/queue.csv
-  python server/manage.py verify    apply progress/status.csv (run `c5d match` first)
+  python server/manage.py import    load/refresh functions from build/<module>/queue.csv
+  python server/manage.py verify    apply modules/<module>/progress/status.csv (run `c5d match` first)
   python server/manage.py token <login> [--display NAME]
                                     create/refresh an API token (e.g. for yourself)
   python server/manage.py stats     print the dashboard numbers
@@ -34,7 +34,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
-from db import DB  # noqa: E402
+from db import DB, MODULES  # noqa: E402
 
 
 def db_path():
@@ -47,16 +47,20 @@ def open_db():
     return DB(p)
 
 
-def read_merges():
-    """Boundary fixes from boundary_overrides.txt, resolved against data/functions.csv:
-    [{"addr": int, "size": int, "absorbed": [int], "new": bool}]."""
+def read_merges(module="exe"):
+    """Boundary fixes from modules/<module>/boundary_overrides.txt, resolved against that
+    module's data/functions.csv: [{"addr": int, "size": int, "absorbed": [int], "new": bool}]."""
     sys.path.insert(0, str(ROOT / "tools"))
     import config
-    return [{"addr": m["entry"], "size": m["size"], "absorbed": m["absorbed"], "new": m["new"]}
-            for m in config.boundary_merges()]
+    m = config.module(module)
+    rows = config._read_function_rows(config.functions_csv(module))
+    overrides = config.read_boundary_overrides(m.boundary_overrides)
+    return [{"addr": x["entry"], "size": x["size"], "absorbed": x["absorbed"], "new": x["new"]}
+            for x in config.boundary_merges(rows, overrides)]
 
 
 def cmd_import(db, args):
+    module = getattr(args, "module", "exe")
     rows = []
     with open(args.queue, newline="") as fh:
         for i, r in enumerate(csv.DictReader(fh)):
@@ -64,9 +68,9 @@ def cmd_import(db, args):
                          "conv": r["conv"], "depth": int(r["depth"]),
                          "cluster": int(r["cluster"], 16), "ready": int(r["pending_callees"] == "0"),
                          "queue_pos": i})
-    db.import_functions(rows)
-    print(f"imported {len(rows)} functions")
-    resized, removed, _ = db.apply_merges(read_merges())   # import already added `new` ones
+    db.import_functions(rows, module=module)
+    print(f"imported {len(rows)} {module} functions")
+    resized, removed, _ = db.apply_merges(read_merges(module), module=module)   # import added `new` ones
     if resized or removed:
         print(f"boundary fixes: {resized} resized, {removed} split-off pieces removed")
     cmd_verify(db, args)
@@ -111,10 +115,11 @@ def read_models(path):
 
 
 def cmd_verify(db, args):
-    statuses = read_statuses(args.status)
-    print(f"claims: {db.credit_claims(statuses)} closed (matched while claimed)")
-    print(f"verify: {db.apply_verified(statuses)} status changes from {args.status}")
-    print(f"credits: {db.apply_credits(read_models(args.status))} changed from c5d-model lines")
+    module = getattr(args, "module", "exe")
+    statuses, m = read_statuses(args.status), module
+    print(f"claims: {db.credit_claims(statuses, module=m)} closed (matched while claimed)")
+    print(f"verify: {db.apply_verified(statuses, module=m)} {m} status changes from {args.status}")
+    print(f"credits: {db.apply_credits(read_models(args.status), module=m)} changed from c5d-model lines")
     for text in db.check_milestones():
         print(f"milestone: {text}")
 
@@ -134,27 +139,60 @@ def ready_from_callgraph(path, status_path):
     return {f"0x{a:08x}": int(r) for a, r in ready.items()}
 
 
+def module_payload(module, status, queue, callgraph, qualify=False):
+    """One module's part of a push: statuses, merges, models and (when known) ready. With
+    `qualify`, keys of modules other than the exe are written "db:0x..." so several
+    modules can share one payload."""
+    if not Path(status).exists():
+        raise SystemExit(f"{status} not found: run `python tools/c5d.py match` first")
+    pre = f"{module}:" if qualify and module != "exe" else ""
+
+    def key(k):                                     # "0x..." -> "db:0x..." when qualifying
+        return pre + k
+
+    part = {"statuses": {key(f"0x{a:08x}"): s for a, s in read_statuses(status).items()},
+            "merges": [{"addr": key(f"0x{m['addr']:08x}"), "size": m["size"],
+                        "absorbed": [key(f"0x{a:08x}") for a in m["absorbed"]], "new": m["new"]}
+                       for m in read_merges(module)],
+            "models": {key(f"0x{a:08x}"): m for a, m in read_models(status).items()}}
+    q, cg = Path(queue), Path(callgraph)
+    if cg.exists():
+        part["ready"] = {key(k): v for k, v in ready_from_callgraph(cg, status).items()}
+    elif q.exists():
+        if q.stat().st_mtime < Path(status).stat().st_mtime:
+            print(f"warning: {q} is older than {status}; run `python tools/c5d.py queue` "
+                  "so newly unblocked functions are handed out", file=sys.stderr)
+        part["ready"] = {key(k): v for k, v in read_ready(q).items()}
+    else:
+        print(f"warning: neither {cg} nor {q} found; {module} readiness not sent", file=sys.stderr)
+    return part
+
+
 def cmd_push(_db, args):
     """Send the match results, boundary fixes and which functions are now ready (all
     callees matched) to the live server (POST /api/admin/verify). Readiness comes from
-    data/callgraph.csv when it exists, else from build/queue.csv."""
-    if not Path(args.status).exists():
-        raise SystemExit(f"{args.status} not found: run `python tools/c5d.py match` first")
-    payload = {"statuses": {f"0x{a:08x}": s for a, s in read_statuses(args.status).items()},
-               "merges": [{"addr": f"0x{m['addr']:08x}", "size": m["size"],
-                           "absorbed": [f"0x{a:08x}" for a in m["absorbed"]], "new": m["new"]}
-                          for m in read_merges()],
-               "models": {f"0x{a:08x}": m for a, m in read_models(args.status).items()}}
-    q, cg = Path(args.queue), Path(args.callgraph)
-    if cg.exists():
-        payload["ready"] = ready_from_callgraph(cg, args.status)
-    elif q.exists():
-        if q.stat().st_mtime < Path(args.status).stat().st_mtime:
-            print(f"warning: {q} is older than {args.status}; run `python tools/c5d.py queue` "
-                  "so newly unblocked functions are handed out", file=sys.stderr)
-        payload["ready"] = read_ready(q)
+    data/callgraph.csv when it exists, else from build/queue.csv.
+
+    --modules exe,db,loc sends several modules in one push (one verify run on the
+    server); each module's status file is --status-pattern with {module} filled in."""
+    if getattr(args, "modules", None):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import config
+        payload = {"module": "exe", "statuses": {}, "merges": [], "models": {}}
+        for mid in [m.strip() for m in args.modules.split(",") if m.strip()]:
+            if mid not in MODULES:
+                raise SystemExit(f"unknown module {mid!r} (one of: {', '.join(MODULES)})")
+            m = config.module(mid)
+            part = module_payload(mid, args.status_pattern.format(module=mid), m.build / "queue.csv",
+                                  m.data / "callgraph.csv", qualify=True)
+            payload["statuses"].update(part["statuses"])
+            payload["merges"] += part["merges"]
+            payload["models"].update(part["models"])
+            if "ready" in part:
+                payload.setdefault("ready", {}).update(part["ready"])
     else:
-        print(f"warning: neither {cg} nor {q} found; readiness not sent", file=sys.stderr)
+        module = getattr(args, "module", "exe")
+        payload = {"module": module, **module_payload(module, args.status, args.queue, args.callgraph)}
     sys.path.insert(0, str(ROOT / "tools"))
     from remote import Remote
     r = Remote(args.server, args.token).call("POST", "/api/admin/verify", payload)
@@ -234,11 +272,13 @@ def cmd_milestone(_db, args):
 
 def cmd_credit(db, args):
     """Back-fill which model/tool wrote already-matched functions (and when)."""
+    module = getattr(args, "module", "exe")
     addrs = [int(a, 16) for a in args.addr]
     with db.tx():
         for a in addrs:
             db.conn.execute("UPDATE functions SET model=?, matched_day=COALESCE(?, matched_day) "
-                            "WHERE addr=? AND status='matched'", (args.model, args.day, a))
+                            "WHERE module=? AND addr=? AND status='matched'",
+                            (args.model, args.day, module, a))
     print(f"credited {len(addrs)} function(s) to {args.model}")
 
 
@@ -246,19 +286,23 @@ def main():
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(dest="cmd", required=True)
     i = sub.add_parser("import")
-    i.add_argument("--queue", default=str(ROOT / "build" / "queue.csv"))
-    i.add_argument("--status", default=str(ROOT / "progress" / "status.csv"))
+    i.add_argument("--queue", default=None, help="default: build/<module>/queue.csv")
+    i.add_argument("--status", default=None, help="default: modules/<module>/progress/status.csv")
     i.set_defaults(fn=cmd_import)
     v = sub.add_parser("verify")
-    v.add_argument("--status", default=str(ROOT / "progress" / "status.csv"))
+    v.add_argument("--status", default=None, help="default: modules/<module>/progress/status.csv")
     v.set_defaults(fn=cmd_verify)
-    pu = sub.add_parser("push", help="send progress/status.csv to the live server")
-    pu.add_argument("--status", default=str(ROOT / "progress" / "status.csv"))
-    pu.add_argument("--queue", default=str(ROOT / "build" / "queue.csv"),
-                    help="readiness from here when there is no call graph")
-    pu.add_argument("--callgraph", default=str(ROOT / "data" / "callgraph.csv"))
+    pu = sub.add_parser("push", help="send a module's progress/status.csv to the live server")
+    pu.add_argument("--status", default=None, help="default: modules/<module>/progress/status.csv")
+    pu.add_argument("--queue", default=None,
+                    help="readiness from here when there is no call graph (default: build/<module>/queue.csv)")
+    pu.add_argument("--callgraph", default=None, help="default: modules/<module>/data/callgraph.csv")
     pu.add_argument("--server", default=None, help="default: server in config.local.json")
     pu.add_argument("--token", default=None, help="default: token in config.local.json")
+    pu.add_argument("--modules", default=None,
+                    help="comma-separated modules to send together in one push (instead of --module)")
+    pu.add_argument("--status-pattern", default="modules/{module}/progress/status.csv",
+                    help="with --modules: each module's status file ({module} is filled in)")
     pu.set_defaults(fn=cmd_push, no_db=True)
     b = sub.add_parser("backup", help="online copy of the DB into --dir")
     b.add_argument("--dir", required=True)
@@ -291,7 +335,18 @@ def main():
     cr.add_argument("addr", nargs="+")
     cr.add_argument("--day", default=None, help="matched day YYYY-MM-DD")
     cr.set_defaults(fn=cmd_credit)
+    for sp_ in (i, v, pu, cr):
+        sp_.add_argument("--module", default="exe", choices=list(MODULES),
+                         help="which binary these functions belong to (default: exe)")
     args = p.parse_args()
+    if hasattr(args, "module"):                     # file defaults follow the module
+        sys.path.insert(0, str(ROOT / "tools"))
+        import config
+        m = config.module(args.module)
+        for key, path in (("status", m.status_csv), ("queue", m.build / "queue.csv"),
+                          ("callgraph", m.data / "callgraph.csv")):
+            if getattr(args, key, "unset") is None:
+                setattr(args, key, str(path))
     args.fn(None if getattr(args, "no_db", False) else open_db(), args)
 
 

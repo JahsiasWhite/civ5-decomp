@@ -32,7 +32,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from db import DB  # noqa: E402
+from db import DB, DEFAULT_MODULE, MODULES  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 STATIC = HERE / "static"
@@ -84,14 +84,44 @@ def unsign(cfg, signed):
     return value if hmac.compare_digest(mac, good) else None
 
 
-def parse_addr(v):
+def parse_module(v):
+    """A request's `module` field: one of MODULES; missing means the exe (older clients)."""
+    m = DEFAULT_MODULE if v is None or v == "" else str(v)
+    if m not in MODULES:
+        raise ApiError(400, f"unknown module {m[:16]!r} (one of: {', '.join(MODULES)})")
+    return m
+
+
+def parse_target(v, module=DEFAULT_MODULE):
+    """A function: a hex address, optionally qualified as "db:0x10001234" (the qualifier
+    wins over `module`). Returns (module, addr), the address checked against that
+    module's range."""
+    if isinstance(v, str) and ":" in v:
+        prefix, v = v.split(":", 1)
+        module = parse_module(prefix.strip())
     try:
         a = int(str(v), 16) if isinstance(v, str) else int(v)
     except (TypeError, ValueError):
-        raise ApiError(400, "addr must be a hex address like 0x00540240")
-    if not 0x400000 <= a < 0x10000000:
-        raise ApiError(400, "addr out of range")
-    return a
+        raise ApiError(400, "addr must be a hex address like 0x00540240 (or module:addr, e.g. db:0x10001000)")
+    _file, lo, hi = MODULES[module]
+    if not lo <= a < hi:
+        raise ApiError(400, f"addr out of range for {module}")
+    return module, a
+
+
+def parse_addr(v, module=DEFAULT_MODULE):
+    return parse_target(v, module)[1]
+
+
+def by_module(raw, default, what):
+    """{"0x..." or "db:0x...": value} -> {module: {addr: value}}."""
+    if not isinstance(raw, dict):
+        raise ApiError(400, f"{what} must be an object of addr -> value")
+    out = {}
+    for k, v in raw.items():
+        m, a = parse_target(k, default)
+        out.setdefault(m, {})[a] = v
+    return out
 
 
 def as_int(v, name, default=0):
@@ -295,29 +325,37 @@ def make_handler(cfg, db):
             if path == "/api/token":
                 return self.send(200, {"token": db.new_token(u["id"])})
             self.require_terms(u)
+            # every function call takes an optional `module` (default exe), or a qualified
+            # addr like "db:0x10001234"
+            module = parse_module(body.get("module"))
             if path == "/api/claim":
                 n = max(1, min(as_int(body.get("n"), "n", 1), 25))
-                addr = parse_addr(body["addr"]) if body.get("addr") is not None else None
+                addr = None
+                if body.get("addr") is not None:
+                    module, addr = parse_target(body["addr"], module)
                 prefix = "".join(c for c in str(body.get("worker_prefix", "w")) if c.isalnum())[:8] or "w"
                 min_size = as_int(body.get("min_size"), "min_size", 0)
                 max_size = as_int(body.get("max_size"), "max_size", None) or None
                 try:
-                    got = db.claim(u["id"], n=n, addr=addr, worker_prefix=prefix,
-                                   min_size=min_size, max_size=max_size, model=str(body.get("model") or ""))
+                    got = db.claim(u["id"], n=n, addr=addr, worker_prefix=prefix, min_size=min_size,
+                                   max_size=max_size, model=str(body.get("model") or ""), module=module)
                 except LookupError as e:
                     raise ApiError(404, str(e))
                 except ValueError as e:
                     raise ApiError(409, str(e))
-                return self.send(200, {"claims": [{"addr": f"0x{a:08x}", "worker": w} for a, w in got]})
+                return self.send(200, {"claims": [{"module": m, "addr": f"0x{a:08x}", "worker": w}
+                                                  for m, a, w in got]})
             if path == "/api/release":
-                ok = db.release(u["id"], parse_addr(body.get("addr")))
+                module, addr = parse_target(body.get("addr"), module)
+                ok = db.release(u["id"], addr, module=module)
                 return self.send(200 if ok else 404, {"released": ok})
             if path == "/api/report":
+                module, addr = parse_target(body.get("addr"), module)
                 try:
-                    db.report(u["id"], parse_addr(body.get("addr")), str(body.get("status", "")),
+                    db.report(u["id"], addr, str(body.get("status", "")),
                               str(body.get("detail", "")), str(body.get("model", "")),
                               body.get("tokens_in", 0), body.get("tokens_out", 0),
-                              body.get("tokens_cached", 0), body.get("tries", 0))
+                              body.get("tokens_cached", 0), body.get("tries", 0), module=module)
                 except PermissionError as e:
                     raise ApiError(403, str(e))
                 except ValueError as e:
@@ -349,46 +387,66 @@ def make_handler(cfg, db):
             return self.send(200, {"ok": True, "day": day, "text": text[:300]})
 
         def admin_verify(self):
-            """Maintainer pushes a full local `c5d match` result: {"statuses": {"0x..": "MATCH"}}.
+            """Maintainer pushes a full local `c5d match` result: {"statuses": {"0x..": "MATCH"}},
+            plus optional ready / merges / models. Addresses are in body["module"] (default
+            exe) unless qualified ("db:0x10001234"), so one push can cover several modules.
             Authenticated before the (large) body is read."""
             u = self.require_admin()
             body = self.json_body(ADMIN_MAX_BODY)
-            raw = body.get("statuses")
-            if not isinstance(raw, dict):
+            default = parse_module(body.get("module"))
+            if not isinstance(body.get("statuses"), dict):
                 raise ApiError(400, "statuses must be an object of addr -> status")
-            statuses = {parse_addr(a): str(s) for a, s in raw.items()}
+            statuses = {m: {a: str(s) for a, s in d.items()}
+                        for m, d in by_module(body["statuses"], default, "statuses").items()}
             ready = body.get("ready")
             if ready is not None and not isinstance(ready, dict):
                 raise ApiError(400, "ready must be an object of addr -> 0/1")
-            ready = {parse_addr(a): bool(v) for a, v in (ready or {}).items()}
+            ready = {m: {a: bool(v) for a, v in d.items()}
+                     for m, d in by_module(ready or {}, default, "ready").items()}
             raw_merges = body.get("merges") or []
+            merges = {}
             try:
-                merges = [{"addr": parse_addr(m["addr"]), "size": int(m["size"]),
-                           "absorbed": [parse_addr(a) for a in m["absorbed"]],
-                           "new": bool(m.get("new"))} for m in raw_merges]
+                for mg in raw_merges:
+                    m, a = parse_target(mg["addr"], default)
+                    absorbed = [parse_target(x, m) for x in mg["absorbed"]]
+                    if any(am != m for am, _ in absorbed):
+                        raise ApiError(400, "a merge can only absorb functions of its own module")
+                    merges.setdefault(m, []).append({"addr": a, "size": int(mg["size"]),
+                                                     "absorbed": [x for _, x in absorbed],
+                                                     "new": bool(mg.get("new"))})
             except (TypeError, KeyError, ValueError):
                 raise ApiError(400, "merges must be a list of {addr, size, absorbed: [addr]}")
-            if any(m["size"] <= 0 for m in merges):
+            if any(mg["size"] <= 0 for ms in merges.values() for mg in ms):
                 raise ApiError(400, "merge size must be positive")
             models = body.get("models")
             if models is not None and not isinstance(models, dict):
                 raise ApiError(400, "models must be an object of addr -> model")
-            models = {parse_addr(a): str(m) for a, m in (models or {}).items()}
+            models = {m: {a: str(v) for a, v in d.items()}
+                      for m, d in by_module(models or {}, default, "models").items()}
+            resized = removed = added = closed = credited = ready_changed = 0
             # before verify (sizes count toward bytes) and readiness (covers added functions)
-            resized, removed, added = db.apply_merges(merges)
-            closed = db.credit_claims(statuses)             # before verify: credits the claim holder
-            changed = db.apply_verified(statuses)
-            credited = db.apply_credits(models)             # after verify: covers new matches too
+            for m, ms in merges.items():
+                r = db.apply_merges(ms, module=m)
+                resized, removed, added = resized + r[0], removed + r[1], added + r[2]
+            for m, st in statuses.items():                  # before verify: credits the claim holder
+                closed += db.credit_claims(st, module=m)
+            changed = db.apply_verified_modules(statuses)   # one verification run for the push
+            for m, d in models.items():                     # after verify: covers new matches too
+                credited += db.apply_credits(d, module=m)
             owned = db.credit_owner(u["id"])                # direct commits count for the pusher
-            ready_changed = db.set_ready(ready)
+            for m, d in ready.items():
+                ready_changed += db.set_ready(d, module=m)
             requeued = db.expire_reports()
             milestones = db.check_milestones()
-            sys.stderr.write(f"admin verify by {u['login']}: {len(statuses)} statuses, {changed} changes, {closed} claims closed, "
+            n_statuses = sum(len(d) for d in statuses.values())
+            sys.stderr.write(f"admin verify by {u['login']}: {n_statuses} statuses "
+                             f"({', '.join(f'{m} {len(d)}' for m, d in statuses.items()) or 'none'}), "
+                             f"{changed} changes, {closed} claims closed, "
                              f"{credited} credits, {owned} owned, {ready_changed} readiness changes, "
                              f"{requeued} stale reports requeued, "
                              f"{resized} resized / {removed} removed / {added} added by boundary fixes, "
                              f"{len(milestones)} milestones\n")
-            return self.send(200, {"received": len(statuses), "changed": changed, "closed": closed, "credited": credited,
+            return self.send(200, {"received": n_statuses, "changed": changed, "closed": closed, "credited": credited,
                                    "owned": owned, "ready_changed": ready_changed, "requeued": requeued,
                                    "resized": resized, "merged_away": removed, "added": added,
                                    "milestones": milestones})

@@ -169,7 +169,7 @@ def main():
                 target, = struct.unpack_from("<I", img.read(vt + 4 * k, 4))
                 rows.append((f"0x{target:08x}", f"{impl}::{m}", f"sdk:{iface}[{k}]@0x{vt:08x}"))
 
-    out = ROOT / "names" / "sdk_vtables.csv"
+    out = config.module().names / "sdk_vtables.csv"
     out.parent.mkdir(exist_ok=True)
     with open(out, "w", newline="") as fh:
         w = csv.writer(fh)

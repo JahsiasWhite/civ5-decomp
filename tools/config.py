@@ -1,6 +1,7 @@
 """Project configuration.
 
-config.json        shared settings (committed): compiler flags, expected exe hash, versions
+config.json        shared settings (committed): compiler flags, versions, and "modules": each
+                   binary (exe, db, loc) with its file name and expected build hash
 config.local.json  this machine only (git-ignored): game, Ghidra and MSVC paths, server
                    login. Written by `c5d setup`; its keys override config.json.
 """
@@ -28,10 +29,111 @@ def save_local(updates):
     return loc
 
 
-def load():
+def load(module_id=None):
+    """config.json overlaid with config.local.json. target_exe / target_build_hash /
+    target_build always come from the current module's entry in "modules" (see module()),
+    so code written for one binary keeps working and a leftover key can't point a DLL run
+    at the exe."""
     cfg = json.loads(SHARED.read_text())
     cfg.update(load_local())
+    m = cfg["modules"][current_module_id(module_id, cfg)]
+    cfg["target_exe"] = m["file"]
+    cfg["target_build_hash"] = m.get("build_hash", "")
+    cfg["target_build"] = m.get("build", "")
     return cfg
+
+
+# ---------------------------------------------------------------- modules
+#
+# Each binary is a module (config.json "modules": exe, db, loc). Its files live in
+# modules/<id>/ and its local build output in build/<id>/. include/, tools/, server/ and
+# third_party/ are shared, and so is build/objcache (keyed on flags and source).
+
+MODULES_DIR = ROOT / "modules"
+BUILD_ROOT = ROOT / "build"
+DEFAULT_MODULE = "exe"
+
+
+def current_module_id(module_id=None, cfg=None):
+    """The module tools work on: `module_id`, else $C5D_MODULE, else the exe."""
+    mid = module_id or os.environ.get("C5D_MODULE") or DEFAULT_MODULE
+    known = (cfg or json.loads(SHARED.read_text()))["modules"]
+    if mid not in known:
+        raise SystemExit(f"unknown module {mid!r} (config.json has: {', '.join(known)})")
+    return mid
+
+
+class Module:
+    """One binary's paths. Everything under the repo, so relative_to(ROOT) works."""
+
+    def __init__(self, mid, spec):
+        self.id = mid
+        self.file = spec["file"]
+        self.build_hash = spec.get("build_hash", "")
+        self.build_label = spec.get("build", "")
+        self.root = MODULES_DIR / mid
+        self.src = self.root / "src"
+        self.symbols_txt = self.root / "symbols.txt"
+        self.symbols_dir = self.root / "symbols"
+        self.boundary_overrides = self.root / "boundary_overrides.txt"
+        self.scope_overrides = self.root / "scope_overrides.txt"
+        self.data = self.root / "data"
+        self.names = self.root / "names"
+        self.progress = self.root / "progress"
+        self.status_csv = self.progress / "status.csv"
+        self.build = BUILD_ROOT / mid
+
+    def rel(self, p):
+        """`p` as a repo-relative posix path (how sources are named in status.csv)."""
+        return Path(p).resolve().relative_to(ROOT.resolve()).as_posix()
+
+    def __repr__(self):
+        return f"Module({self.id!r})"
+
+
+def split_addr(text):
+    """"db:0x10001234" -> ("db", 0x10001234); "0x00401000" -> (None, 0x401000)."""
+    text = str(text).strip()
+    mid, sep, rest = text.partition(":")
+    if sep:
+        return mid.strip(), int(rest, 16)
+    return None, int(text, 16)
+
+
+def module_from_argv(argv):
+    """The module a command line names: --module X / --module=X, else the module of the
+    first qualified address (db:0x...) or source file (modules/<id>/....cpp) in it. Only
+    whole arguments count, so an option value that merely mentions a module's folder
+    (`--flag /Imodules/loc/include`) doesn't switch modules. None if neither."""
+    for i, a in enumerate(argv):
+        if a == "--module" and i + 1 < len(argv):
+            return argv[i + 1]
+        if a.startswith("--module="):
+            return a.split("=", 1)[1]
+    for a in argv:
+        a = a.split("=", 1)[1] if a.startswith("--") and "=" in a else a
+        mid, sep, rest = a.partition(":")
+        if sep and mid.isalpha() and rest.lower().startswith("0x"):
+            return mid
+        if a.startswith("-") or not a.lower().endswith((".cpp", ".c")):
+            continue
+        parts = a.replace("\\", "/").split("/")       # a source file under modules/<id>/
+        if MODULES_DIR.name in parts[:-2]:
+            i = parts.index(MODULES_DIR.name)
+            if i + 2 < len(parts):
+                return parts[i + 1]
+    return None
+
+
+def module(module_id=None):
+    cfg = json.loads(SHARED.read_text())
+    mid = current_module_id(module_id, cfg)
+    return Module(mid, cfg["modules"][mid])
+
+
+def all_modules():
+    cfg = json.loads(SHARED.read_text())
+    return [Module(mid, spec) for mid, spec in cfg["modules"].items()]
 
 
 IS_WINDOWS = os.name == "nt"
@@ -61,20 +163,22 @@ def missing_machine_keys(cfg=None):
     return [k for k in MACHINE_KEYS if not cfg.get(k)]
 
 
-def functions_csv():
-    """The shared function list (data/functions.csv, committed so every contributor
-    uses the same addresses); falls back to a local Ghidra export."""
-    shared = ROOT / "data" / "functions.csv"
-    return shared if shared.exists() else ROOT / "build" / "functions.csv"
+def functions_csv(module_id=None):
+    """The shared function list (modules/<id>/data/functions.csv, committed so every
+    contributor uses the same addresses); falls back to a local Ghidra export."""
+    m = module(module_id)
+    shared = m.data / "functions.csv"
+    return shared if shared.exists() else m.build / "functions.csv"
 
 
-BOUNDARY_OVERRIDES = ROOT / "boundary_overrides.txt"
+def boundary_overrides_path(module_id=None):
+    return module(module_id).boundary_overrides
 
 
 def read_boundary_overrides(path=None):
     """[(entry, end_exclusive, note, new)] from boundary_overrides.txt (see that file).
     `new` is True for a line `<entry> <end> new`: a function Ghidra did not list at all."""
-    path = Path(path) if path else BOUNDARY_OVERRIDES
+    path = Path(path) if path else boundary_overrides_path()
     out = []
     if not path.exists():
         return out

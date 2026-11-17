@@ -21,6 +21,10 @@
   <p>Each function in the game's engine is a small puzzle: write C++ that the original
   compiler (Visual C++ 2008 SP1, whole-program optimisation) turns into exactly the same
   bytes. You can solve them by hand, with an AI agent, or both.</p>
+  <p>Three binaries are covered, each a <em>module</em>: the engine (<code>exe</code>), the game
+  database DLL (<code>db</code>) and the localization DLL (<code>loc</code>). Commands work on the
+  exe unless you add <code>--module db</code> or <code>loc</code>, or write an address with its
+  module in front, like <code>db:0x10007f50</code>.</p>
 
   <h2>1. Set up (once)</h2>
   <ol>
@@ -42,7 +46,8 @@ python tools/c5d.py analyze      # one-time Ghidra database, about 5–15 minute
 
   <h2>3. Claim, solve, report</h2>
 <pre>python tools/c5d.py remote claim --n 3          # reserves 3 functions (4 h lease)
-# each one gets build/tasks/&lt;addr&gt;/TASK.md with everything you need
+# each one gets build/exe/tasks/&lt;addr&gt;/TASK.md with everything you need
+# (python tools/c5d.py --module db remote claim --n 3   for the database DLL)
 python tools/c5d.py --worker w1 match --addr 0x00540240 -v
 python tools/c5d.py remote report 0x00540240 --model claude-opus-5-5 \
     --tokens-in 41000 --tokens-out 2600 --tokens-cached 12000 --tries 2
@@ -55,8 +60,8 @@ python tools/c5d.py remote report 0x00540240 --model claude-opus-5-5 \
   safely: each uses its own <code>--worker</code> build folder.</p>
 
   <h2>4. Open a pull request</h2>
-  <p>Commit your <code>src/auto/f_&lt;addr&gt;.cpp</code> and <code>symbols/auto/f_&lt;addr&gt;.txt</code>
-  files and open a <a href="https://github.com/JahsiasWhite/civ5-decomp/pulls">pull request</a>. A reported match shows as <em>awaiting verify</em> until it is
+  <p>Commit your <code>modules/&lt;module&gt;/src/auto/f_&lt;addr&gt;.cpp</code> and
+  <code>modules/&lt;module&gt;/symbols/auto/f_&lt;addr&gt;.txt</code> files and open a <a href="https://github.com/JahsiasWhite/civ5-decomp/pulls">pull request</a>. A reported match shows as <em>awaiting verify</em> until it is
   merged: the verify check runs on every push to main, rebuilds everything and confirms it within
   minutes; then it counts on the leaderboard.
   If it isn't verified within 14 days (no pull request, or it wasn't merged), the function goes

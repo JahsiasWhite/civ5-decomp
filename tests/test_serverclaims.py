@@ -46,6 +46,12 @@ def test_unknown_on_server_stays_local():
     assert ServerClaims(r).claim(0x401000, "w1")
 
 
+def test_module_not_imported_stops():
+    r = FakeRemote({"0x10001000": RemoteError("server: module db isn't on this server yet", 404)})
+    with pytest.raises(SystemExit, match="haven't been imported"):
+        ServerClaims(r).claim(0x10001000, "w1")
+
+
 def test_unreachable_stops_instead_of_going_local():
     r = FakeRemote({"0x00401000": RemoteError("cannot reach https://x: refused")})
     with pytest.raises(SystemExit, match="stopping rather than claiming it only locally"):

@@ -1,0 +1,15 @@
+# Manual scope overrides: <start> <end-exclusive> <category>
+# Categories other than "game" are out of scope (see modules/exe/scope_overrides.txt).
+
+# SQLite 3.7.17 (source id 2013-05-20 00:56:22 118a3b35...), compiled into the DLL as the
+# amalgamation. Open source and unchanged as far as we know, so not decompiled here. The
+# block runs from right after Database::ResultsCache::Prepare to right before the first
+# Database::XMLSerializer method: nothing in it is called from Firaxis code except
+# SQLite's public API (sqlite3_*), and the code before it is called only from Firaxis
+# code. Found 2026-11-17 from SQLite's strings and the call graph.
+0x1000de20 0x100714c0 sqlite
+
+# The linker/CRT tail: import stubs (interleaved, so the eh_tail rule doesn't catch it),
+# 64-bit arithmetic helpers, DLL startup (__CRT_INIT, ___DllMainCRTStartup), onexit/atexit,
+# SEH and security-cookie helpers, to the end of .text.
+0x100766ce 0x10077996 crt_startup

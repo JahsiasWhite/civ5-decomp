@@ -1,12 +1,22 @@
 # civ5-decomp
 
-A byte-matching decompilation of the *Sid Meier's Civilization V* engine
-(`CivilizationV_DX11.exe`, final Steam build from Nov 2014), modelled on
-the approach used by fnvdecomp.
+A byte-matching decompilation of *Sid Meier's Civilization V* (final Steam build from
+Nov 2014), modelled on the approach used by fnvdecomp. It covers the three binaries whose
+source Firaxis never published, each a **module** with its own folder under `modules/`:
+
+| Module | Binary | In scope |
+|---|---|---|
+| `exe` | `CivilizationV_DX11.exe`, the engine | everything but the C runtime and other libraries |
+| `db` | `CvGameDatabaseWin32Final Release.dll`, the game database | Firaxis' code; not SQLite 3.7.17, which is compiled into it |
+| `loc` | `CvLocalizationWin32Final Release.dll`, text and formatting | Firaxis' code; not ICU 4.4, which is compiled into it |
+
+Every command works on the exe unless given `--module db`/`loc` or an address such as
+`db:0x10001234` (both DLLs load at `0x10000000`, so an address alone is ambiguous).
 
 The gameplay DLL (`CvGameCore_Expansion2.dll`) is **not** in scope here:
 Firaxis published its source in the Civ V SDK. Its headers are our
-starting point for the exe <-> DLL interface classes.
+starting point for the exe <-> DLL interface classes. The SDK also has headers for the
+database and localization DLLs, which we use for names and layouts.
 
 Live progress, the leaderboard and contributor sign-up: **[civ5decomp.com](https://civ5decomp.com)**.
 
@@ -16,8 +26,8 @@ Live progress, the leaderboard and contributor sign-up: **[civ5decomp.com](https
    `c5d remote report`). Each report frees that claim slot (max 25 at once, 4-hour lease
    each). The site now shows them as *reported*.
 2. **Put them all in one PR.** Batching is fine, since every function has its own pair of
-   files (`src/auto/f_*.cpp`, `symbols/auto/f_*.txt`) and they don't conflict. CI checks
-   each one on the PR.
+   files (`modules/<module>/src/auto/f_*.cpp`, `modules/<module>/symbols/auto/f_*.txt`) and they
+   don't conflict. CI checks each one on the PR.
 3. **Merge.** Verify runs on `main` and the site marks them *matched* within a few minutes.
 
 Reported functions that aren't verified within 14 days go back to the pool, so don't let a
@@ -42,13 +52,16 @@ closes the claim. A function nobody claimed or reported (committed directly) sho
 
 ## Target
 
-| | CivilizationV_DX11.exe |
-|---|---|
-| Linker | MSVC 9.0 (Visual C++ 2008) |
-| `.text` | ~6.1 MB |
-| Build date | 2014-11-19 |
-| DRM wrapper | none |
-| Rich header | absent (so the exact compiler build has to be found from the CRT) |
+| | CivilizationV_DX11.exe | CvGameDatabase DLL | CvLocalization DLL |
+|---|---|---|---|
+| Linker | MSVC 9.0 (Visual C++ 2008) | same | same |
+| `.text` | ~6.1 MB | ~486 KB (~49 KB in scope) | ~557 KB (~55 KB in scope) |
+| Image base | `0x00400000` | `0x10000000` | `0x10000000` |
+| Build date | 2014-11-19 | same build | same build |
+| DRM wrapper | none | not checked | not checked |
+| Rich header | absent (so the exact compiler build has to be found from the CRT) | | |
+
+The DLLs match with the exe's compiler flags and LTCG link unchanged.
 
 ## Pipeline
 
@@ -60,18 +73,18 @@ setup ──► scope ──► queue ──► task next / agent ──► matc
 
 | Command | What it does | Output |
 |---|---|---|
-| `c5d setup` | Finds the game (Steam libraries), checks the exe's build hash, finds Ghidra, Java and the VC++ 2008 compiler, writes `config.local.json`, builds scope + queue, runs a test match | `config.local.json` |
-| `c5d analyze` | Ghidra headless import and analysis (needed for task bundles), plus function export. The shared list is `data/functions.csv`; maintainers refresh it from this export. | `ghidra_proj/`, `build/functions.csv` |
+| `c5d setup` | Finds the game (Steam libraries), checks the build hash of the exe and both DLLs, finds Ghidra, Java and the VC++ 2008 compiler, writes `config.local.json`, builds scope + queue, runs a test match | `config.local.json` |
+| `c5d analyze` | Ghidra headless import and analysis (needed for task bundles), plus function export. The shared list is `modules/exe/data/functions.csv`; maintainers refresh it from this export. | `ghidra_proj/`, `build/functions.csv` |
 | `c5d scope` | Classifies every function: game code vs import stubs, thunks, CRT (byte signatures from the compiler's static libs), ATL/MFC names, compiler EH funclets. Manual ranges go in `scope_overrides.txt`. | `build/scope.csv` |
 | `c5d boundaries [--write]` | Finds functions Ghidra split in two (an early `ret`, then a tail reached only by a jump from the first part), and listed entries that sit inside another function's code (Ghidra misread a stretch of code; the real start may be missing, written as `new`), and adds them to `boundary_overrides.txt`. Every tool reads the function list through those fixes. | `boundary_overrides.txt` |
-| `tools/sdk_vtables.py` | Names engine functions from the SDK interface headers: finds each interface's `QueryInterface` through its GUID, then its vtable | `names/sdk_vtables.csv` |
-| `c5d queue` | Call graph, calling-convention guess (stack / thiscall / custom LTCG registers), call depth, LTCG clusters. Leaves first. | `build/queue.csv`, `data/callgraph.csv` (committed) |
+| `tools/sdk_vtables.py` | Names engine functions from the SDK interface headers: finds each interface's `QueryInterface` through its GUID, then its vtable | `modules/exe/names/sdk_vtables.csv` |
+| `c5d queue` | Call graph, calling-convention guess (stack / thiscall / custom LTCG registers), call depth, LTCG clusters. Leaves first. | `build/exe/queue.csv`, `modules/exe/data/callgraph.csv` (committed) |
 | `c5d classes [0x<addr>] [--top N]` | Classes found from vtables (`tools/classes.py`): vtables are the code-pointer tables that constructors/destructors store into objects, and their slots are the virtual members. Lists classes by unmatched members, or one class in full. Names come from a claiming header, the SDK, RTTI, or matched members' symbols. A header claims a class with `// c5d-vtable: 0x...`. Bundles for methods outside any vtable get the class and related methods found through same-object calls (`this` passed along in ecx). | |
-| `c5d task next --n N` | Writes a self-contained bundle per ready function: rules, its class (members, status, and the claiming header inlined), disassembly, Ghidra C, references with names/conventions/status | `build/tasks/<addr>/TASK.md` |
+| `c5d task next --n N` | Writes a self-contained bundle per ready function: rules, its class (members, status, and the claiming header inlined), disassembly, Ghidra C, references with names/conventions/status | `build/<module>/tasks/<addr>/TASK.md` |
 | `c5d task check <addr>` | Verifies one function and logs the attempt | `build/attempts.jsonl` |
-| `c5d agent --n N --tries T [--remote]` | Runs `agent_cmd` from `config.local.json` on each bundle (prompt on stdin), checks, retries with the diff. Any CLI agent works, e.g. `["claude", "-p", "--permission-mode", "acceptEdits", "--output-format", "json"]`. With JSON output, the token usage it prints is summed per task (`build/tasks/<addr>/usage.json`) and sent by `remote report`. `--remote` claims from the server and reports each result. Runs one function at a time. | as above |
-| `c5d match` | LTCG build of all `src/` + verification; a full run updates `progress/status.csv` | |
-| `c5d build` | Hybrid exe: every function in `src/` relocated into a copy of the game exe (see "Hybrid build") | `build/hybrid/` |
+| `c5d agent --n N --tries T [--remote]` | Runs `agent_cmd` from `config.local.json` on each bundle (prompt on stdin), checks, retries with the diff. Any CLI agent works, e.g. `["claude", "-p", "--permission-mode", "acceptEdits", "--output-format", "json"]`. With JSON output, the token usage it prints is summed per task (`build/exe/tasks/<addr>/usage.json`) and sent by `remote report`. `--remote` claims from the server and reports each result. Runs one function at a time. | as above |
+| `c5d match` | LTCG build of all `modules/exe/src/` + verification; a full run updates `modules/exe/progress/status.csv` | |
+| `c5d build` | Hybrid exe: every function in `modules/exe/src/` relocated into a copy of the game exe (see "Hybrid build") | `build/exe/hybrid/` |
 | `c5d status` | Progress summary | `PROGRESS.md` |
 
 The SDK headers come from the public Community Patch repo (sparse checkout of
@@ -82,7 +95,7 @@ git clone --depth 1 --filter=blob:none --sparse https://github.com/LoneGazebo/Co
 git -C third_party/Community-Patch-DLL sparse-checkout set CvGameCoreDLLUtil
 ```
 
-Automated work goes in `src/auto/f_<address>.cpp`. Move it into a proper area
+Automated work goes in `modules/exe/src/auto/f_<address>.cpp`. Move it into a proper area
 folder once the class it belongs to is known.
 
 ## Website and claim service (`server/`)
@@ -98,7 +111,7 @@ c5d remote claim  ──────────►  hands out ready functions, 
   (bundles built locally)       4 h lease, max 25 per user      python tools/c5d.py match
 c5d remote report ──────────►  marks "reported"                python server/manage.py verify
   (re-checks locally first)                                       -> "matched", leaderboard, trend
-open a PR with src/auto + symbols/auto
+open a PR with modules/exe/src/auto + modules/exe/symbols/auto
 ```
 
 **Try it locally** (dev sign-in, no GitHub needed):
@@ -122,15 +135,15 @@ Then open `http://127.0.0.1:8765/dev-login?login=you`. Tests: `python -m pytest 
    with the callback `https://your-domain/auth/callback`, and set `GITHUB_CLIENT_ID` /
    `GITHUB_CLIENT_SECRET`. No scopes are requested; the server only reads the public login.
 4. Seed the DB once: copy `server/data/c5d.sqlite` (after `manage.py import`) to
-   `/var/lib/c5d/`, or run the import there with your `build/queue.csv` (it contains
+   `/var/lib/c5d/`, or run the import there with your `build/exe/queue.csv` (it contains
    addresses, sizes and names only). After that, never copy the DB over the live one:
    that would wipe claims and reports made since.
 5. Sign in on the site, create a token on `/account`, and `c5d remote login` with it.
    Verification runs on GitHub (see "Verification without the game" below): twice a day
    and on every push to `main`, `.github/workflows/verify.yml` matches everything and pushes
    the results. Add a repository secret `C5D_ADMIN_TOKEN` with an API token of an admin login.
-   `push` sends `progress/status.csv`, the boundary fixes and readiness (which functions
-   have all callees matched, worked out from the committed call graph `data/callgraph.csv`)
+   `push` sends `modules/exe/progress/status.csv`, the boundary fixes and readiness (which functions
+   have all callees matched, worked out from the committed call graph `modules/exe/data/callgraph.csv`)
    to `POST /api/admin/verify` (only logins listed in `C5D_ADMINS`, bearer token only). So
    merging a PR is all it takes: functions whose callees just matched start being handed out. Reported matches that
    aren't verified within 14 days (no PR, or the PR wasn't merged) go back to the pool.
@@ -159,13 +172,14 @@ Then open `http://127.0.0.1:8765/dev-login?login=you`. Tests: `python -m pytest 
 
 ## Verification without the game
 
-Matching needs the original exe, which can't leave your machine. CI uses fingerprints
+Matching needs the original binaries, which can't leave your machine. CI uses fingerprints
 instead (`tools/fingerprint.py`):
 
-- `python tools/c5d.py fingerprint` (maintainers, once; needs the exe) writes
-  `data/fingerprints.csv`: per function, a SHA-256 of its original bytes and of the bytes
-  up to the next function, plus `data/fingerprints.json` (import and export tables). No game
-  code: hashes can't be turned back into bytes.
+- `python tools/c5d.py [--module <id>] fingerprint` (maintainers, once per module; needs the
+  binary) writes `modules/<id>/data/fingerprints.csv`: per function, a SHA-256 of its original
+  bytes and of the bytes up to the next function, plus `modules/<id>/data/fingerprints.json`
+  (import and export tables). No game code: hashes can't be turned back into bytes. A module
+  takes part in CI once its fingerprints are committed.
 - `python tools/c5d.py match --fingerprints` (automatic when the exe isn't there) links as
   usual, rewrites every reference in our code to the address the original must have there
   (from the symbols files), and compares hashes. Equal hashes mean the same code and the same
@@ -175,23 +189,29 @@ instead (`tools/fingerprint.py`):
   fetched from Microsoft and checked against its SHA-256 by `.github/ci/vc2008.sh`) runs
   under Wine; paths are passed as `Z:\...` (`tools/config.py`). Pull requests get a check
   that fails if a function in their files doesn't match; `main` also sends the results to
-  the site.
+  the site. The per-module loops are `.github/ci/{match,report,push}_modules.sh`, which also
+  run locally (`bash .github/ci/match_modules.sh full`).
 
 ## Configuration
 
-- `config.json` (committed): compiler flags, the target exe's build hash, pinned tool versions.
+- `config.json` (committed): compiler flags, pinned tool versions, and `modules`: each
+  binary's file name and build hash.
 - `config.local.json` (git-ignored, written by `c5d setup`): this machine's game, Ghidra and
   MSVC paths, plus the server login, `model` and `agent_cmd`. Its keys override `config.json`.
-- `data/functions.csv` (committed): the shared function list (addresses, sizes, Ghidra names;
-  no code), so everyone uses the same addresses whatever Ghidra version they have.
+- `modules/<id>/data/functions.csv` (committed): each module's shared function list
+  (addresses, sizes, Ghidra names; no code), so everyone uses the same addresses whatever
+  Ghidra version they have.
+- The module a command works on: `--module <id>`, else the module of a qualified address
+  (`db:0x...`) or source path (`modules/db/...`) on the command line, else `$C5D_MODULE`,
+  else `exe`.
 
-Every toolchain command refuses to run until setup is done, and refuses an exe whose hash
+Every toolchain command refuses to run until setup is done, and refuses a binary whose hash
 doesn't match (the hash is cached by size + mtime, so this costs nothing).
 
 ## Hybrid build: testing as we go
 
 We don't wait for 100% to rebuild and check the exe. `c5d build` takes our `/LTCG`-linked
-code for every function in `src/` and writes it into a copy of your own exe at the original
+code for every function in `modules/exe/src/` and writes it into a copy of your own exe at the original
 addresses, re-pointing every call, jump, global and switch table:
 
 - **Matched functions** are written in place, and the result must be **byte-identical** to the
@@ -216,8 +236,8 @@ The hybrid exe is built from each player's own copy and is never shared.
 
 Each worker passes `--worker <id>`, which gives it its own build folder
 (`build/work/<id>/`). `c5d task next --worker-prefix w` claims each task for its
-own worker (`build/claims/`). A worker writes only `src/auto/f_<addr>.cpp` and
-`symbols/auto/f_<addr>.txt`. `symbols.txt` plus every `symbols/**/*.txt` file are
+own worker (`build/exe/claims/`). A worker writes only `modules/exe/src/auto/f_<addr>.cpp` and
+`modules/exe/symbols/auto/f_<addr>.txt`. `modules/exe/symbols.txt` plus every `symbols/**/*.txt` file are
 merged, so workers never edit the same file. LTCG links leave out files claimed
 by *other* workers, so a half-written file can't break anyone else's build.
 `c5d task release <addr>` drops a claim. Twenty workers ran at once in the trial without
@@ -357,35 +377,38 @@ What the trial found and fixed:
 2. **Harden:** build a `match` command that ignores relocations, set up the
    class-definition library, and match 20 to 50 functions to measure the hit rate.
 3. **Scale:** add the function queue, the AI agent loop and progress tracking (plus the site).
+4. **More binaries:** the database and localization DLLs as modules beside the exe, with their
+   bundled SQLite and ICU out of scope (2026-11-17).
 
 ## Layout
 
 ```
-config.json        shared settings: compiler flags, target exe build hash, tool versions
+config.json        shared settings: compiler flags, tool versions, and "modules" (each
+                   binary's file name and build hash: exe, db, loc)
 config.local.json  this machine's paths, server login, agent_cmd (git-ignored; `c5d setup`)
-data/              functions.csv: the shared function list
 CONTRIBUTING.md    contributor setup guide
-symbols.txt        address <-> symbol map (drives `match`)
-names/             readable names from other sources (SDK vtables)
-progress/          status.csv: per-function match status (committed)
 PROGRESS.md        generated summary
-scope_overrides.txt manual scope ranges
+modules/exe/       CivilizationV_DX11.exe (the DLLs get modules/db/ and modules/loc/)
+  src/             matched function source; src/auto/ is agent-written (f_<address>.cpp)
+  symbols.txt      address <-> symbol map (drives `match`), plus symbols/**/*.txt
+  data/            functions.csv (the shared function list), callgraph.csv, fingerprints
+  names/           readable names from other sources (SDK vtables)
+  progress/        status.csv: per-function match status (committed)
+  boundary_overrides.txt, scope_overrides.txt   manual boundary and scope fixes
+include/           reconstructed class declarations ("blueprints"), shared by all modules
+tools/c5d.py       CLI: `setup`, `analyze`, `dump`, `match`, `build`, ... (`--help`)
+tools/config.py    config.json + config.local.json loading, module paths
 tools/scope.py     scope classification
 tools/workqueue.py call graph, conventions, leaves-first queue
 tools/tasks.py     task bundles + agent loop
 tools/sdk_vtables.py SDK interface names
-src/auto/          agent-written functions (f_<address>.cpp)
-tools/c5d.py       CLI: `setup`, `analyze`, `dump`, `match`, `build`, ... (`--help`)
 tools/setup_env.py `c5d setup`: discovery, exe hash, toolchain checks
-tools/config.py    config.json + config.local.json loading
 tools/hybrid.py    `c5d build`: relocate our code into a copy of the exe
 tools/binfmt.py    PE / COFF readers (exports, imports, base relocations)
 tools/ltcg.py      /GL + /LTCG build, placeholders, linked comparison
 tools/xrefs.py     find callers of an address in the exe
 tools/ghidra/      Ghidra headless scripts
-include/           reconstructed class declarations ("blueprints")
-src/               matched function source
-build/             generated output (git-ignored)
+build/<module>/    generated output per module; build/objcache/ is shared (git-ignored)
 ```
 
 ## Quick start
@@ -393,28 +416,28 @@ build/             generated output (git-ignored)
 ```bash
 python tools/c5d.py setup     # find + check everything, write config.local.json
 python tools/c5d.py analyze   # one-time Ghidra database (for task bundles)
-python tools/c5d.py dump 0x00813940   # disasm + decompile to build/dump (local only)
-python tools/c5d.py match             # compile src/ and compare against the exe
+python tools/c5d.py dump 0x00813940   # disasm + decompile to build/exe/dump (local only)
+python tools/c5d.py match             # compile modules/exe/src/ and compare against the exe
 python tools/c5d.py build             # hybrid exe, verified byte-identical
 ```
 
 ## Matching a function
 
-1. Add `<address> <decorated name>` to `symbols.txt` for the function, plus
+1. Add `<address> <decorated name>` to `modules/exe/symbols.txt` for the function, plus
    any functions or globals it references.
-2. Write it in a `.cpp` under `src/` (one area per folder), and put class
+2. Write it in a `.cpp` under `modules/exe/src/` (one area per folder), and put class
    layouts in `include/`.
 3. Run `python tools/c5d.py match` (add `-v` for detail). By default this is
-   **LTCG mode**: every file in `src/` is compiled with `/GL` and linked together with
+   **LTCG mode**: every file in `modules/exe/src/` is compiled with `/GL` and linked together with
    `/LTCG` into a throwaway DLL, so the linker makes the same whole-program
    decisions as Firaxis's build. Anything not decompiled yet becomes a generated
    placeholder. Each function is then compared with the exe. Every call, jump
    and global address must point where the original does (resolved via
-   `symbols.txt`, the linker map and the import tables). `--obj` is a faster
+   `modules/exe/symbols.txt`, the linker map and the import tables). `--obj` is a faster
    per-file mode that is only reliable for simple leaf functions.
    `python tools/xrefs.py <addr>` lists the exe's callers of a function.
    - `MATCH`: identical, and every relocation target is verified.
-   - `MATCH?`: identical bytes, but some relocation targets are unknown (add them to `symbols.txt`).
+   - `MATCH?`: identical bytes, but some relocation targets are unknown (add them to `modules/exe/symbols.txt`).
    - `DIFF`: a side-by-side disassembly with `!!` on differing lines
      (`r` = differs only in a relocation that checked out).
 

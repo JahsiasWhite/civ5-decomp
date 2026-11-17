@@ -19,6 +19,8 @@ import sys
 import time
 from pathlib import Path
 
+import config  # noqa: E402  (tools/ is on sys.path wherever these run)
+
 import capstone
 
 ATTEMPTS = "attempts.jsonl"
@@ -81,7 +83,7 @@ def disasm_text(img, addr, size, names):
                 v = op.imm & 0xFFFFFFFF
             elif op.type == capstone.x86.X86_OP_MEM and op.mem.base == 0 and op.mem.index == 0:
                 v = op.mem.disp & 0xFFFFFFFF
-            if v is not None and v >= 0x400000 and not (addr <= v < addr + size):
+            if v is not None and v >= img.image_base and not (addr <= v < addr + size):
                 refs[v] = ins.mnemonic
                 if v in names:
                     txt += f"    ; {names[v]}"
@@ -130,7 +132,8 @@ def write_bundle(ctx, row, queue_by_addr, names, symbols_by_addr, imports, last_
     addr, size = int(row["entry"], 16), int(row["size"])
     d = ctx.build / "tasks" / f"{addr:08x}"
     d.mkdir(parents=True, exist_ok=True)
-    src = f"src/auto/f_{addr:08x}.cpp"
+    m = config.module()
+    src = m.rel(m.src / "auto" / f"f_{addr:08x}.cpp")
     asm, refs = disasm_text(ctx.image, addr, size, {**names, **imports})
     ref_lines = []
     for v in sorted(refs):
@@ -146,11 +149,16 @@ def write_bundle(ctx, row, queue_by_addr, names, symbols_by_addr, imports, last_
             ref_lines.append(f"| 0x{v:08x} | data/other | | | {label} |")
     name = names.get(addr, "")
     parts = [
-        f"# Decompile 0x{addr:08x} {name}".rstrip(),
+        f"# Decompile {'' if m.id == config.DEFAULT_MODULE else m.id + ':'}0x{addr:08x} {name}".rstrip(),
         "",
-        "Repository: civ5-decomp (byte-matching decompilation of CivilizationV_DX11.exe).",
+        "Repository: civ5-decomp (byte-matching decompilation of Civilization V: the exe and its "
+        "game DLLs).",
         "Read `README.md` (Findings) once for context.",
         "",
+        f"- Module: **{m.id}** (`{m.file}`): this function's files go under `{m.rel(m.root)}/`, "
+        "shared headers in `include/`"
+        + ("" if m.id == config.DEFAULT_MODULE else
+           f". Run c5d as `python tools/c5d.py --module {m.id} ...` (or write the address as `{m.id}:0x...`)"),
         f"- Address: `0x{addr:08x}`, size {size} bytes",
         f"- Known name: `{name or 'unknown (name it descriptively; keep the address in the symbol map)'}`",
         f"- Convention guess: **{row['conv']}**"
@@ -158,8 +166,9 @@ def write_bundle(ctx, row, queue_by_addr, names, symbols_by_addr, imports, last_
         f"- Callers: {row['callers']}; callees in scope: {row['callees']}; "
         f"cluster size {row['cluster_size']}",
         "",
-        RULES.format(src=src, addr=f"0x{addr:08x}", worker=worker,
-                     symfile=f"symbols/auto/f_{addr:08x}.txt"),
+        RULES.format(src=src, addr=(f"0x{addr:08x}" if m.id == config.DEFAULT_MODULE
+                                         else f"{m.id}:0x{addr:08x}"), worker=worker,
+                     symfile=m.rel(m.symbols_dir / "auto" / f"f_{addr:08x}.txt")),
         *class_section(ctx, addr, queue_by_addr),
         "## Disassembly (reference only)",
         "```", asm, "```",

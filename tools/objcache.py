@@ -64,6 +64,9 @@ def includes_digest(root, src):
     root = Path(root).resolve()
     inc_dir = root / "include"
     src = Path(src).resolve()
+    # a module's own headers (modules/<id>/include) come after include/ on INCLUDE
+    rel = src.relative_to(root).parts if root in src.parents else ()
+    mod_inc = [root / rel[0] / rel[1] / "include"] if len(rel) > 2 and rel[0] == "modules" else []
     seen = {}
     todo = [src]
     while todo:
@@ -79,7 +82,7 @@ def includes_digest(root, src):
             # files that included it, then on INCLUDE (include/ first). Every candidate
             # that exists counts, not just the first, so a header found by another
             # route can't be missed (worst case: a few extra rebuilds).
-            dirs = ([f.parent, src.parent] if quoted else []) + [inc_dir]
+            dirs = ([f.parent, src.parent] if quoted else []) + [inc_dir] + mod_inc
             for p in {(d / name).resolve() for d in dirs}:
                 if not p.is_file() or root not in p.parents or p in seen:
                     continue                    # absent, toolchain header, or done

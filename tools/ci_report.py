@@ -22,6 +22,8 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+import config  # noqa: E402  (tools/ is on sys.path wherever these run)
+
 ROOT = Path(__file__).resolve().parent.parent
 INCLUDE_RE = re.compile(r'^\s*#\s*include\s*"([^"]+)"', re.M)
 HEADER_EXT = (".h", ".hpp", ".inl")
@@ -32,17 +34,22 @@ def _rel(p, root):
 
 
 def include_graph(root=ROOT):
-    """{file: {files it #includes "..."}} over src/ and include/, as repo-relative posix
-    paths. A quoted include resolves like cl does here: next to the including file
-    first, then include/ (the /I path). Unresolved ones (SDK, system) are left out."""
+    """{file: {files it #includes "..."}} over every module's src/ (modules/<id>/src) and
+    include/, as repo-relative posix paths. A quoted include resolves like cl does here:
+    next to the including file first, then include/ (the /I path). Unresolved ones (SDK,
+    system) are left out."""
     root = Path(root)
-    files = [p for d in ("src", "include") if (root / d).is_dir()
-             for p in (root / d).rglob("*") if p.suffix in (".cpp", ".c") + HEADER_EXT]
+    dirs = ([root / "include"] + sorted((root / "modules").glob("*/src"))
+            + sorted((root / "modules").glob("*/include")))
+    files = [p for d in dirs if d.is_dir()
+             for p in d.rglob("*") if p.suffix in (".cpp", ".c") + HEADER_EXT]
     graph = {}
     for f in files:
         deps = set()
         for name in INCLUDE_RE.findall(f.read_text(encoding="utf-8", errors="replace")):
-            for cand in (f.parent / name, root / "include" / name):
+            rel = f.resolve().relative_to(root.resolve()).parts
+            mod_inc = [root / rel[0] / rel[1] / "include" / name] if rel[0] == "modules" else []
+            for cand in (f.parent / name, root / "include" / name, *mod_inc):
                 if cand.is_file():
                     deps.add(_rel(cand, root))
                     break
@@ -115,16 +122,17 @@ def _regression_table(regressed):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--status", default=str(ROOT / "progress" / "status.csv"))
+    p.add_argument("--status", default=str(config.module().status_csv))
     p.add_argument("--changed", default=None)
     p.add_argument("--base-status", default=None,
                    help="progress/status.csv before the change: the PR's base (header "
                         "regressions) or, without --changed, before the push (all regressions)")
     args = p.parse_args()
 
+    m = config.module()                     # C5D_MODULE / default exe: one module per report
     rows = _read_rows(args.status)
     counts = Counter(r["status"] for r in rows)
-    out = ["## Match results (fingerprint mode)", "",
+    out = [f"## Match results: {m.id} (fingerprint mode)", "",
            " · ".join(f"**{k}** {counts[k]}" for k in ("MATCH", "DIFF", "UNVERIFIED", "ERROR", "MATCH?")
                       if counts[k]) or "no functions", ""]
 
@@ -145,7 +153,10 @@ def main():
             rc = 1
         base_path = Path(args.base_status) if args.base_status else None
         base_rows = _read_rows(base_path) if base_path and base_path.is_file() else []
-        affected, regressed = header_regressions(rows, base_rows, changed, include_graph())
+        # only this module's sources: another module's includers get their own report
+        own = (m.rel(m.root) + "/", "include/")
+        graph = {f: d for f, d in include_graph().items() if f.startswith(own)}
+        affected, regressed = header_regressions(rows, base_rows, changed, graph)
         if affected:
             out += [f"### Sources including a changed header: {len(affected)} file(s), "
                     f"{len(regressed)} regression(s)", ""]

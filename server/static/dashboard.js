@@ -20,6 +20,19 @@ const modelColour = (() => {
   };
 })();
 
+// one colour per binary (exe / db / loc), the same on every chart and label
+const MODS = ["exe", "db", "loc"];
+const modColour = (m) => (MODS.includes(m) ? `var(--mod-${m})` : "var(--faint)");
+// each module's binary, shown when hovering its label; render() refreshes it from /api/stats
+const MOD_FILES = { exe: "CivilizationV_DX11.exe", db: "CvGameDatabaseWin32Final Release.dll",
+                    loc: "CvLocalizationWin32Final Release.dll" };
+// hover=false where the row already has its own tooltip naming the binary (What is left)
+function modTag(m, hover = true) {
+  const attrs = { class: `mod mod-${MODS.includes(m) ? m : "x"}` };
+  if (hover) attrs.title = MOD_FILES[m] || m;
+  return el("span", attrs, m);
+}
+
 function el(tag, attrs, text) {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
@@ -44,7 +57,8 @@ function fillRows(tbody, rows, cols, emptyText) {
     for (const c of cells) {
       const td = el("td", c.cls ? { class: c.cls } : {});
       if (c.swatch) { const s = el("i", { class: "swatch" }); s.style.background = c.swatch; td.appendChild(s); }
-      td.appendChild(document.createTextNode(c.t));
+      if (c.nodes) td.append(...c.nodes);
+      if (c.t !== undefined) td.appendChild(document.createTextNode(c.t));
       tr.appendChild(td);
     }
     tbody.appendChild(tr); out.push(tr);
@@ -125,7 +139,7 @@ function axes(s, W, H, pad, maxY, fmtY) {
     t.textContent = fmtY(maxY * i / 4); s.appendChild(t);
   }
 }
-function lineChart(s, points, key, fmtY, tipFor) {
+function lineChart(s, points, key, fmtY, tipFor, markers) {
   s.textContent = "";
   if (!points.length) return emptyChart(s, "No verified matches yet");
   const vb = s.viewBox.baseVal, W = vb.width, H = vb.height, pad = { l: 56, r: 12, t: 10, b: 26 };
@@ -148,6 +162,14 @@ function lineChart(s, points, key, fmtY, tipFor) {
     if (i % step && i !== n - 1) return;
     const t = svg("text", { x: x(i), y: H - 8, "text-anchor": "middle" }); t.textContent = p.day.slice(5); s.appendChild(t);
   });
+  // dashed marker on the day each DLL joined (or the first day after it with a match)
+  for (const mk of markers || []) {
+    const i = points.findIndex((p) => p.day >= mk.day);
+    if (i < 0) continue;
+    s.appendChild(svg("line", { class: "joined", x1: x(i), x2: x(i), y1: pad.t, y2: H - pad.b }));
+    const t = svg("text", { class: "joined-label", x: x(i) + 4, y: pad.t + 10 }); t.textContent = mk.label;
+    s.appendChild(t);
+  }
   // a full-height hover strip per day, with a guide line and a marker on the point
   const half = n === 1 ? (W - pad.l - pad.r) / 2 : (W - pad.l - pad.r) / (n - 1) / 2;
   points.forEach((p, i) => {
@@ -244,9 +266,12 @@ function renderBoard() {
   trs.forEach((tr, i) => {
     const r = rows[i];
     if (r.bands) tip(tr, () => ({
-      title: `${r.who} · by size band`,
-      rows: r.bands.filter((b) => b.functions).map((b) => ({
-        label: b.label, value: `${n0(b.functions)} fns · ${size(b.bytes)} · ${pct(b.bytes, r.bytes, 0)}` })),
+      title: `${r.who} · by module and size band`,
+      rows: (r.modules || []).map((m) => ({
+        swatch: modColour(m.module), label: m.module,
+        value: `${n0(m.functions)} fns · ${size(m.bytes)} · ${pct(m.bytes, r.bytes, 0)}` })).concat(
+        r.bands.filter((b) => b.functions).map((b) => ({
+          label: b.label, value: `${n0(b.functions)} fns · ${size(b.bytes)} · ${pct(b.bytes, r.bytes, 0)}` }))),
       note: `${n0(r.functions)} functions · ${size(r.bytes)} verified`,
     }));
   });
@@ -269,7 +294,23 @@ function render(s) {
   // stat cards
   $("c-bytes").textContent = size(s.matched_bytes);
   $("c-bytes-foot").textContent = `of ${size(s.bytes)} in scope · ${pct(s.matched_bytes, s.bytes, 3)}`;
-  $("c-bytes-meter").style.width = Math.max(100 * s.matched_bytes / (s.bytes || 1), 0.5) + "%";
+  // the meter: one segment per module, each its share of all bytes in scope
+  const mods = Object.entries(s.modules || {});
+  for (const [m, v] of mods) if (v.file) MOD_FILES[m] = v.file;
+  const meter = $("c-bytes-meter"); meter.textContent = "";
+  for (const [m, v] of mods) {
+    if (!v.matched_bytes) continue;
+    const seg = el("i", { title: `${MOD_FILES[m] || m}: ${size(v.matched_bytes)}` });
+    seg.style.background = modColour(m);
+    seg.style.width = Math.max(100 * v.matched_bytes / (s.bytes || 1), 0.5) + "%";
+    meter.appendChild(seg);
+  }
+  const line = $("c-bytes-mods"); line.textContent = "";
+  for (const [m, v] of mods) {
+    const sp = el("span"); sp.appendChild(modTag(m));
+    sp.appendChild(document.createTextNode(v.functions ? `${size(v.matched_bytes)} / ${size(v.bytes)}` : "not imported yet"));
+    line.appendChild(sp);
+  }
   $("c-fn").textContent = n0(s.matched);
   $("c-fn-foot").textContent = `of ${n0(s.functions)} in scope · ${pct(s.matched, s.functions)}`;
   $("c-todo").textContent = n0(s.todo);
@@ -283,11 +324,17 @@ function render(s) {
   const dayTip = (p) => ({
     title: p.day,
     rows: [{ label: "total", value: `${n0(p.functions)} functions · ${size(p.bytes)}` },
+           ...Object.entries(p.modules || {}).map(([m, v]) => ({
+             swatch: modColour(m), label: m, value: `${n0(v.functions)} fns · ${size(v.bytes)}` })),
            { label: "that day", value: `+${n0(p.new_functions || 0)} fns · +${size(p.new_bytes || 0)}` }],
     note: `${pct(p.bytes, s.bytes, 3)} of the bytes in scope`,
   });
-  lineChart($("ch-bytes"), s.trend, "bytes", (v) => size(v), dayTip);
-  lineChart($("ch-fns"), s.trend, "functions", (v) => n0(Math.round(v)), dayTip);
+  // one marker per day, naming every module that joined then
+  const joinDays = new Map();
+  for (const [m, v] of mods) if (m !== "exe" && v.joined) joinDays.set(v.joined, [...(joinDays.get(v.joined) || []), m]);
+  const joins = [...joinDays].map(([day, ms]) => ({ day, label: ms.join(" + ") + (ms.length > 1 ? " join" : " joins") }));
+  lineChart($("ch-bytes"), s.trend, "bytes", (v) => size(v), dayTip, joins);
+  lineChart($("ch-fns"), s.trend, "functions", (v) => n0(Math.round(v)), dayTip, joins);
   stackedDaily($("ch-daily"), s.trend_by_model, $("lg-daily"),
     new Map(s.trend.map((p) => [p.day, p.new_functions || 0])));
 
@@ -303,12 +350,17 @@ function render(s) {
       const d = today.get(r.model), t = tries.get(r.model);
       if (d) rows.push({ label: "last 24 h", value: `+${n0(d.functions)} fns · +${size(d.bytes)}` });
       if (t) rows.push({ label: "hit rate", value: `${n0(t.matches)} / ${n0(t.reports)} reports · ${pct(t.matches, t.reports, 0)}` });
+      for (const [m, v] of Object.entries(r.modules || {}))
+        rows.push({ swatch: modColour(m), label: m, value: `${n0(v.functions)} fns · ${size(v.bytes)}` });
       return { title: r.model, rows };
     } })),
     (v) => kb(v) + " KB");
   fillRows($("t-squad-all").tBodies[0], s.squad.all.map((r) => [
     { t: r.model, swatch: modelColour(r.model) }, { t: n0(r.functions), cls: "num" },
-    { t: kb(r.bytes), cls: "num" }, { t: (100 * r.share).toFixed(1) + "%", cls: "num" }]), 4, "No matches yet.");
+    { t: kb(r.bytes), cls: "num" }, { t: (100 * r.share).toFixed(1) + "%", cls: "num" },
+    { nodes: Object.entries(r.modules || {}).map(([m, v]) => {
+      const sp = el("span", { class: "fn", title: `${n0(v.functions)} functions` });
+      sp.append(modTag(m), document.createTextNode(kb(v.bytes) + " ")); return sp; }) }]), 5, "No matches yet.");
   fillRows($("t-squad-day").tBodies[0], s.squad.day.map((r) => [
     { t: r.model, swatch: modelColour(r.model) }, { t: n0(r.functions), cls: "num" },
     { t: kb(r.bytes), cls: "num" }]), 3, "Nothing verified in the last 24 hours.");
@@ -319,14 +371,46 @@ function render(s) {
     { t: r.day, cls: "mono" }, { t: n0(r.kept), cls: "num" }, { t: kb(r.kept_bytes), cls: "num" },
     { t: n0(r.rejected), cls: "num" }]), 4, "No verification run has matched or rejected anything yet.");
 
-  // map
+  // map: one row per module, then the size tiers for the module picked in the filter
+  const left = $("mods-left"); left.textContent = "";
+  for (const [m, v] of mods) {
+    const ts = s.tiers.filter((t) => t.module === m);
+    const sum = (k) => ts.reduce((a, t) => a + t[k], 0);
+    tierRow(left, { label: m, total: sum("total"), matched: sum("matched"), open: sum("open"), untried: sum("untried"),
+                    bytes: sum("bytes"), matched_bytes: sum("matched_bytes") }, modTag(m, false), v.file);
+  }
+  const filter = $("tier-filter"); filter.textContent = "";
+  for (const m of ["all", ...mods.map(([m]) => m)]) {
+    const b = el("button", { type: "button", "aria-pressed": String(m === tierFilter) }, m === "all" ? "All" : m);
+    b.addEventListener("click", () => { tierFilter = m; render(s); });
+    filter.appendChild(b);
+  }
+  renderTiers(s);
+
+  // log
+  const log = $("log-list"); log.textContent = "";
+  if (!s.log.length) log.appendChild(el("li", { class: "empty" }, "No milestones yet."));
+  for (const m of s.log) {
+    const li = el("li"); li.append(el("time", { datetime: m.day }, m.day), el("span", {}, m.text)); log.appendChild(li);
+  }
+}
+
+let tierFilter = "all";
+function renderTiers(s) {
   const tiers = $("tiers"); tiers.textContent = "";
-  for (const k of s.tiers) {
-    const row = el("div", { class: "tierbar" });
-    row.appendChild(el("span", {}, k.label));
+  for (const k of s.tiers.filter((t) => t.module === tierFilter))
+    tierRow(tiers, k, null, `${k.label} functions` + (tierFilter === "all" ? "" : ` · ${tierFilter}`));
+}
+// one bar: matched / tried and open / never tried. labelNode (a module label) replaces the text label.
+function tierRow(parent, k, labelNode, title) {
+  {
+    const row = el("div", { class: "tierbar" + (labelNode ? " module" : "") });
+    const lab = el("span", {}, labelNode ? undefined : k.label);
+    if (labelNode) lab.appendChild(labelNode);
+    row.appendChild(lab);
     const st = el("div", { class: "stack" });
     tip(row, () => ({
-      title: `${k.label} functions`,
+      title,
       rows: [{ swatch: "var(--brass)", label: "matched", value: `${n0(k.matched)} · ${size(k.matched_bytes)}` },
              { swatch: "var(--bad)", label: "tried, open", value: n0(k.open) },
              { swatch: "var(--rule)", label: "never tried", value: n0(k.untried) }],
@@ -336,15 +420,9 @@ function render(s) {
       const sp = el("span", { class: cls }); sp.style.width = (k.total ? 100 * v / k.total : 0) + "%"; st.appendChild(sp);
     }
     row.appendChild(st);
-    row.appendChild(el("span", { class: "figs" }, `${n0(k.matched)} / ${n0(k.total)} · ${size(k.bytes - k.matched_bytes)} left`));
-    tiers.appendChild(row);
-  }
-
-  // log
-  const log = $("log-list"); log.textContent = "";
-  if (!s.log.length) log.appendChild(el("li", { class: "empty" }, "No milestones yet."));
-  for (const m of s.log) {
-    const li = el("li"); li.append(el("time", { datetime: m.day }, m.day), el("span", {}, m.text)); log.appendChild(li);
+    row.appendChild(el("span", { class: "figs" }, k.total
+      ? `${n0(k.matched)} / ${n0(k.total)} · ${size(k.bytes - k.matched_bytes)} left` : "not imported yet"));
+    parent.appendChild(row);
   }
 }
 

@@ -1,0 +1,5 @@
+# SQLite 3.7.17 functions inside the database DLL (out of scope; see scope_overrides.txt).
+# Named so calls from the DLL's own code can be checked. Each was identified from the
+# exported Database:: method that calls it.
+0x10043fa0 _sqlite3_column_int        # Results::GetInt
+0x10044000 _sqlite3_column_text       # Results::GetText

@@ -96,7 +96,7 @@ def exe_is_target(path, expected):
         return False
     st = path.stat()
     stamp = f"{path}|{st.st_size}|{st.st_mtime_ns}|{expected}"
-    cache = ROOT / "build" / ".exe_verified"
+    cache = ROOT / "build" / f".verified_{path.name}"         # one per binary
     if cache.exists() and cache.read_text() == stamp:
         return True
     try:
@@ -271,6 +271,7 @@ def step_game(rep, cfg, arg):
         seen.append(exe)
         if exe_is_target(exe, want):
             rep.ok(target, f"{d} (build hash matches {cfg.get('target_build', 'the target build')})")
+            check_other_modules(rep, cfg, d, target)
             return {"game_dir": d.as_posix()}
         try:
             got = build_hash(exe)[:16] + "..."
@@ -285,6 +286,21 @@ def step_game(rep, cfg, arg):
         rep.bad(target, "Civilization V not found in any Steam library",
                 "install it through Steam, or pass --game \"<folder containing the exe>\"")
     return {}
+
+
+def check_other_modules(rep, cfg, game_dir, done):
+    """The other binaries in config.json "modules" (the DLLs) must be the same build too
+    before anyone works on them. A mismatch only matters for that module, so it's a note."""
+    for mid, spec in cfg.get("modules", {}).items():
+        f = spec["file"]
+        if f == done:
+            continue
+        path = Path(game_dir) / f
+        if exe_is_target(path, spec.get("build_hash", "")):
+            rep.ok(f"{mid}: {f}", "build hash matches")
+        else:
+            rep.note(f"{mid}: {path} is missing or a different build; `--module {mid}` won't work "
+                     "until Steam verifies the game files")
 
 
 def step_ghidra(rep, cfg, arg):
@@ -378,32 +394,40 @@ def c5d(*args, capture=True):
 
 
 def step_data(rep):
+    """Scope and work queue for every module (build/<id>/scope.csv, queue.csv). A DLL
+    whose binary isn't the targeted build is only a note: that module can't be set up."""
     print("Function list, scope and work queue")
-    fcsv = config.functions_csv()
-    if fcsv.parent.name == "data":
-        rep.ok("function list", f"{sum(1 for _ in open(fcsv)) - 1:,} functions ({fcsv.relative_to(ROOT).as_posix()})")
-    else:
-        rep.bad("function list", "data/functions.csv is missing", "git pull (it is committed)")
-        return
-    build = ROOT / "build"
-    for name, args in (("scope", ("scope",)), ("queue", ("queue", "--top", "0"))):
-        out = build / f"{name}.csv"
-        inputs = [fcsv] + [p for p in (config.BOUNDARY_OVERRIDES,) if p.exists()]
-        if out.exists() and out.stat().st_mtime >= max(p.stat().st_mtime for p in inputs):
-            rep.ok(f"build/{name}.csv", "up to date")
-            continue
-        print(f"       running c5d {name} ...", flush=True)
-        r = c5d(*args)
-        if r.returncode == 0 and out.exists():
-            rep.ok(f"build/{name}.csv", "generated")
-        else:
-            rep.bad(f"c5d {name}", "failed", (r.stdout + r.stderr).strip()[-600:])
+    game_dir = config.load().get("game_dir")
+    for m in config.all_modules():
+        fcsv = config.functions_csv(m.id)
+        label = f"{m.id}: function list"
+        if fcsv.parent != m.data:
+            rep.bad(label, f"{m.rel(m.data / 'functions.csv')} is missing", "git pull (it is committed)")
             return
+        rep.ok(label, f"{sum(1 for _ in open(fcsv)) - 1:,} functions ({m.rel(fcsv)})")
+        if m.id != config.DEFAULT_MODULE and not (
+                game_dir and exe_is_target(Path(game_dir) / m.file, m.build_hash)):
+            rep.note(f"{m.id}: {m.file} isn't the targeted build; skipped its scope and queue")
+            continue
+        for name, args in (("scope", ("scope",)), ("queue", ("queue", "--top", "0"))):
+            out = m.build / f"{name}.csv"
+            shown = m.rel(out)
+            inputs = [fcsv] + [p for p in (m.boundary_overrides,) if p.exists()]
+            if out.exists() and out.stat().st_mtime >= max(p.stat().st_mtime for p in inputs):
+                rep.ok(shown, "up to date")
+                continue
+            print(f"       running c5d --module {m.id} {name} ...", flush=True)
+            r = c5d("--module", m.id, *args)
+            if r.returncode == 0 and out.exists():
+                rep.ok(shown, "generated")
+            else:
+                rep.bad(f"c5d --module {m.id} {name}", "failed", (r.stdout + r.stderr).strip()[-600:])
+                return
 
 
 def step_test_match(rep):
     print("Test match")
-    status = ROOT / "progress" / "status.csv"
+    status = config.module().status_csv
     import csv
     rows = [r for r in csv.DictReader(open(status, newline=""))] if status.exists() else []
     known = next((r for r in rows if r["status"] == "MATCH"), None)

@@ -17,6 +17,7 @@
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   /* categorical colours for models (same order everywhere) */
+  --mod-exe: #d1a94f; --mod-db: #8ea6e0; --mod-loc: #c77b8f;   /* one colour per binary */
   --m0: #d1a94f; --m1: #5db3a5; --m2: #c77b8f; --m3: #8ea6e0; --m4: #a7c46a; --m5: #d98b52; --m6: #b49be0; --m7: #7d8a96;
   color-scheme: dark;
 }
@@ -25,6 +26,7 @@
     --bg: #efe7d4; --bg-2: #e9dfc8; --panel: #f7f1e3; --panel-2: #f2e9d4; --ink: #1f2a3a; --muted: #5d5a4c;
     --faint: #8b8574; --rule: #cdbf9e; --brass: #9b7420; --brass-2: #7d5c12; --sea: #2d7f73; --bad: #b0472e;
     --grid: rgba(155, 116, 32, .08);
+    --mod-exe: #9b7420; --mod-db: #3d5fae; --mod-loc: #a3485f;
     --m0: #9b7420; --m1: #2d7f73; --m2: #a3485f; --m3: #3d5fae; --m4: #5f7f1f; --m5: #b0602a; --m6: #6f53a8; --m7: #5b6670;
     color-scheme: light;
   }
@@ -82,7 +84,18 @@ nav.pages { margin-left: auto; }
 .card .value.up { color: var(--sea); }
 .card .foot { font-size: 13px; color: var(--muted); }
 .meter { height: 6px; background: var(--bg-2); border-radius: 99px; overflow: hidden; margin-top: 10px; }
-.meter i { display: block; height: 100%; width: 0; background: var(--brass); border-radius: 99px; transition: width .7s ease; }
+.meter { display: flex; }
+.meter i { display: block; height: 100%; width: 0; background: var(--brass); transition: width .7s ease; }
+.meter i + i { box-shadow: -1px 0 0 var(--panel); }
+.card .mods { display: flex; flex-wrap: wrap; gap: 2px 12px; margin-top: 8px; font: 12px var(--mono); color: var(--muted); }
+
+/* module labels: exe / db / loc, one colour each, used wherever a function or module shows */
+.mod { display: inline-block; font: 600 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .06em;
+  padding: 3px 5px 2px; border-radius: 4px; margin-right: 6px; vertical-align: 1px;
+  color: var(--mod); border: 1px solid color-mix(in srgb, var(--mod) 55%, transparent);
+  background: color-mix(in srgb, var(--mod) 14%, transparent); }
+.mod-exe { --mod: var(--mod-exe); } .mod-db { --mod: var(--mod-db); } .mod-loc { --mod: var(--mod-loc); }
+.fn { font-family: var(--mono); white-space: nowrap; }
 
 /* ---------- sections ---------- */
 section.block { margin: 48px 0 0; }
@@ -157,6 +170,15 @@ tr[tabindex]:focus-visible, .tierbar:focus-visible { outline: 2px solid var(--br
 .tierbar .stack { display: flex; height: 14px; border-radius: 4px; overflow: hidden; background: var(--bg-2); }
 .tierbar .stack span { display: block; height: 100%; }
 .tierbar .figs { font: 12px var(--mono); color: var(--muted); text-align: right; }
+.tierbar.module { margin: 8px 0; }
+.tierbar.module + .filter { margin-top: 18px; }
+.filter { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 14px; border-top: 1px dashed var(--rule); margin-bottom: 4px; }
+.filter button { font: 12px var(--mono); color: var(--muted); background: transparent; border: 1px solid var(--rule);
+  border-radius: 99px; padding: 5px 11px; cursor: pointer; }
+.filter button:hover { color: var(--ink); }
+.filter button[aria-pressed="true"] { color: var(--ink); border-color: var(--brass); background: var(--panel-2); }
+.chart .joined { stroke: var(--muted); stroke-dasharray: 3 4; }
+.chart text.joined-label { fill: var(--muted); font-size: 10px; }
 .k-matched { background: var(--brass); } .k-open { background: var(--bad); } .k-untried { background: var(--rule); }
 @media (max-width: 560px) { .tierbar { grid-template-columns: 1fr; gap: 4px; } .tierbar .figs { text-align: left; } }
 
