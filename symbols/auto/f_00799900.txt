@@ -1,0 +1,13 @@
+0x00799900 ?SetupCallMetatable_00799900@@YAXPAUlua_State@@@Z
+0x0073b5c0 ?l_CallWrapper_0073b5c0@@YAHPAUlua_State@@@Z
+0x00a5d3fc ?g_str_newindex_00a5d3fc@@3QBDB
+0x00a5d408 ?g_str_metatable_00a5d408@@3QBDB
+0x00a5d414 ?g_str_call_00a5d414@@3QBDB
+0x00a5d41c ?g_str_Call_00a5d41c@@3QBDB
+0x0092391c _lua_pushstring
+0x00923934 _lua_createtable
+0x0092395e _lua_rawset
+0x0092396a _lua_pushcclosure
+0x00923982 _lua_getfield
+0x009239b8 _lua_pushnil
+0x009239dc _lua_setmetatable

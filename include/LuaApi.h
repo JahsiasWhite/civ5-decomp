@@ -16,7 +16,6 @@ int lua_isstring(lua_State* L, int idx);
 void lua_pushstring(lua_State* L, const char* s);
 void lua_pushlstring(lua_State* L, const char* s, unsigned int len);
 void lua_pushboolean(lua_State* L, int b);
-void lua_pushnumber(lua_State* L, double n);
 void lua_pushcclosure(lua_State* L, lua_CFunction fn, int n);
 void lua_createtable(lua_State* L, int narr, int nrec);
 void lua_getfield(lua_State* L, int idx, const char* k);
@@ -28,4 +27,7 @@ void lua_concat(lua_State* L, int n);
 void lua_pushinteger(lua_State* L, int n);
 void lua_pushnumber(lua_State* L, double n);
 int luaL_error(lua_State* L, const char* fmt, ...);
+lua_State* lua_newthread(lua_State* L);
+int lua_setfenv(lua_State* L, int idx);
+void* lua_newuserdata(lua_State* L, unsigned int sz);
 }

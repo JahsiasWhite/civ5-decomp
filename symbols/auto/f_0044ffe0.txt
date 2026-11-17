@@ -1,0 +1,2 @@
+0x0044ffe0 ?Reset@Timer_0044ffe0@@QAEXXZ
+0x009d6494 __imp__QueryPerformanceCounter@4

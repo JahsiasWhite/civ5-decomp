@@ -1,0 +1,4 @@
+0x00769fb0 ?UpdateRef_00769fb0@@YAX_N@Z
+0x02de044c ?g_value_02de044c@@3JC
+0x009d6478 __imp__InterlockedIncrement@4
+0x009d64b4 __imp__InterlockedDecrement@4

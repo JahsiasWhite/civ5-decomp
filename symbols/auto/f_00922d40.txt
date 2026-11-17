@@ -1,0 +1,2 @@
+0x00922d40 ?SetSpeakers_00922d40@@YA_NPAXM@Z
+0x009d6e10 __imp__AIL_set_speaker_configuration@16

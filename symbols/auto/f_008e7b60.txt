@@ -1,0 +1,1 @@
+0x008e7b60 ?GetEndAligned@Host_008e7b60@@QAEPAXXZ
