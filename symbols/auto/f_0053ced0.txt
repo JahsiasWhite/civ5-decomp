@@ -1,0 +1,14 @@
+0x0053ced0 ?SetupCallbackThread_0053ced0@@YAXPAUlua_State@@H@Z
+0x00490850 ?PushFn_00490850@@YAXPAUlua_State@@H@Z
+0x006753e0 ?l_GC_006753e0@@YAHPAUlua_State@@@Z
+0x00a609e8 ?g_str_ct_00a609e8@@3QBDB
+0x00a609f8 ?g_str_eh_00a609f8@@3QBDB
+0x00a60a08 ?g_str_gc_00a60a08@@3QBDB
+0x0092391c _lua_pushstring
+0x00923934 _lua_createtable
+0x0092395e _lua_rawset
+0x0092396a _lua_pushcclosure
+0x009239dc _lua_setmetatable
+0x00923a12 _lua_setfenv
+0x00923a30 _lua_newuserdata
+0x00923a5a _lua_newthread
