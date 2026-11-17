@@ -1,6 +1,7 @@
 # Verify matches without the game: compile everything with VC++ 2008 SP1 under Wine
-# and compare against modules/exe/data/fingerprints.csv (see tools/fingerprint.py).
-# Only the exe so far; the DLL modules join the run in a later step.
+# and compare each module (exe, db, loc) against its modules/<id>/data/fingerprints.csv (see
+# tools/fingerprint.py). A module takes part once its fingerprints are committed; the loops
+# are in .github/ci/*_modules.sh, which also run locally.
 #
 # - pull requests: a check that fails if a function in the PR's files doesn't MATCH, or
 #   one in a file including a changed header stops matching
@@ -109,23 +110,11 @@ jobs:
             echo "mode=full" >> "$GITHUB_OUTPUT"
           fi
 
+      # each module with fingerprints; DIFFs are normal, a run that never got to its summary
+      # (compile/link failure) fails the step
       - name: Match against the fingerprints
         id: match
-        run: |
-          mkdir -p build
-          scope=""
-          if [ "${{ steps.plan.outputs.mode }}" = "partial" ]; then
-            scope="--around-from build/around.txt"
-          fi
-          set +e
-          python tools/c5d.py match --fingerprints $scope --status-out build/status.csv > build/match.txt 2>&1
-          set -e
-          tail -n 40 build/match.txt
-          # DIFFs are normal; a run that never got to the summary (compile/link failure) is not
-          grep -q "fingerprint mode\]" build/match.txt || { echo "::error::match run failed"; exit 1; }
-          echo "::notice title=Match results::$(tail -n 1 build/match.txt | sed 's/^\[[^]]*\] *//')"
-          grep "pruned .* from build/objcache" build/match.txt || true
-          du -sh build/objcache 2>/dev/null || true
+        run: bash .github/ci/match_modules.sh "${{ steps.plan.outputs.mode }}" build/around.txt
 
       # saved even when Report fails on a regression: the objects are still good
       - name: Save the object cache
@@ -138,23 +127,14 @@ jobs:
       - name: Report
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            base="${{ github.event.pull_request.base.sha }}"
-            git diff --name-only "$base" HEAD > build/changed.txt
             # the base branch's last committed results: what a header change must not break
-            # (status.csv moved to modules/exe/progress/; older commits have it at progress/)
-            git show "$base:modules/exe/progress/status.csv" > build/base_status.csv 2>/dev/null ||
-              git show "$base:progress/status.csv" > build/base_status.csv 2>/dev/null || rm -f build/base_status.csv
-            python tools/ci_report.py --status build/status.csv --changed build/changed.txt \
-              --base-status build/base_status.csv >> "$GITHUB_STEP_SUMMARY"
+            bash .github/ci/report_modules.sh pr "${{ github.event.pull_request.base.sha }}" >> "$GITHUB_STEP_SUMMARY"
           else
             # results before this push (the commit before it; the current commit for the
             # scheduled run): a function that matched there and doesn't now fails the run
             before="${{ github.event.before }}"
             case "$before" in ""|0000000000000000000000000000000000000000) before=HEAD;; esac
-            # (status.csv moved to modules/exe/progress/; older commits have it at progress/)
-            git show "$before:modules/exe/progress/status.csv" > build/base_status.csv 2>/dev/null ||
-              git show "$before:progress/status.csv" > build/base_status.csv 2>/dev/null || rm -f build/base_status.csv
-            python tools/ci_report.py --status build/status.csv --base-status build/base_status.csv >> "$GITHUB_STEP_SUMMARY"
+            bash .github/ci/report_modules.sh push "$before" >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - uses: actions/upload-artifact@v4
@@ -162,9 +142,11 @@ jobs:
         with:
           name: match-results
           path: |
-            build/match.txt
-            build/status.csv
+            build/*/match.txt
+            build/*/status.csv
+            build/*/around.txt
             build/around.txt
+            build/modules_ran.txt
 
       # also after a regression in Report: the site never downgrades a match, so the new
       # matches in the same run still get counted
@@ -179,4 +161,4 @@ jobs:
             echo "::warning::C5D_ADMIN_TOKEN secret not set; results not sent to the site"
             exit 0
           fi
-          python server/manage.py push --server https://civ5decomp.com --token "$C5D_ADMIN_TOKEN"
+          bash .github/ci/push_modules.sh https://civ5decomp.com

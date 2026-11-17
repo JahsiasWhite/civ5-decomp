@@ -126,9 +126,10 @@ def main():
                         "regressions) or, without --changed, before the push (all regressions)")
     args = p.parse_args()
 
+    m = config.module()                     # C5D_MODULE / default exe: one module per report
     rows = _read_rows(args.status)
     counts = Counter(r["status"] for r in rows)
-    out = ["## Match results (fingerprint mode)", "",
+    out = [f"## Match results: {m.id} (fingerprint mode)", "",
            " · ".join(f"**{k}** {counts[k]}" for k in ("MATCH", "DIFF", "UNVERIFIED", "ERROR", "MATCH?")
                       if counts[k]) or "no functions", ""]
 
@@ -149,7 +150,10 @@ def main():
             rc = 1
         base_path = Path(args.base_status) if args.base_status else None
         base_rows = _read_rows(base_path) if base_path and base_path.is_file() else []
-        affected, regressed = header_regressions(rows, base_rows, changed, include_graph())
+        # only this module's sources: another module's includers get their own report
+        own = (m.rel(m.root) + "/", "include/")
+        graph = {f: d for f, d in include_graph().items() if f.startswith(own)}
+        affected, regressed = header_regressions(rows, base_rows, changed, graph)
         if affected:
             out += [f"### Sources including a changed header: {len(affected)} file(s), "
                     f"{len(regressed)} regression(s)", ""]
