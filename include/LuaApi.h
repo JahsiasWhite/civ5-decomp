@@ -13,6 +13,7 @@ extern "C" {
 void lua_settop(lua_State* L, int idx);
 void lua_pushvalue(lua_State* L, int idx);
 int lua_isstring(lua_State* L, int idx);
+int lua_toboolean(lua_State* L, int idx);
 void lua_pushstring(lua_State* L, const char* s);
 void lua_pushlstring(lua_State* L, const char* s, unsigned int len);
 void lua_pushboolean(lua_State* L, int b);
