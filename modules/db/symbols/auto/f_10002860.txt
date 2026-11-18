@@ -1,0 +1,1 @@
+0x10002860 ?SetLogger@Connection@Database@@QAEXPAVIDatabaseLogger@2@@Z

@@ -1,0 +1,3 @@
+0x10002ce0 ?FinalizeCommand_10002ce0@@YAXPAUCommand_10002ce0@@@Z
+0x10058cc0 _sqlite3_finalize
+0x10036760 _sqlite3_errmsg

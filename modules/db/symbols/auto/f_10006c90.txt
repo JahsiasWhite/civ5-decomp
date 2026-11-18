@@ -1,0 +1,2 @@
+0x10006c90 ?GetValue@Results@Database@@QAEXHAAN@Z
+0x10043f70 _sqlite3_column_double

@@ -10,18 +10,27 @@ extern "C" {
 int sqlite3_total_changes(sqlite3* db);
 const char* sqlite3_errmsg(sqlite3* db);
 int sqlite3_errcode(sqlite3* db);
+int sqlite3_open_v2(const char* filename, sqlite3** ppDb, int flags, const char* zVfs);
+int sqlite3_busy_timeout(sqlite3* db, int ms);
+int sqlite3_exec(sqlite3* db, const char* sql, int (*callback)(void*, int, char**, char**), void* arg, char** errmsg);
 int sqlite3_column_count(sqlite3_stmt* pStmt);
 const char* sqlite3_column_name(sqlite3_stmt* pStmt, int N);
+int sqlite3_column_type(sqlite3_stmt* pStmt, int iCol);
+const char* sqlite3_column_decltype(sqlite3_stmt* pStmt, int iCol);
 int sqlite3_column_int(sqlite3_stmt* stmt, int iCol);
 __int64 sqlite3_column_int64(sqlite3_stmt* stmt, int iCol);
 double sqlite3_column_double(sqlite3_stmt* stmt, int iCol);
 const unsigned char* sqlite3_column_text(sqlite3_stmt* stmt, int iCol);
 const void* sqlite3_column_text16(sqlite3_stmt* stmt, int iCol);
 sqlite3_stmt* sqlite3_next_stmt(sqlite3* pDb, sqlite3_stmt* pStmt);
+const char* sqlite3_sql(sqlite3_stmt* pStmt);
+int sqlite3_finalize(sqlite3_stmt* pStmt);
 int sqlite3_reset(sqlite3_stmt* pStmt);
 int sqlite3_clear_bindings(sqlite3_stmt* pStmt);
 int sqlite3_bind_null(sqlite3_stmt* pStmt, int iCol);
 int sqlite3_bind_int(sqlite3_stmt* pStmt, int iCol, int iValue);
 int sqlite3_bind_int64(sqlite3_stmt* pStmt, int iCol, __int64 iValue);
 int sqlite3_bind_double(sqlite3_stmt* pStmt, int iCol, double rValue);
+int sqlite3_bind_text(sqlite3_stmt* pStmt, int iCol, const char* zData, int nData, void (*xDel)(void*));
+int sqlite3_bind_text16(sqlite3_stmt* pStmt, int iCol, const void* zData, int nData, void (*xDel)(void*));
 }

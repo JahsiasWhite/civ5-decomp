@@ -1,0 +1,4 @@
+0x10006a40 ?ColumnType@Results@Database@@QAE?AW4ColumnTypes@2@H@Z
+0x100789bc ??_C@_07GOBOHMJA@boolean?$AA@
+0x100440a0 _sqlite3_column_type
+0x100310c0 _sqlite3_column_decltype

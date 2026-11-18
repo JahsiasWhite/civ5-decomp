@@ -5,6 +5,16 @@
 
 namespace Database {
 
+// src: EXE [0x10006a40]
+enum ColumnTypes {
+    CT_INTEGER = 1,
+    CT_FLOAT = 2,
+    CT_TEXT = 3,
+    CT_BLOB = 4,
+    CT_NONE = 5,
+    CT_BOOL = 6
+};
+
 // The connection a statement was prepared on, and the statement.
 struct Command {
     const Connection* connection;      // +0
@@ -18,10 +28,20 @@ public:
     // src: EXE [0x100066f0]
     CVGAMEDATABASE_API virtual const char* GetColumns() const;
 
+    // src: EXE [0x10006700]
+    CVGAMEDATABASE_API void SetColumns(const char* szColumns);
     // src: EXE [0x10006740]
     CVGAMEDATABASE_API bool Reset();
     // src: EXE [0x10006770]
     CVGAMEDATABASE_API bool TryReset();
+    // src: EXE [0x100067d0]
+    CVGAMEDATABASE_API bool Bind(int iColumn, const char* szValue, int iLength, bool bStatic);
+    // src: EXE [0x10006830]
+    CVGAMEDATABASE_API bool Bind(int iColumn, const char* szValue, bool bStatic);
+    // src: EXE [0x10006880]
+    CVGAMEDATABASE_API bool Bind(int iColumn, const wchar_t* wszValue, int iLength, bool bStatic);
+    // src: EXE [0x100068e0]
+    CVGAMEDATABASE_API bool Bind(int iColumn, const wchar_t* wszValue, bool bStatic);
     // src: EXE [0x10006930]
     CVGAMEDATABASE_API bool Bind(int iColumn, double dValue);
     // src: EXE [0x10006960]
@@ -37,6 +57,8 @@ public:
     // src: EXE [0x10006a20]
     CVGAMEDATABASE_API const char* ColumnName(int iColumn);
     CVGAMEDATABASE_API int ColumnPosition(const char* szColumn);
+    // src: EXE [0x10006a40]
+    CVGAMEDATABASE_API ColumnTypes ColumnType(int iColumn);
 
     // src: EXE [0x10006ac0]
     CVGAMEDATABASE_API const char* GetText(int iColumn);
@@ -50,8 +72,16 @@ public:
     CVGAMEDATABASE_API float GetFloat(int iColumn);
     // src: EXE [0x10006b70]
     CVGAMEDATABASE_API double GetDouble(int iColumn);
+    // src: EXE [0x10006ba0]
+    CVGAMEDATABASE_API void GetValue(int iColumn, bool& bValue);
     // src: EXE [0x10006be0]
     CVGAMEDATABASE_API void GetValue(int iColumn, int& iValue);
+    // src: EXE [0x10006c10]
+    CVGAMEDATABASE_API void GetValue(int iColumn, __int64& iValue);
+    // src: EXE [0x10006c50]
+    CVGAMEDATABASE_API void GetValue(int iColumn, float& fValue);
+    // src: EXE [0x10006c90]
+    CVGAMEDATABASE_API void GetValue(int iColumn, double& dValue);
     // src: EXE [0x10006ce0]
     CVGAMEDATABASE_API void GetValue(int iColumn, const char*& szValue);
     // src: EXE [0x10006d10]

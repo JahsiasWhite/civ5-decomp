@@ -1,0 +1,2 @@
+0x10002900 ?CheckCode@ConnectionExt_10002900@@QAE_NH@Z
+0x10036760 _sqlite3_errmsg

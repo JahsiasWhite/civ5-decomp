@@ -1,0 +1,2 @@
+0x10008b20 ?Alloc@ArenaPool_10008b20@@QAEPAXI@Z
+0x10076a3a _malloc

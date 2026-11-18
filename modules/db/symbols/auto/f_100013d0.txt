@@ -1,0 +1,5 @@
+0x100013d0 ?ConfigureSqlite_100013d0@@YAXXZ
+0x10036400 _sqlite3_config
+0x1007849c _g_memMethods_1007849c
+0x10089a40 _g_pcacheBuf_10089a40
+0x10087ee0 _g_heapBuf_10087ee0

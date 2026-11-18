@@ -1,0 +1,2 @@
+0x10008a00 ?CompareBytes_10008a00@@YA_NPBEI0I_N@Z
+0x10078b60 _g_tolower_10078b60

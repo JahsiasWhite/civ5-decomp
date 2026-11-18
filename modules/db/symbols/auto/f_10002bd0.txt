@@ -1,0 +1,3 @@
+0x10002bd0 ?SetBusyTimeout@Connection@Database@@QAE_NH@Z
+0x1001a410 _sqlite3_busy_timeout
+0x10036760 _sqlite3_errmsg

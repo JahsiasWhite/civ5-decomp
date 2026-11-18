@@ -1,0 +1,1 @@
+0x10004260 ?erase@?$list@UNodeStr_10004260@@V?$allocator@UNodeStr_10004260@@@std@@@std@@QAE?AV?$_Iterator@$0A@@12@V?$_Const_iterator@$0A@@12@@Z

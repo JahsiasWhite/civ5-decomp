@@ -1,0 +1,2 @@
+0x10006880 ?Bind@Results@Database@@QAE_NHPB_WH_N@Z
+0x10044250 _sqlite3_bind_text16

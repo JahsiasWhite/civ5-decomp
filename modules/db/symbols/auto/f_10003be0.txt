@@ -1,0 +1,4 @@
+0x10003be0 ?Analyze@Connection@Database@@QBEXXZ
+0x10060cf0 _sqlite3_exec
+0x10036760 _sqlite3_errmsg
+0x100787a0 ??_C@_07GIPJNAEO@ANALYZE?$AA@

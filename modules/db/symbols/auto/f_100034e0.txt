@@ -1,0 +1,6 @@
+0x100034e0 ?Open@Connection@Database@@QAE_NPBDH@Z
+0x1005ac60 _sqlite3_open_v2
+0x10036760 _sqlite3_errmsg
+0x1001a3b0 _sqlite3_trace
+0x10003470 ?TraceCallback_10003470@@YAXPAXPBD@Z
+0x100786bc ??_C@_08CADOGOJM@?3memory?3?$AA@

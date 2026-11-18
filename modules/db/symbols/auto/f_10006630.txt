@@ -1,0 +1,10 @@
+0x10006630 ?UpdateHeapStats_10006630@@YAXXZ
+0x1061b6c4 ?g_hHeap_1061b6c4@@3PAXA
+0x1061b6d0 ?g_dwHeapAllocatedBytes_1061b6d0@@3KA
+0x1061b6d4 ?g_dwHeapCommittedBytes_1061b6d4@@3KA
+0x1061b6d8 ?g_dwHeapOverheadBytes_1061b6d8@@3KA
+0x1061b6dc ?g_dwHeapUncommittedBytes_1061b6dc@@3KA
+0x1061b6e0 ?g_dwHeapRegions_1061b6e0@@3KA
+0x10078028 __imp__HeapLock@4
+0x10078024 __imp__HeapWalk@8
+0x10078020 __imp__HeapUnlock@4
