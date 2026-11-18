@@ -412,6 +412,7 @@ address,symbol,status,bytes,source,since
 0x006726e0,?Thunk_006726e0@@YAHXZ,MATCH,8,modules/exe/src/auto/f_006726e0.cpp,2026-11-16
 0x006727c0,?SetupCallbackThread_006727c0@@YAXPAUlua_State@@H@Z,MATCH,158,modules/exe/src/auto/f_006727c0.cpp,2026-11-16
 0x00672d20,?GetVal@Class_00672d20@@QAEHXZ,MATCH,14,modules/exe/src/auto/f_00672d20.cpp,2026-11-16
+0x00672df0,?PushVec3_00672df0@@YAXPAUlua_State@@PBUVec3_00672df0@@@Z,MATCH,127,modules/exe/src/auto/f_00672df0.cpp,2026-11-18
 0x00673070,??0PackedCellPair_00673070@@QAE@XZ,MATCH,41,modules/exe/src/auto/f_00673070.cpp,2026-11-18
 0x00676500,?SetupCallMetatable_00676500@@YAXPAUlua_State@@@Z,MATCH,130,modules/exe/src/auto/f_00676500.cpp,2026-11-16
 0x0067b210,?Thunk_0067b210@@YAHXZ,MATCH,8,modules/exe/src/auto/f_0067b210.cpp,2026-11-16
