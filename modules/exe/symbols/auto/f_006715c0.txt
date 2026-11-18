@@ -1,0 +1,12 @@
+0x006715c0 ?InitExposedTypes_006715c0@@YAXPAUlua_State@@@Z
+0x00597b50 ?l_ExposedTypesToString_00597b50@@YAHPAUlua_State@@@Z
+0x00923922 _lua_rawseti
+0x00923928 _lua_setfield
+0x00923934 _lua_createtable
+0x0092396a _lua_pushcclosure
+0x00923970 _lua_pushvalue
+0x00923976 _lua_settop
+0x0092397c _lua_type
+0x00923982 _lua_getfield
+0x009fc870 ??_C@_0N@MAJBBDMF@ExposedTypes?$AA@
+0x009f730c ??_C@_0L@HDFPAPPH@__tostring?$AA@

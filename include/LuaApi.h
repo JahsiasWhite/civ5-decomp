@@ -48,4 +48,8 @@ void* lua_newuserdata(lua_State* L, unsigned int sz);
 int lua_type(lua_State* L, int idx);
 int lua_checkstack(lua_State* L, int sz);
 int lua_cpcall(lua_State* L, lua_CFunction func, void* ud);
+void lua_rawseti(lua_State* L, int idx, int n);
+void lua_remove(lua_State* L, int idx);
+int lua_equal(lua_State* L, int idx1, int idx2);
+const char* lua_typename(lua_State* L, int tp);
 }

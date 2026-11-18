@@ -1,0 +1,5 @@
+0x00905110 ?GetType@LuaRef_00905110@@QAEHXZ
+0x00923976 _lua_settop
+0x0092397c _lua_type
+0x009239ac _lua_rawgeti
+0x009239b2 _lua_checkstack

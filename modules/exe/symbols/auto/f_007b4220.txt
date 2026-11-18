@@ -1,0 +1,13 @@
+0x007b4220 ?InitLuaEventFactory_007b4220@@YAXPAUlua_State@@@Z
+0x00444780 ?l_LuaEventFactoryIndex_00444780@@YAHPAUlua_State@@@Z
+0x0092391c _lua_pushstring
+0x00923928 _lua_setfield
+0x00923934 _lua_createtable
+0x0092395e _lua_rawset
+0x0092396a _lua_pushcclosure
+0x00923970 _lua_pushvalue
+0x00923976 _lua_settop
+0x0092397c _lua_type
+0x00923982 _lua_getfield
+0x00a6d220 ??_C@_0BA@BMOKCPDI@LuaEventFactory?$AA@
+0x00a6d230 ??_C@_08COGDAMNE@__index?$AA?$AA@

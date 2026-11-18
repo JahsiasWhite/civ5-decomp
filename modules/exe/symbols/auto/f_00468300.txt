@@ -1,0 +1,15 @@
+0x00468300 ?InitGameEvents_00468300@@YAXPAUlua_State@@@Z
+0x00718160 ?l_GameEventsIndex_00718160@@YAHPAUlua_State@@@Z
+0x0092391c _lua_pushstring
+0x00923928 _lua_setfield
+0x00923934 _lua_createtable
+0x0092395e _lua_rawset
+0x0092396a _lua_pushcclosure
+0x00923970 _lua_pushvalue
+0x00923976 _lua_settop
+0x0092397c _lua_type
+0x00923982 _lua_getfield
+0x009239dc _lua_setmetatable
+0x00c93ee4 ?g_str_00c93ee4@@3PBDB
+0x00a6767c ??_C@_0L@HGIAMDKL@GameEvents?$AA@
+0x00a67688 ??_C@_09IBJAHFMB@__index?$AA?$AA?$AA@

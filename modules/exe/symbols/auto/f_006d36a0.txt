@@ -1,0 +1,3 @@
+0x006d36a0 ?CopyFields_006d36a0@@YAXPAUlua_State@@HPAPBD@Z
+0x00923928 _lua_setfield
+0x00923982 _lua_getfield
