@@ -1,0 +1,3 @@
+0x005d9d50 ?PushMessage71@MessageQueue_005d9d50@@QAEPAJXZ
+0x00797840 ?_Insert_n@?$vector@DV?$allocator@D@std@@@std@@IAEXV?$_Vector_const_iterator@DV?$allocator@D@std@@@2@IABD@Z
+0x00813d50 ?Enter@FCriticalSection@@QAEXXZ

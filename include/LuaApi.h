@@ -33,4 +33,5 @@ int lua_setfenv(lua_State* L, int idx);
 void* lua_newuserdata(lua_State* L, unsigned int sz);
 int lua_type(lua_State* L, int idx);
 int lua_checkstack(lua_State* L, int sz);
+int lua_cpcall(lua_State* L, lua_CFunction func, void* ud);
 }

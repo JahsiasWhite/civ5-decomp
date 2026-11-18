@@ -1,0 +1,10 @@
+0x0078bd50 ?Write@SaveHeader_0078bd50@@QAE_NAAVFDataStream@@@Z
+0x00c965d4 ?g_szSaveMagic_00c965d4@@3PBDB
+0x0082b530 ??6FDataStream@@QAEXABD@Z
+0x0082b8a0 ??6FDataStream@@QAEXABI@Z
+0x0082b550 ??6FDataStream@@QAEXABVFStringA@@@Z
+0x00781970 ??6@YAAAVFDataStream@@AAV0@AB_N@Z
+0x005567d0 ??6@YAAAVFDataStream@@AAV0@ABUSaveDlcEntry_0078bd50@@@Z
+0x00559870 ??6@YAAAVFDataStream@@AAV0@ABUSaveModEntry_0078bd50@@@Z
+0x00830500 ??6@YAAAVFDataStream@@AAV0@ABU_GUID@@@Z
+0x0052fa40 ??6@YAAAVFDataStream@@AAV0@ABW4SaveHeaderEnum_0078bd50@@@Z
