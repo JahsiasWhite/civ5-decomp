@@ -896,6 +896,7 @@ address,symbol,status,bytes,source,since
 0x00897710,?GetByteField_00897710@@YAHPBUHost_00897710@@@Z,MATCH,19,modules/exe/src/auto/f_00897710.cpp,2026-11-16
 0x00897730,?SetPackedLow@@YAXPAUPacked_00897730@@I@Z,MATCH,40,modules/exe/src/auto/f_00897730.cpp,2026-11-18
 0x00897990,?GetOffset_00897990@@YAPADPAD@Z,MATCH,13,modules/exe/src/auto/f_00897990.cpp,2026-11-16
+0x008979a0,?GetMaxDuration_008979a0@@YAMPAUUnkSub_008979a0@@@Z,MATCH,500,modules/exe/src/auto/f_008979a0.cpp,2026-11-18
 0x00897ba0,?Deref_00897ba0@@YAHPAH@Z,MATCH,10,modules/exe/src/auto/f_00897ba0.cpp,2026-11-16
 0x00897bb0,?GetOffset_00897bb0@@YAPADPAD@Z,MATCH,11,modules/exe/src/auto/f_00897bb0.cpp,2026-11-16
 0x00897c30,?GetOffset_00897c30@@YAPADPAD@Z,MATCH,13,modules/exe/src/auto/f_00897c30.cpp,2026-11-16
@@ -923,9 +924,15 @@ address,symbol,status,bytes,source,since
 0x0089a8c0,?GetField_0089a8c0@@YAPAXPAPAX@Z,MATCH,11,modules/exe/src/auto/f_0089a8c0.cpp,2026-11-16
 0x0089a8d0,?GetField_0089a8d0@@YAPAXPAPAX@Z,MATCH,11,modules/exe/src/auto/f_0089a8d0.cpp,2026-11-16
 0x0089a8e0,?GetOffset_0089a8e0@@YAPADPAD@Z,MATCH,11,modules/exe/src/auto/f_0089a8e0.cpp,2026-11-16
+0x0089ab50,?InitEmitter_0089ab50@@YAXPAUEmitter_0089ab50@@PBMPAUEmitterDesc_0089ab50@@PBD@Z,MATCH,1913,modules/exe/src/auto/f_0089ab50.cpp,2026-11-18
+0x0089ba50,?UpdateSmoothing_0089ba50@@YAXPAUUnk_0089ba50@@@Z,MATCH,521,modules/exe/src/auto/f_0089ba50.cpp,2026-11-18
 0x0089ebc0,?ClearField_0089ebc0@@YAXPAUTargetObj_0089ebc0@@@Z,MATCH,18,modules/exe/src/auto/f_0089ebc0.cpp,2026-11-16
 0x0089f700,?Relocate_0089f700@@YAXPAUObject_0089f700@@@Z,MATCH,50,modules/exe/src/auto/f_0089f700.cpp,2026-11-18
 0x0089f740,?Relocate_0089f740@@YAXPAUObject_0089f740@@@Z,MATCH,50,modules/exe/src/auto/f_0089f740.cpp,2026-11-18
+0x008a1e20,?EmitConeSurface_008a1e20@@YAXPAUEmitter_008a1e20@@PAM1@Z,MATCH,602,modules/exe/src/auto/f_008a1e20.cpp,2026-11-18
+0x008a2470,?EmitSpherePoint_008a2470@@YAXPAUEmitter_008a2470@@PAM1@Z,MATCH,533,modules/exe/src/auto/f_008a2470.cpp,2026-11-18
+0x008a2690,?EmitConeVolume_008a2690@@YAXPAUEmitter_008a2690@@PAM1@Z,MATCH,683,modules/exe/src/auto/f_008a2690.cpp,2026-11-18
+0x008a2e60,?EmitSphereArcPoint_008a2e60@@YAXPAUEmitter_008a2e60@@PAM1@Z,MATCH,583,modules/exe/src/auto/f_008a2e60.cpp,2026-11-18
 0x008a30b0,?GetBlockData_008a30b0@@YAPAXPAUUnkBlockHeader_008a30b0@@@Z,MATCH,31,modules/exe/src/auto/f_008a30b0.cpp,2026-11-17
 0x008a3170,?GetLowFlags_008a3170@@YAHPAX@Z,MATCH,44,modules/exe/src/auto/f_008a3170.cpp,2026-11-18
 0x008a31a0,?GetFlag100_008a31a0@@YAHPAX@Z,MATCH,44,modules/exe/src/auto/f_008a31a0.cpp,2026-11-18
@@ -934,10 +941,12 @@ address,symbol,status,bytes,source,since
 0x008a3570,?EmptyFramedStub_008a3570@@YAXXZ,MATCH,5,modules/exe/src/auto/f_008a3570.cpp,2026-11-15
 0x008a3580,?SetGlobal_008a3580@@YAXH@Z,MATCH,13,modules/exe/src/auto/f_008a3580.cpp,2026-11-16
 0x008a3590,?GetGlobal_008a3590@@YAHXZ,MATCH,10,modules/exe/src/auto/f_008a3590.cpp,2026-11-16
+0x008a35a0,?AllocBlock_008a35a0@@YAPAXIHHPAI@Z,UNVERIFIED,650,modules/exe/src/auto/f_008a35a0.cpp,2026-11-18
 0x008a4080,?CalcSizes_008a4080@@YAXHHHHHPAH@Z,MATCH,1007,modules/exe/src/auto/f_008a4080.cpp,2026-11-16
 0x008a4900,?PushValue_008a4900@@YAHPAUObject_008a4900@@@Z,MATCH,55,modules/exe/src/auto/f_008a4900.cpp,2026-11-18
 0x008a51b0,?SetGlobal_008a51b0@@YAXH@Z,MATCH,13,modules/exe/src/auto/f_008a51b0.cpp,2026-11-16
 0x008a5230,?CloseStream_008a5230@@YAXPAUOwner_008a5230@@@Z,MATCH,43,modules/exe/src/auto/f_008a5230.cpp,2026-11-18
+0x008a7d00,?AdvanceAnim_008a7d00@@YAXPAUAnimPlayer_008a7d00@@M@Z,MATCH,812,modules/exe/src/auto/f_008a7d00.cpp,2026-11-18
 0x008a8180,?SetHolderValue_008a8180@@YAXPAUUnkDevice_008a8180@@M@Z,MATCH,29,modules/exe/src/auto/f_008a8180.cpp,2026-11-17
 0x008a81a0,?SetFlag_008a81a0@@YAXPAUObject_008a81a0@@H@Z,MATCH,54,modules/exe/src/auto/f_008a81a0.cpp,2026-11-18
 0x008a82a0,?GetOffset_008a82a0@@YAHXZ,MATCH,26,modules/exe/src/auto/f_008a82a0.cpp,2026-11-16
