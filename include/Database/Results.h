@@ -13,7 +13,10 @@ struct Command {
 
 class Results {
 public:
+    // src: EXE [0x10007520]
     CVGAMEDATABASE_API virtual ~Results();
+    // src: EXE [0x100066f0]
+    CVGAMEDATABASE_API virtual const char* GetColumns() const;
 
     CVGAMEDATABASE_API int ColumnPosition(const char* szColumn);
 
@@ -21,6 +24,8 @@ public:
     CVGAMEDATABASE_API int GetInt(const char* szColumn);
 
     CVGAMEDATABASE_API bool SingleQuery() const;
+    // src: EXE [0x10006d50]
+    CVGAMEDATABASE_API void SingleQuery(bool bSingleQuery);
 
 private:
     Command m_Command;                 // +0x04

@@ -1,7 +1,17 @@
 address,symbol,status,bytes,source,since
+0x10001150,?_Doraise@Unk_10078470@@UBEXXZ,MATCH,9,modules/db/src/auto/f_10001150.cpp,2026-11-17
+0x100012a0,?_Doraise@Unk_10078490@@UBEXXZ,MATCH,9,modules/db/src/auto/f_100012a0.cpp,2026-11-17
+0x10001380,?GetField0@Host_10001380@@QBEHXZ,MATCH,3,modules/db/src/auto/f_10001380.cpp,2026-11-17
+0x100062d0,??0BinaryIO@Database@@QAE@PBD@Z,MATCH,11,modules/db/src/auto/f_100062d0.cpp,2026-11-17
+0x100066e0,?GetSingleton_100066e0@@YAPAXXZ,MATCH,6,modules/db/src/auto/f_100066e0.cpp,2026-11-17
+0x100066f0,?GetColumns@Results@Database@@UBEPBDXZ,MATCH,13,modules/db/src/auto/f_100066f0.cpp,2026-11-17
 0x10006d40,?SingleQuery@Results@Database@@QBE_NXZ,MATCH,4,modules/db/src/database/Results.cpp,2026-11-17
+0x10006d50,?SingleQuery@Results@Database@@QAEX_N@Z,MATCH,10,modules/db/src/auto/f_10006d50.cpp,2026-11-17
 0x10007ed0,?GetText@Results@Database@@QAEPBDPBD@Z,MATCH,40,modules/db/src/database/Results.cpp,2026-11-17
 0x10007f50,?GetInt@Results@Database@@QAEHPBD@Z,MATCH,40,modules/db/src/database/Results.cpp,2026-11-17
+0x100085a0,??1Unk_10078b48@@QAE@XZ,MATCH,7,modules/db/src/auto/f_100085a0.cpp,2026-11-17
+0x100085c0,??0Unk_10078b54@@QAE@XZ,MATCH,16,modules/db/src/auto/f_100085c0.cpp,2026-11-17
+0x100085f0,??1Unk_10078b54@@QAE@XZ,MATCH,7,modules/db/src/auto/f_100085f0.cpp,2026-11-17
 0x1000c0d0,?Connection@ResultsCache@Database@@QAEAAV02@XZ,MATCH,3,modules/db/src/database/ResultsCache.cpp,2026-11-17
 0x100714c0,?ErrorMessage@XMLSerializer@Database@@QBEPBDXZ,MATCH,7,modules/db/src/database/XMLSerializer.cpp,2026-11-17
 0x10071560,?UseTransactions@XMLSerializer@Database@@QBE_NXZ,MATCH,7,modules/db/src/database/XMLSerializer.cpp,2026-11-17

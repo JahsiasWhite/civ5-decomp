@@ -1,0 +1,2 @@
+0x100066e0 ?GetSingleton_100066e0@@YAPAXXZ
+0x1061b6c8 ?g_singleton_1061b6c8@@3PADA

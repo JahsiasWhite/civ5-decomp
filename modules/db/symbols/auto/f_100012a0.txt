@@ -1,0 +1,2 @@
+0x100012a0 ?_Doraise@Unk_10078490@@UBEXXZ
+0x10078198 __imp_?_Throw@std@@YAXABVexception@stdext@@@Z
