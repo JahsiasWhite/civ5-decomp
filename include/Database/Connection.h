@@ -17,6 +17,8 @@ class Connection {
 public:
     // src: EXE [0x10001190]
     CVGAMEDATABASE_API int TotalChanges() const;
+    // src: EXE [0x100012e0]
+    CVGAMEDATABASE_API int StatementCount() const;
     // src: EXE [0x10001390]
     CVGAMEDATABASE_API int ErrorCode() const;
     // src: EXE [0x100013b0]

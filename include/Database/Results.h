@@ -18,8 +18,18 @@ public:
     // src: EXE [0x100066f0]
     CVGAMEDATABASE_API virtual const char* GetColumns() const;
 
+    // src: EXE [0x10006740]
+    CVGAMEDATABASE_API bool Reset();
+    // src: EXE [0x10006770]
+    CVGAMEDATABASE_API bool TryReset();
+    // src: EXE [0x10006930]
+    CVGAMEDATABASE_API bool Bind(int iColumn, double dValue);
+    // src: EXE [0x10006960]
+    CVGAMEDATABASE_API bool Bind(int iColumn, float fValue);
     // src: EXE [0x10006990]
     CVGAMEDATABASE_API bool Bind(int iColumn, int iValue);
+    // src: EXE [0x100069b0]
+    CVGAMEDATABASE_API bool Bind(int iColumn, __int64 iValue);
     // src: EXE [0x100069e0]
     CVGAMEDATABASE_API bool BindNULL(int iColumn);
     // src: EXE [0x10006a00]
@@ -34,6 +44,18 @@ public:
     CVGAMEDATABASE_API const wchar_t* GetText16(int iColumn);
     // src: EXE [0x10006b00]
     CVGAMEDATABASE_API int GetInt(int iColumn);
+    // src: EXE [0x10006b20]
+    CVGAMEDATABASE_API __int64 GetInt64(int iColumn);
+    // src: EXE [0x10006b40]
+    CVGAMEDATABASE_API float GetFloat(int iColumn);
+    // src: EXE [0x10006b70]
+    CVGAMEDATABASE_API double GetDouble(int iColumn);
+    // src: EXE [0x10006be0]
+    CVGAMEDATABASE_API void GetValue(int iColumn, int& iValue);
+    // src: EXE [0x10006ce0]
+    CVGAMEDATABASE_API void GetValue(int iColumn, const char*& szValue);
+    // src: EXE [0x10006d10]
+    CVGAMEDATABASE_API void GetValue(int iColumn, const wchar_t*& wszValue);
 
     CVGAMEDATABASE_API const char* GetText(const char* szColumn);
     CVGAMEDATABASE_API int GetInt(const char* szColumn);

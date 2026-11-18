@@ -1,0 +1,1 @@
+0x10006740 ?Reset@Results@Database@@QAE_NXZ

@@ -1,0 +1,1 @@
+0x10006960 ?Bind@Results@Database@@QAE_NHM@Z

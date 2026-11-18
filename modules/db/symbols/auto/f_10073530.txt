@@ -1,0 +1,2 @@
+0x10073530 ?SwapBackward_10073530@@YAPAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PAV12@00@Z
+0x1007816c __imp_?swap@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QAEXAAV12@@Z

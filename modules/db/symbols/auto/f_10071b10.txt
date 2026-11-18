@@ -1,0 +1,2 @@
+0x10071b10 ?FormatBuf_10071b10@@YAHPADPBDZZ
+0x100782b0 __imp__vsprintf_s

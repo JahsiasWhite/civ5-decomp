@@ -1,0 +1,2 @@
+0x100069b0 ?Bind@Results@Database@@QAE_NH_J@Z
+0x100396e0 _sqlite3_bind_int64

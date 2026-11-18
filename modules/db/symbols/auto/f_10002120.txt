@@ -1,0 +1,1 @@
+0x10002120 ??4?$auto_ptr@UObj_10002120@@@std@@QAEAAV01@U?$auto_ptr_ref@UObj_10002120@@@1@@Z

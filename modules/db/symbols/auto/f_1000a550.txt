@@ -1,0 +1,1 @@
+0x1000a550 ?Step2C@Cursor_1000a550@@QAE_NPAUHandle_1000a550@@@Z

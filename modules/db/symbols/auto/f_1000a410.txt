@@ -1,0 +1,1 @@
+0x1000a410 ?NextWithParent@Cursor_1000a410@@QAE_NPAUHandle_1000a410@@@Z

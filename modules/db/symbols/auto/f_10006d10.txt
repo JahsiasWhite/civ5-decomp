@@ -1,0 +1,1 @@
+0x10006d10 ?GetValue@Results@Database@@QAEXHAAPB_W@Z
