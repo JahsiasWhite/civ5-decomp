@@ -1,0 +1,2 @@
+0x005fb630 ?IsValueZero_005fb630@@YAHXZ
+0x05f54f38 ?g_unk_05f54f38@@3PAUUnk_05f54f38@@A

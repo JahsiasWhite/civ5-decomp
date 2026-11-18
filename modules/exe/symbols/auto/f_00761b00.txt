@@ -1,0 +1,2 @@
+0x00761b00 ?Destroy@Class_004c2cc0@@QAEXXZ
+0x00a72c88 ?kVtable_00a72c88@@3QBQBXB
