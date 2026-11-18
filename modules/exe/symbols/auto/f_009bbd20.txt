@@ -1,0 +1,1 @@
+0x009bbd20 ?GetChoiceValue_009bbd20@@YAHPAUUnkChoiceOwner@@@Z
