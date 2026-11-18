@@ -9,6 +9,12 @@ public:
     virtual void Slot2();
     virtual void Slot3();
 
+    // src: GUESS 0x10008e20 (confidence: medium)
+    Unk_10078b48();
     // src: GUESS 0x100085a0 (confidence: medium)
     ~Unk_10078b48();
+
+private:
+    // src: GUESS (confidence: low)
+    int m_field04;  // +4
 };

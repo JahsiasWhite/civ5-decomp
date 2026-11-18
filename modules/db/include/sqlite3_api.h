@@ -7,6 +7,14 @@ struct sqlite3;
 struct sqlite3_stmt;
 
 extern "C" {
+int sqlite3_total_changes(sqlite3* db);
+const char* sqlite3_errmsg(sqlite3* db);
+int sqlite3_errcode(sqlite3* db);
+int sqlite3_column_count(sqlite3_stmt* pStmt);
+const char* sqlite3_column_name(sqlite3_stmt* pStmt, int N);
 int sqlite3_column_int(sqlite3_stmt* stmt, int iCol);
 const unsigned char* sqlite3_column_text(sqlite3_stmt* stmt, int iCol);
+const void* sqlite3_column_text16(sqlite3_stmt* stmt, int iCol);
+int sqlite3_bind_null(sqlite3_stmt* pStmt, int iCol);
+int sqlite3_bind_int(sqlite3_stmt* pStmt, int iCol, int iValue);
 }

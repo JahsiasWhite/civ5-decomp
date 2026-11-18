@@ -1,0 +1,1 @@
+0x100028a0 ?LogMessage@Connection@Database@@QBEXPBD@Z

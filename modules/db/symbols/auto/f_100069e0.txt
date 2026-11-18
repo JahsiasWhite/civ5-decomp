@@ -1,0 +1,2 @@
+0x100069e0 ?BindNULL@Results@Database@@QAE_NH@Z
+0x10039770 _sqlite3_bind_null

@@ -1,0 +1,1 @@
+0x100028e0 ?LogError@Connection@Database@@QBEXPBD@Z

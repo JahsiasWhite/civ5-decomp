@@ -1,0 +1,2 @@
+0x10001190 ?TotalChanges@Connection@Database@@QBEHXZ
+0x1001a130 _sqlite3_total_changes

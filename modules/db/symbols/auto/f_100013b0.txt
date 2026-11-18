@@ -1,0 +1,2 @@
+0x100013b0 ?ErrorMessage@Connection@Database@@QBEPBDXZ
+0x10036760 _sqlite3_errmsg

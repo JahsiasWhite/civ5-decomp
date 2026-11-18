@@ -1,0 +1,4 @@
+0x100011e0 ??1Unk_1007847c@@UAE@XZ
+0x1007847c ??_7Unk_1007847c@@6B@
+0x10078450 ??_7exception@stdext@@6B@
+0x100781a4 __imp_??1?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QAE@XZ

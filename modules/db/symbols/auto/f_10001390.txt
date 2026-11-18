@@ -1,0 +1,2 @@
+0x10001390 ?ErrorCode@Connection@Database@@QBEHXZ
+0x10036900 _sqlite3_errcode

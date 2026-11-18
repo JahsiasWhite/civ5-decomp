@@ -1,0 +1,2 @@
+0x10006a00 ?ColumnCount@Results@Database@@QBEHXZ
+0x10015c30 _sqlite3_column_count

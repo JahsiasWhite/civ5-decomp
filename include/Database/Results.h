@@ -18,7 +18,22 @@ public:
     // src: EXE [0x100066f0]
     CVGAMEDATABASE_API virtual const char* GetColumns() const;
 
+    // src: EXE [0x10006990]
+    CVGAMEDATABASE_API bool Bind(int iColumn, int iValue);
+    // src: EXE [0x100069e0]
+    CVGAMEDATABASE_API bool BindNULL(int iColumn);
+    // src: EXE [0x10006a00]
+    CVGAMEDATABASE_API int ColumnCount() const;
+    // src: EXE [0x10006a20]
+    CVGAMEDATABASE_API const char* ColumnName(int iColumn);
     CVGAMEDATABASE_API int ColumnPosition(const char* szColumn);
+
+    // src: EXE [0x10006ac0]
+    CVGAMEDATABASE_API const char* GetText(int iColumn);
+    // src: EXE [0x10006ae0]
+    CVGAMEDATABASE_API const wchar_t* GetText16(int iColumn);
+    // src: EXE [0x10006b00]
+    CVGAMEDATABASE_API int GetInt(int iColumn);
 
     CVGAMEDATABASE_API const char* GetText(const char* szColumn);
     CVGAMEDATABASE_API int GetInt(const char* szColumn);

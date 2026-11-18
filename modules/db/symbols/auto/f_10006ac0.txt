@@ -1,0 +1,2 @@
+0x10006ac0 ?GetText@Results@Database@@QAEPBDH@Z
+0x10044000 _sqlite3_column_text
