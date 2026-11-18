@@ -1,0 +1,2 @@
+0x00825a80 ?PopStack_00825a80@@YAXXZ
+0x06196fac ?g_stack_06196fac@@3PAV?$vector@UUnkStackEntry_06196fac@@V?$allocator@UUnkStackEntry_06196fac@@@std@@@std@@A
