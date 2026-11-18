@@ -1,0 +1,2 @@
+0x00923300 ?MSS_SetSampleVolumePan@@YAXPAXMM@Z
+0x009d6db0 __imp__AIL_set_sample_volume_pan@12

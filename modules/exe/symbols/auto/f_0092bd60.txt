@@ -1,0 +1,2 @@
+0x0092bd60 ?GetEntryFromEnd_0092bd60@@YAPAUUnkEntry28_0092bd60@@I@Z
+0x00ca1a30 ?g_table_00ca1a30@@3PAUUnkEntry28_0092bd60@@A

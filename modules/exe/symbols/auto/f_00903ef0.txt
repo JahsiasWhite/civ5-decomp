@@ -1,0 +1,4 @@
+0x00903ef0 ?PrintError_00903ef0@@YAXPBD@Z
+0x00a9cac8 ?g_fmt_00a9cac8@@3QBDB
+0x009d6790 __imp____iob_func
+0x009d6794 __imp__fprintf_s

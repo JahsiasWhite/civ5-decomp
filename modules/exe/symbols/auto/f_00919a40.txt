@@ -1,0 +1,1 @@
+0x00919a40 ?GetVector@Unk_00919a40@@QAE_NPAUUnkFloat3_00919a40@@@Z
