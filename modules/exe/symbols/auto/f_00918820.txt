@@ -1,0 +1,1 @@
+0x00918820 ?RemoveListenerA@Registry_00918820@@QAEXPAX@Z

@@ -1,0 +1,4 @@
+0x0079e630 ?ResetEntries_0079e630@@YAXXZ
+0x01a0c7c8 ?g_entryCount_01a0c7c8@@3HA
+0x01a0c7d8 ?g_entries_01a0c7d8@@3PAUEntry_0079e630@@A
+0x01a0c77e ?g_entriesReset_01a0c77e@@3_NA

@@ -55,17 +55,31 @@ jobs:
       # A stalled mirror or a slow apt trigger (man-db rebuilds its index after every
       # install) can hang this step, so: no prompts, no man-db rebuild, network timeouts
       # with retries, visible output, and a step timeout well under the job's.
+      # Some hangs get past all of that (a normal install takes ~1.5 min, but runs have
+      # sat here until the step timed out), so each apt call also gets a hard time
+      # limit and is retried, finishing an interrupted install before the next try.
       - name: Install Wine and tools
-        timeout-minutes: 15
+        timeout-minutes: 20
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
           echo 'man-db man-db/auto-update boolean false' | sudo debconf-set-selections
           sudo rm -f /var/lib/man-db/auto-update
           APT_OPTS="-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Dpkg::Use-Pty=0"
+          # run "$@" with a time limit of $1 seconds, up to 3 times
+          retry() {
+            limit=$1; shift
+            for attempt in 1 2 3; do
+              if sudo -E timeout --kill-after=15 "$limit" "$@"; then return 0; fi
+              echo "::warning::attempt $attempt of '$*' failed or timed out after ${limit}s"
+              # a killed install can leave dpkg half-done; finish it before retrying
+              sudo -E timeout 120 dpkg --configure -a || true
+            done
+            return 1
+          }
           sudo dpkg --add-architecture i386
-          sudo apt-get $APT_OPTS update -q
-          sudo -E apt-get $APT_OPTS install -yq --no-install-recommends wine wine32:i386 msitools
+          retry 120 apt-get $APT_OPTS update -q
+          retry 300 apt-get $APT_OPTS install -yq --no-install-recommends wine wine32:i386 msitools
           wine --version
           python -m pip install -q capstone
 
