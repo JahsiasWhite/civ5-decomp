@@ -38,3 +38,9 @@
 0x0070df00 0x0070df08 regcall_stub
 0x00724930 0x00724938 regcall_stub
 0x0079e870 0x0079e878 regcall_stub
+
+# EH cleanup funclet of the CRT's `eh vector destructor iterator' (0x009272cc, out of
+# scope as library code). Ghidra splits it off as its own function; it is the
+# compiler-generated __finally that calls __ArrayUnwind, so there is no source to write.
+# Found 2026-11-17.
+0x00927317 0x0092732f eh_funclet
