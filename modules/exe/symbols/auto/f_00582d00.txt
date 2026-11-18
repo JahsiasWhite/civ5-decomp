@@ -1,0 +1,2 @@
+0x00582d00 ?Describe@NetPlayerSyncCheck@@UAEXPADI@Z
+0x00a8edf4 ??_C@_0DC@CBNBHCCK@NetPlayerSyncCheck?$CIPlayer?$DN?$CFd?$CJ?0?5A@

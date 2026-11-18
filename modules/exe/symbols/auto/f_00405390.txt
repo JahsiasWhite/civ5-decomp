@@ -1,0 +1,1 @@
+0x00405390 ?GetRecordSize_00405390@@YAHH@Z

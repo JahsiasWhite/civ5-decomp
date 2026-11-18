@@ -1,0 +1,2 @@
+0x0083d090 ?GetByteOrder_0083d090@@YAHXZ
+0x00cb0ae4 ?g_byteOrder_00cb0ae4@@3HA

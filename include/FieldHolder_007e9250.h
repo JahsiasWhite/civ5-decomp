@@ -46,18 +46,23 @@ public:
     virtual void v05();
     virtual void v06();
     virtual void v07();
-    virtual void v08();
+    // src: GUESS (confidence: low)
+    virtual bool Check8(int a);
     // src: GUESS (confidence: low)
     virtual void Apply9(int value);
-    virtual void v10();
-    virtual void v11();
+    // src: GUESS (confidence: low)
+    virtual bool Check10(int a);
+    // src: GUESS (confidence: low)
+    virtual bool Check11(int a, int b);
     virtual void v12();
     // src: GUESS (confidence: low)
     virtual bool Query13();
     // src: GUESS (confidence: low)
     virtual bool Query14();
-    virtual void v15();
-    virtual void v16();
+    // src: GUESS (confidence: low)
+    virtual bool Check15(int a, int b);
+    // src: GUESS (confidence: low)
+    virtual bool Check16(int a, int b, int c);
     virtual void v17();
     virtual void v18();
     virtual void v19();
@@ -183,20 +188,25 @@ public:
     virtual void v81();
     virtual void v82();
     virtual void v83();
-    virtual void v84();
+    // src: GUESS (confidence: low) [0x007fecf0]
+    virtual bool LinkedCheck8(int a);
     // src: GUESS (confidence: low) [0x007fed30]
     virtual void ApplyLinked9(int value);
     virtual void v86();
     // src: GUESS (confidence: low) [0x007fedf0]
     virtual void ApplyLinked20(int value);
-    virtual void v88();
-    virtual void v89();
+    // src: GUESS (confidence: low) [0x007fee20]
+    virtual bool LinkedCheck10(int a);
+    // src: GUESS (confidence: low) [0x007fee60]
+    virtual bool LinkedCheck11(int a, int b);
     virtual void v90();
     virtual void v91();
     virtual void v92();
     virtual void v93();
-    virtual void v94();
-    virtual void v95();
+    // src: GUESS (confidence: low) [0x007fe9d0]
+    virtual bool LinkedCheck15(int a, int b);
+    // src: GUESS (confidence: low) [0x007fea10]
+    virtual bool LinkedCheck16(int a, int b, int c);
     virtual void v96();
     virtual void v97();
     // src: GUESS (confidence: low) [0x007feea0]

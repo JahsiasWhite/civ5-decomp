@@ -1,0 +1,2 @@
+0x0090e9c0 ?Report@Reporter_0090e9c0@@QAEXH@Z
+0x0606baf0 ?g_manager_0606baf0@@3PAUManager_0090e9c0@@A

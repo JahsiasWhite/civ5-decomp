@@ -1,0 +1,3 @@
+0x0050c800 ?ReadFromLua_0050c800@@YAXPAUlua_State@@PAURecord_0050c800@@@Z
+0x0092394c _lua_tointeger
+0x00923952 _lua_tonumber

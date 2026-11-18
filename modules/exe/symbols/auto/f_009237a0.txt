@@ -1,0 +1,4 @@
+0x009237a0 ?OpenDigitalDriver_009237a0@@YAPAXIHH@Z
+0x009d6de4 __imp__AIL_startup@0
+0x009d6e14 __imp__AIL_set_preference@8
+0x009d6e1c __imp__AIL_open_digital_driver@16

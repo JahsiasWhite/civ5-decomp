@@ -1,0 +1,1 @@
+0x008ed300 ?Get@Records_008ed300@@QAEPAURecord_008ed300@@I@Z

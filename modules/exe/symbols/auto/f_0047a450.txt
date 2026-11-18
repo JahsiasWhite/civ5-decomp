@@ -1,0 +1,3 @@
+0x0047a450 ?ContainsValue_0047a450@@YG_NH@Z
+0x02dd1e80 ?g_values_02dd1e80@@3PACA
+0x02dd1e84 ?g_valueCount_02dd1e84@@3IA
