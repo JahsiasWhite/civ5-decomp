@@ -52,11 +52,20 @@ jobs:
         with:
           python-version: "3.10"
 
+      # A stalled mirror or a slow apt trigger (man-db rebuilds its index after every
+      # install) can hang this step, so: no prompts, no man-db rebuild, network timeouts
+      # with retries, visible output, and a step timeout well under the job's.
       - name: Install Wine and tools
+        timeout-minutes: 15
+        env:
+          DEBIAN_FRONTEND: noninteractive
         run: |
+          echo 'man-db man-db/auto-update boolean false' | sudo debconf-set-selections
+          sudo rm -f /var/lib/man-db/auto-update
+          APT_OPTS="-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Dpkg::Use-Pty=0"
           sudo dpkg --add-architecture i386
-          sudo apt-get update -qq
-          sudo apt-get install -yqq --no-install-recommends wine wine32:i386 msitools >/dev/null
+          sudo apt-get $APT_OPTS update -q
+          sudo -E apt-get $APT_OPTS install -yq --no-install-recommends wine wine32:i386 msitools
           wine --version
           python -m pip install -q capstone
 

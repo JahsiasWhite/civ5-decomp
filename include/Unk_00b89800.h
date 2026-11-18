@@ -2,7 +2,12 @@
 // c5d-vtable: 0x00b89800
 
 // Placeholder: the class whose slot 5 is 0x00837750 (0x00837770's SyncSize
-// file declares the same layout locally). Only the child pointer at 0x14 is used.
+// file declares the same layout locally). Its constructor (0x00837690) inlines
+// the base Unk_00b88c18 constructor; the fields up to 0x14 repeat that base's
+// layout here, and the vtable pointer is set through a declared array.
+
+// src: GUESS (confidence: medium) [0x00b89800]
+extern void* const g_vtable_00b89800[];
 
 // src: GUESS (confidence: low) [0x00837750]
 class UnkChild_00b89800
@@ -32,9 +37,15 @@ public:
 class Unk_00b89800
 {
 public:
+    // src: GUESS (confidence: medium) [0x00837690]
+    Unk_00b89800();
     // src: GUESS (confidence: low) [0x00837750]
     int IsChildReady();
 
-    int m_unk00[5];
+    const void* m_vftable;
+    bool m_enabled;                 // 0x04
+    int m_count;                    // 0x08
+    int m_unk0c;
+    int m_unk10;
     UnkChild_00b89800* m_child;     // 0x14
 };
