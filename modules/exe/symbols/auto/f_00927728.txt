@@ -1,0 +1,2 @@
+0x00927728 ?Clear@Buffer_00927728@@QAEXXZ
+0x00926be0 _free

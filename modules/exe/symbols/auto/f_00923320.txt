@@ -1,0 +1,2 @@
+0x00923320 ?MSS_SetSampleVolume_00923320@@YAXPAXM@Z
+0x009fcf90 __real@3f000000
