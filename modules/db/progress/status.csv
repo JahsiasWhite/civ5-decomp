@@ -33,6 +33,7 @@ address,symbol,status,bytes,source,since
 0x10003330,?CopyDwordBackward_10003330@@YAPAHPBH0PAH@Z,MATCH,34,modules/db/src/auto/f_10003330.cpp,2026-11-18
 0x10003360,?CopyDwordBackward_10003360@@YAPAHPBH0PAH@Z,MATCH,34,modules/db/src/auto/f_10003360.cpp,2026-11-18
 0x100034e0,?Open@Connection@Database@@QAE_NPBDH@Z,MATCH,102,modules/db/src/auto/f_100034e0.cpp,2026-11-18
+0x10003ad0,?ExecuteMultiple@Connection@Database@@QBE_NPBDH@Z,UNVERIFIED,263,modules/db/src/auto/f_10003ad0.cpp,2026-11-18
 0x10003be0,?Analyze@Connection@Database@@QBEXXZ,MATCH,71,modules/db/src/auto/f_10003be0.cpp,2026-11-18
 0x10003c30,?Vacuum@Connection@Database@@QBEXXZ,MATCH,71,modules/db/src/auto/f_10003c30.cpp,2026-11-18
 0x10004260,?erase@?$list@UNodeStr_10004260@@V?$allocator@UNodeStr_10004260@@@std@@@std@@QAE?AV?$_Iterator@$0A@@12@V?$_Const_iterator@$0A@@12@@Z,MATCH,70,modules/db/src/auto/f_10004260.cpp,2026-11-18
@@ -108,6 +109,8 @@ address,symbol,status,bytes,source,since
 0x1000a990,?Step18@Cursor_1000a990@@QAE_NPAUHandle_1000a990@@@Z,MATCH,31,modules/db/src/auto/f_1000a990.cpp,2026-11-18
 0x1000aa30,?CountDescendants_1000aa30@@YAHPBUTreeNode_1000aa30@@H@Z,MATCH,68,modules/db/src/auto/f_1000aa30.cpp,2026-11-18
 0x1000ac80,?SkipProcessingInstruction_1000ac80@@YGPBDPAPBD@Z,MATCH,36,modules/db/src/auto/f_1000ac80.cpp,2026-11-18
+0x1000b3b0,?lGetMemoryUsage@Lua@Scripting@Database@@SAHPAUlua_State@@@Z,MATCH,245,modules/db/src/auto/f_1000b3b0.cpp,2026-11-18
+0x1000be80,?PushDatabaseTable@Lua@Scripting@Database@@SAXPAUlua_State@@AAVConnection@3@PBD@Z,MATCH,280,modules/db/src/auto/f_1000be80.cpp,2026-11-18
 0x1000c0d0,?Connection@ResultsCache@Database@@QAEAAV02@XZ,MATCH,3,modules/db/src/database/ResultsCache.cpp,2026-11-17
 0x1000c880,?FillDwordRange_1000c880@@YAXPAH0ABH@Z,MATCH,30,modules/db/src/auto/f_1000c880.cpp,2026-11-18
 0x1000c8c0,?ScalarDeletingDtor@Wrapper_1000c8c0@@QAEPAXI@Z,MATCH,34,modules/db/src/auto/f_1000c8c0.cpp,2026-11-18
@@ -121,6 +124,8 @@ address,symbol,status,bytes,source,since
 0x100714c0,?ErrorMessage@XMLSerializer@Database@@QBEPBDXZ,MATCH,7,modules/db/src/database/XMLSerializer.cpp,2026-11-17
 0x10071560,?UseTransactions@XMLSerializer@Database@@QBE_NXZ,MATCH,7,modules/db/src/database/XMLSerializer.cpp,2026-11-17
 0x10071570,?UseTransactions@XMLSerializer@Database@@QAEX_N@Z,MATCH,13,modules/db/src/database/XMLSerializer.cpp,2026-11-17
+0x10071580,?ClassifyNumberString_10071580@@YGHPBDI@Z,MATCH,195,modules/db/src/auto/f_10071580.cpp,2026-11-18
+0x10071650,?ReadFileToBuffer_10071650@@YG_NPB_WPAPAXPAI2@Z,MATCH,237,modules/db/src/auto/f_10071650.cpp,2026-11-18
 0x10071740,?SetPackageTag@XMLSerializer@Database@@QAEXPBD@Z,MATCH,33,modules/db/src/auto/f_10071740.cpp,2026-11-18
 0x10071b10,?FormatBuf_10071b10@@YAHPADPBDZZ,MATCH,30,modules/db/src/auto/f_10071b10.cpp,2026-11-18
 0x10071e70,?ScalarDeletingDtor@Wrapper_10071e70@@QAEPAXI@Z,MATCH,31,modules/db/src/auto/f_10071e70.cpp,2026-11-18

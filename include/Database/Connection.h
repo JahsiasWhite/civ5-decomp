@@ -38,6 +38,8 @@ public:
     CVGAMEDATABASE_API bool SetBusyTimeout(int iTimeOut);
     // src: EXE [0x100034e0]
     CVGAMEDATABASE_API bool Open(const char* szFileName, int iFlags);
+    // src: EXE [0x10003ad0]
+    CVGAMEDATABASE_API bool ExecuteMultiple(const char* szStatements, int iLength) const;
     // src: EXE [0x10003be0]
     CVGAMEDATABASE_API void Analyze() const;
     // src: EXE [0x10003c30]

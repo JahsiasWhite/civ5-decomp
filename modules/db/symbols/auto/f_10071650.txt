@@ -1,0 +1,6 @@
+0x10071650 ?ReadFileToBuffer_10071650@@YG_NPB_WPAPAXPAI2@Z
+0x100780f0 __imp__CreateFileW@28
+0x10078114 __imp__GetFileSizeEx@8
+0x100782a0 __imp__realloc
+0x100780f8 __imp__CloseHandle@4
+0x1007805c __imp__ReadFile@20

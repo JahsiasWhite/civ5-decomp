@@ -1,0 +1,3 @@
+0x00438ce0 ?Lua_ReadEntry_00438ce0@@YAXPAUlua_State@@PAUEntry_00438ce0@@@Z
+0x0092394c _lua_tointeger
+0x00923964 _lua_tolstring

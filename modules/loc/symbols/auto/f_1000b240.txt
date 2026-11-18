@@ -1,0 +1,1 @@
+0x1000b240 ?GetLanguageCount@StringDictionary@Localization@@QBEIXZ

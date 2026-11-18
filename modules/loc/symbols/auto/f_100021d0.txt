@@ -1,0 +1,2 @@
+0x100021d0 ?LogWarning@Localization@@YAXPBD@Z
+0x100c5b1c ?g_pLogger_100c5b1c@Localization@@3PAVILogger_100021b0@1@A

@@ -1,0 +1,5 @@
+0x10003ad0 ?ExecuteMultiple@Connection@Database@@QBE_NPBDH@Z
+0x100594d0 _sqlite3_prepare_v2
+0x10060940 _sqlite3_step
+0x10058cc0 _sqlite3_finalize
+0x10036760 _sqlite3_errmsg

@@ -1,0 +1,9 @@
+0x00905d00 ?Lua_RegisterAll_00905d00@@YAXPAUlua_State@@@Z
+0x00904820 ?Lua_Helper_00904820@@YAXPAUlua_State@@PAX@Z
+0x00923928 _lua_setfield
+0x0092396a _lua_pushcclosure
+0x00cb9438 ?g_initFlags_00cb9438@@3IA
+0x00cc2320 ?g_regEntries_00cc2320@@3PAURegEntry_00905d00@@A
+0x00cc6320 ?g_numRegEntries_00cc6320@@3IA
+0x00cc6324 ?g_callbacks_00cc6324@@3PAP6AXPAUlua_State@@@ZA
+0x00cc7324 ?g_numCallbacks_00cc7324@@3IA

@@ -1,0 +1,2 @@
+0x100071c0 ?_Get_deleter@?$_Ref_count_d@DP6AXPAX@ZV?$allocator@H@std@@@tr1@std@@UBEPAXABVtype_info@@@Z
+0x100c32fc ??_R0P6AXPAX@Z@8

@@ -1,0 +1,14 @@
+0x1000b3b0 ?lGetMemoryUsage@Lua@Scripting@Database@@SAHPAUlua_State@@@Z
+0x100066e0 ?GetSingleton_100066e0@@YAPAXXZ
+0x1007687e _lua_createtable
+0x100768d8 _lua_gettop
+0x100768d2 _lua_pushstring
+0x100768cc _lua_pushinteger
+0x100768c6 _lua_rawset
+0x100798ec ??_C@_0L@MHEKMCLI@NumRegions?$AA@
+0x100798d4 ??_C@_0BG@ODBDDMEJ@MaxUserAllocatedBytes?$AA@
+0x100798b8 ??_C@_0BK@OEBHGAAI@CurrentUserAllocatedBytes?$AA@
+0x100798a0 ??_C@_0BG@IMNHJGJM@CurrentAllocatedBytes?$AA@
+0x10079888 ??_C@_0BF@CODKECBA@CurrentReservedBytes?$AA@
+0x10079870 ??_C@_0BF@LDNMDMAI@CurrentOverheadBytes?$AA@
+0x10079858 ??_C@_0BH@LNAHJINO@CurrentUncommitedBytes?$AA@

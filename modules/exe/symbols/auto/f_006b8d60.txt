@@ -1,0 +1,13 @@
+0x006b8d60 ?Lua_RegisterDatabase_006b8d60@@YAHPAUlua_State@@@Z
+0x00640fb0 ?Lua_DbQuery_00640fb0@@YAHPAUlua_State@@@Z
+0x00663810 ?Lua_DbStatementCount_00663810@@YAHPAUlua_State@@@Z
+0x00672db0 ?Lua_DbCreateQuery_00672db0@@YAHPAUlua_State@@@Z
+0x006ddee0 ?Lua_DbStatementSQL_006ddee0@@YAHPAUlua_State@@@Z
+0x009d6058 __imp_?lGetMemoryUsage@Lua@Scripting@Database@@SAHPAUlua_State@@@Z
+0x009d605c __imp_?lCollectMemoryUsage@Lua@Scripting@Database@@SAHPAUlua_State@@@Z
+0x00a5711c ?g_str_GetMemoryUsage_00a5711c@@3QBDB
+0x00a5712c ?g_str_CollectMemoryUsage_00a5712c@@3QBDB
+0x00a57140 ?g_str_StatementCount_00a57140@@3QBDB
+0x00a57150 ?g_str_StatementSQL_00a57150@@3QBDB
+0x00a57160 ?g_str_Query_00a57160@@3QBDB
+0x00a57168 ?g_str_CreateQuery_00a57168@@3QBDB

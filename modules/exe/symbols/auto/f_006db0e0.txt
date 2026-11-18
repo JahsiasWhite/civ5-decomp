@@ -1,0 +1,14 @@
+0x006db0e0 ?Lua_RegisterAutomation_006db0e0@@YAHPAUlua_State@@@Z
+0x004a8d60 ?Lua_AutoSetEventFunction_004a8d60@@YAHPAUlua_State@@@Z
+0x005d2f80 ?Lua_AutoSetGameCoreInit_005d2f80@@YAHPAUlua_State@@@Z
+0x00620720 ?l_ExitGame@@YAHPAUlua_State@@@Z
+0x0072c330 ?Lua_AutoGetAutorunTurnLimit_0072c330@@YAHPAUlua_State@@@Z
+0x00750240 ?Lua_AutoIsExitingGame_00750240@@YAHPAUlua_State@@@Z
+0x0075eb40 ?Lua_AutoSetEventScript_0075eb40@@YAHPAUlua_State@@@Z
+0x00a569e4 ?g_str_Automation_00a569e4@@3QBDB
+0x00a56b1c ?g_str_SetGameCoreInit_00a56b1c@@3QBDB
+0x00a56b2c ?g_str_SetEventScript_00a56b2c@@3QBDB
+0x00a56b3c ?g_str_SetEventFunction_00a56b3c@@3QBDB
+0x00a56b50 ?g_str_GetAutorunTurnLimit_00a56b50@@3QBDB
+0x00a56b64 ?g_str_ExitGame_00a56b64@@3QBDB
+0x00a56b70 ?g_str_IsExitingGame_00a56b70@@3QBDB

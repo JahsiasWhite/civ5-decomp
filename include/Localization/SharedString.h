@@ -2,6 +2,7 @@
 // instances share. Layout from the DLL's code (offsets below); names follow the SDK.
 #pragma once
 #include "LocalizationAPI.h"
+#include <memory>
 
 namespace Localization {
 
@@ -11,16 +12,23 @@ public:
     // the exported class doesn't get compiler-generated ones
     SharedString(const SharedString& copy);
     SharedString& operator=(const SharedString& other);
+    // src: EXE [0x10001000]
+    ~SharedString();
 
     unsigned int GetBufferLength() const;
     unsigned int GetOffset() const;
     unsigned int GetLength() const;
+    // src: EXE [0x10007160]
+    bool SetOffsetAndLength(unsigned int uiOffset, unsigned int uiLength);
+    // src: EXE [0x100070f0]
+    bool operator==(const SharedString& kOther) const;
 
 private:
-    void* m_Buffer[2];                 // +0x00 shared pointer to the buffer (object, count)
-    unsigned int m_BufferLength;       // +0x08
-    unsigned int m_offset;             // +0x0c
-    unsigned int m_length;             // +0x10
+    // src: GUESS (confidence: high)
+    std::tr1::shared_ptr<const char> m_spBuffer;  // +0x00 (+0x04 rep)
+    unsigned int m_BufferLength;                  // +0x08
+    unsigned int m_offset;                        // +0x0c
+    unsigned int m_length;                        // +0x10
 };
 
 }  // namespace Localization

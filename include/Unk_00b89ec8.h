@@ -21,7 +21,8 @@ public:
     virtual void Slot10() = 0;
     virtual void Slot11() = 0;
     virtual int Lookup(int key) = 0;            // slot 12
-    virtual void Slot13() = 0;
+    // src: GUESS (confidence: low) [0x00841470]
+    virtual void Slot13(int key, float value);
     virtual void Slot14() = 0;                  // 0x00841450
     virtual void Apply(int value) = 0;          // slot 15
 

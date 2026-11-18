@@ -1,0 +1,1 @@
+0x1000b2c0 ?GetLanguage@StringDictionary@Localization@@QBEABVLanguage@12@I@Z

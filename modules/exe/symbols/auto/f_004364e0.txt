@@ -1,0 +1,3 @@
+0x004364e0 ?Lua_PushEntry_004364e0@@YAXPAUlua_State@@PBUEntry_004364e0@@@Z
+0x0092391c _lua_pushstring
+0x00923940 _lua_pushinteger

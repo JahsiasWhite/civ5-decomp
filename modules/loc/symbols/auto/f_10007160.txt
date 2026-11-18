@@ -1,0 +1,1 @@
+0x10007160 ?SetOffsetAndLength@SharedString@Localization@@QAE_NII@Z

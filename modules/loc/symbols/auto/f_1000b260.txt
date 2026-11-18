@@ -1,0 +1,1 @@
+0x1000b260 ?GetLanguageType@StringDictionary@Localization@@QBEPBDI@Z
