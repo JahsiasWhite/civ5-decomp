@@ -171,6 +171,7 @@ address,symbol,status,bytes,source,since
 0x005156c0,?RegisterEventMethods_005156c0@@YAXPAUlua_State@@@Z,MATCH,257,modules/exe/src/auto/f_005156c0.cpp,2026-11-16
 0x00519220,?HasBit@Host_00519220@@QBE_NI@Z,MATCH,27,modules/exe/src/auto/f_00519220.cpp,2026-11-16
 0x00519ec0,?RegisterEventMethods_00519ec0@@YAXPAUlua_State@@@Z,MATCH,257,modules/exe/src/auto/f_00519ec0.cpp,2026-11-16
+0x00519fe0,?RegisterPreGameLua@@YAHPAUlua_State@@@Z,MATCH,2855,modules/exe/src/auto/f_00519fe0.cpp,2026-11-18
 0x0051b030,??0ArraySet_0051b030@@QAE@XZ,MATCH,43,modules/exe/src/auto/f_0051b030.cpp,2026-11-18
 0x0051e6a0,?PushPair_0051e6a0@@YAXPAUlua_State@@PBUPair_0051e6a0@@@Z,MATCH,46,modules/exe/src/auto/f_0051e6a0.cpp,2026-11-18
 0x0051e6d0,?SetVal@Class_0051e6d0@@QAEXD@Z,MATCH,13,modules/exe/src/auto/f_0051e6d0.cpp,2026-11-16
