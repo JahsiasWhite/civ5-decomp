@@ -1,0 +1,1 @@
+0x008cfdc0 ?AllocScratch_008cfdc0@@YGHPAUCmdBuf_008cfdc0@@I@Z

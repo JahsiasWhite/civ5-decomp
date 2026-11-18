@@ -1,0 +1,5 @@
+0x00905440 ?PushFunction@LuaRef_00905440@@QBE_NXZ
+0x00923976 _lua_settop
+0x0092397c _lua_type
+0x009239ac _lua_rawgeti
+0x009239b2 _lua_checkstack

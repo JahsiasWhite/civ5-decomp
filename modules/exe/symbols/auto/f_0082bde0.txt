@@ -1,0 +1,2 @@
+0x0082bde0 ?ReadInt@Stream_0082bde0@@QAEXPAH@Z
+0xe4a3c18b ?g_byteOrder_00cb0ae4@@3HA

@@ -1,0 +1,2 @@
+0x007dac90 ?ReadFrom@Record_007dac90@@QAEXPAUStream_0082bde0@@@Z
+0x0082bde0 ?ReadInt@Stream_0082bde0@@QAEXPAH@Z

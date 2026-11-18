@@ -1,0 +1,2 @@
+0x006a2c90 ?Lua_ReadIntPair_006a2c90@@YAXPAUlua_State@@PAUIntPair_006a2c90@@@Z
+0x0092394c _lua_tointeger

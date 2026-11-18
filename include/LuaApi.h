@@ -7,7 +7,10 @@
 struct lua_State;
 typedef int (*lua_CFunction)(lua_State* L);
 
+#define LUA_REGISTRYINDEX (-10000)
 #define LUA_GLOBALSINDEX (-10002)
+#define LUA_NOREF (-2)
+#define LUA_TTABLE 5
 
 extern "C" {
 int lua_gettop(lua_State* L);
@@ -30,6 +33,7 @@ void lua_pushinteger(lua_State* L, int n);
 void lua_pushnumber(lua_State* L, double n);
 void lua_pushlightuserdata(lua_State* L, void* p);
 int luaL_error(lua_State* L, const char* fmt, ...);
+int luaL_ref(lua_State* L, int t);
 void luaL_unref(lua_State* L, int t, int ref);
 void lua_rawgeti(lua_State* L, int idx, int n);
 int lua_tointeger(lua_State* L, int idx);
