@@ -10,6 +10,7 @@ typedef int (*lua_CFunction)(lua_State* L);
 #define LUA_GLOBALSINDEX (-10002)
 
 extern "C" {
+int lua_gettop(lua_State* L);
 void lua_settop(lua_State* L, int idx);
 void lua_pushvalue(lua_State* L, int idx);
 int lua_isstring(lua_State* L, int idx);
