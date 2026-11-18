@@ -1,0 +1,5 @@
+0x005c8000 ?GetDefault_005c8000@@YGXPAUValue16_005c8000@@@Z
+0x00a5559c ?g_defaultA_00a5559c@@3HB
+0x00a555a0 ?g_defaultB_00a555a0@@3HB
+0x00a555a4 ?g_defaultC_00a555a4@@3HB
+0x00a555a8 ?g_defaultD_00a555a8@@3HB

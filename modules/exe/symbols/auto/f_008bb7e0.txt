@@ -1,0 +1,2 @@
+0x008bb7e0 ?LookupBySize_008bb7e0@@YGHH@Z
+0x02ea0fe0 ?g_sizeTable_02ea0fe0@@3PAHA

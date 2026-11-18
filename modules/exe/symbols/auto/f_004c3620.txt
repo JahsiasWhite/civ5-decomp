@@ -1,0 +1,2 @@
+0x004c3620 ?PushTriple_004c3620@@YAXPAUlua_State@@PBUTriple_004c3620@@@Z
+0x00923940 _lua_pushinteger

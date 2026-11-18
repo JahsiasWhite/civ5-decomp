@@ -1,0 +1,2 @@
+0x00923490 ?SetStream3D_00923490@@YAXPAXPBUVec3_00923490@@@Z
+0x009d6dc4 __imp__AIL_set_sample_3D_position@16

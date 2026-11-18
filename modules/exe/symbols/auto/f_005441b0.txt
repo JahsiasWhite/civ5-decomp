@@ -1,0 +1,2 @@
+0x005441b0 ?PushRecord_005441b0@@YAXPAUlua_State@@PBURecord_005441b0@@@Z
+0x00923940 _lua_pushinteger

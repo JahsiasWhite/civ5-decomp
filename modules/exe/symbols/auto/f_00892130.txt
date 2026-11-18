@@ -1,0 +1,2 @@
+0x00892130 ?FreeAndClear_00892130@@YGXPAPAX@Z
+0x00926be0 _free

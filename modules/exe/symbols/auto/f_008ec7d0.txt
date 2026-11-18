@@ -1,0 +1,1 @@
+0x008ec7d0 ?HasCount@Counted_008ec7d0@@QBE_NXZ
