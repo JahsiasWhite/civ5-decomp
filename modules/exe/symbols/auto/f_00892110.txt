@@ -1,0 +1,2 @@
+0x00892110 ?AllocCallback_00892110@@YGPAXI@Z
+0x00926be6 _malloc
