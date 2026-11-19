@@ -1,0 +1,1 @@
+0x1000a470 ?CountNodes@XmlDoc_1000a470@@QAEHXZ

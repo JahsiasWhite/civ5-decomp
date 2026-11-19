@@ -109,6 +109,7 @@ address,symbol,status,bytes,source,since
 0x100099d0,?SkipCData_100099d0@@YGPBDPAPBD@Z,MATCH,41,modules/db/src/auto/f_100099d0.cpp,2026-11-19
 0x10009a00,?SkipDecl_10009a00@@YGPBDPAPBD@Z,MATCH,81,modules/db/src/auto/f_10009a00.cpp,2026-11-19
 0x1000a410,?NextWithParent@Cursor_1000a410@@QAE_NPAUHandle_1000a410@@@Z,MATCH,33,modules/db/src/auto/f_1000a410.cpp,2026-11-19
+0x1000a470,?CountNodes@XmlDoc_1000a470@@QAEHXZ,MATCH,35,modules/db/src/auto/f_1000a470.cpp,2026-11-19
 0x1000a4a0,?Step20@Cursor_1000a4a0@@QAE_NPAUHandle_1000a4a0@@@Z,MATCH,31,modules/db/src/auto/f_1000a4a0.cpp,2026-11-19
 0x1000a550,?Step2C@Cursor_1000a550@@QAE_NPAUHandle_1000a550@@@Z,MATCH,31,modules/db/src/auto/f_1000a550.cpp,2026-11-19
 0x1000a5f0,?FindFirstChild@XmlNode_1000a5f0@@QAEPAU1@PBEI_N@Z,MATCH,119,modules/db/src/auto/f_1000a5f0.cpp,2026-11-19
@@ -147,5 +148,6 @@ address,symbol,status,bytes,source,since
 0x100737c0,?RemoveTableFromPackageTagList@XMLSerializer@Database@@QAEXPBD@Z,MATCH,115,modules/db/src/auto/f_100737c0.cpp,2026-11-19
 0x10073900,?UninitFillNString_10073900@@YGPAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PAV12@IABV12@@Z,MATCH,66,modules/db/src/auto/f_10073900.cpp,2026-11-19
 0x10073950,?DestroyStringRange_10073950@@YGXPAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@0@Z,MATCH,36,modules/db/src/auto/f_10073950.cpp,2026-11-19
+0x10073c30,??0XMLSerializer@Database@@QAE@AAVConnection@1@@Z,MATCH,134,modules/db/src/auto/f_10073c30.cpp,2026-11-19
 0x10073cc0,??1XMLSerializer_10073cc0@@QAE@XZ,MATCH,65,modules/db/src/auto/f_10073cc0.cpp,2026-11-19
 0x10075800,?_Tidy@?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@IAEXXZ,MATCH,71,modules/db/src/auto/f_10075800.cpp,2026-11-19
