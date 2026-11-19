@@ -1,3 +1,0 @@
-0x02a10200 ?g_Idx_0053c4c0@@3HA
-0x02a102d8 ?g_Slots_0053c4c0@@3PAUSlot_0053c4c0@@A
-0x0053c4c0 ?Call_0053c4c0@@YAXPAX@Z

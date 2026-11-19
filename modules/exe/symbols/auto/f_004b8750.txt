@@ -1,1 +1,0 @@
-0x004b8750 ?GetPos@Class_004b8750@@QAE?AUVec3_004b8750@@XZ

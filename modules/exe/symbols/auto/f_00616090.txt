@@ -1,0 +1,1 @@
+0x00616090 ?FindOrFirst@Table_006afdb0@@QAEPAUElem68_006afdb0@@H@Z

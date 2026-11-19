@@ -1,1 +1,0 @@
-0x00692e90 ?Assign@Ptr_00692e90@@QAEXPAUIUnknown_00692e90@@@Z

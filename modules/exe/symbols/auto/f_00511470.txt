@@ -1,0 +1,4 @@
+0x00a2a5e0 ?g_Mask_007b3f80@@3IA
+0x00a2a5e4 ?g_Table1_007b3f80@@3PAIA
+0x00a2a618 ?g_Table2_007b3f80@@3PAIA
+0x00511470 ?Blend_007b3f80@@YAIII@Z

@@ -158,3 +158,4 @@
 0x00809630 0x008098ba  # one function of 650 bytes, as its match shows (Ghidra split it into blocks)
 0x00851220 0x00851256  # one function of 54 bytes, as its match shows (Ghidra split it into blocks)
 0x00471690 0x004716a2 new  # one function of 18 bytes, as its match shows (Ghidra split it into blocks)
+0x0062c700 0x0062c73a  # one function of 58 bytes, as its match shows (Ghidra split it into blocks)

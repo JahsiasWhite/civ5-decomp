@@ -1,2 +1,0 @@
-0x00ca2458 ?g_TableEnd_0092bd60@@3DA
-0x0092bd60 ?GetEntryFromEnd_0092bd60@@YAPAUUnkEntry28_0092bd60@@I@Z
