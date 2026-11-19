@@ -18,6 +18,8 @@ public:
     CVLOCALIZATION_API unsigned int GetNumForms() const;
     // src: EXE [0x100095b0]
     CVLOCALIZATION_API bool SetGender(Gender eGender);
+    // src: EXE [0x100095e0]
+    CVLOCALIZATION_API bool SetGender(unsigned int uiForm, Gender eGender);
     // src: EXE [0x10009630]
     CVLOCALIZATION_API Gender GetGender(unsigned int uiForm) const;
 

@@ -1,0 +1,5 @@
+0x10071ea0 ?SetError@XMLSerializer_10071ea0@@QAEXPBD@Z
+0x10001b20 ?FormatBuf_10001b20@@YAHPADPBDZZ
+0x10078298 __imp__strncpy_s
+0x10081efc ??_C@_08IKODGPEB@No?5Error?$AA@
+0x10081f08 ??_C@_0CB@NPMEDBCP@Database?3?3XMLSerializer?5?$CI?$CFs?$CJ?3?5?$CFs@

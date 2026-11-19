@@ -1,0 +1,3 @@
+0x1000a5f0 ?FindFirstChild@XmlNode_1000a5f0@@QAEPAU1@PBEI_N@Z
+0x10008a00 ?CompareBytes_10008a00@@YA_NPBEI0I_N@Z
+0x1061b6e4 ?g_empty_1061b6e4@@3QBEB

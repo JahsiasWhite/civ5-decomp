@@ -2,6 +2,8 @@
 // index. Layout from the DLL's code (offsets below); names follow the SDK.
 #pragma once
 #include "DatabaseAPI.h"
+#include <string>
+#include <hash_map>
 
 namespace Database {
 
@@ -23,6 +25,12 @@ struct Command {
 
 class Results {
 public:
+    // src: EXE [0x10006d60]
+    CVGAMEDATABASE_API static void* operator new(unsigned int uiSize);
+    // src: EXE [0x10007cd0]
+    CVGAMEDATABASE_API Results(const char* szColumns);
+    // src: EXE [0x10007af0]
+    CVGAMEDATABASE_API Results(const Results& kOther);
     // src: EXE [0x10007520]
     CVGAMEDATABASE_API virtual ~Results();
     // src: EXE [0x100066f0]
@@ -34,6 +42,8 @@ public:
     CVGAMEDATABASE_API bool Reset();
     // src: EXE [0x10006770]
     CVGAMEDATABASE_API bool TryReset();
+    // src: EXE [0x10006f30]
+    CVGAMEDATABASE_API bool TryExecute();
     // src: EXE [0x100067d0]
     CVGAMEDATABASE_API bool Bind(int iColumn, const char* szValue, int iLength, bool bStatic);
     // src: EXE [0x10006830]
@@ -72,6 +82,8 @@ public:
     CVGAMEDATABASE_API float GetFloat(int iColumn);
     // src: EXE [0x10006b70]
     CVGAMEDATABASE_API double GetDouble(int iColumn);
+    // src: EXE [0x100070c0]
+    CVGAMEDATABASE_API bool GetBool(int iColumn);
     // src: EXE [0x10006ba0]
     CVGAMEDATABASE_API void GetValue(int iColumn, bool& bValue);
     // src: EXE [0x10006be0]
@@ -94,11 +106,16 @@ public:
     // src: EXE [0x10006d50]
     CVGAMEDATABASE_API void SingleQuery(bool bSingleQuery);
 
+protected:
+    // src: EXE [0x10007d30]
+    CVGAMEDATABASE_API void HashColumnPositions();
+
 private:
     Command m_Command;                 // +0x04
     const char* m_szColumns;           // +0x0c
     bool m_bSingleQuery;               // +0x10
-    // +0x14: the column-name -> position hash map (not modelled yet)
+    // src: GUESS (confidence: high)
+    stdext::hash_map<std::string, unsigned int> m_columnPositions; // +0x14
 };
 
 }  // namespace Database

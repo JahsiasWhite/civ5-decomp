@@ -4,11 +4,15 @@
 
 namespace Database {
 
+class Connection;
+
 // src: EXE
 class BinaryIO {
 public:
     // src: EXE [0x100062d0]
     CVGAMEDATABASE_API BinaryIO(const char* szFilename);
+    // src: EXE [0x100063c0]
+    CVGAMEDATABASE_API bool Load(Connection& kConnection);
 
 private:
     // src: GUESS (confidence: high)

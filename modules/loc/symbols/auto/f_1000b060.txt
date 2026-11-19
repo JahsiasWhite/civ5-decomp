@@ -1,0 +1,6 @@
+0x1000b060 ?HasKey@StringDictionary@Localization@@QBE_NPBDII@Z
+0x10089034 __imp__EnterCriticalSection@4
+0x10089038 __imp__LeaveCriticalSection@4
+0x10089010 __imp_?Bind@Results@Database@@QAE_NHPBDH_N@Z
+0x10089000 __imp_?Step@Results@Database@@QAE_NXZ
+0x10089004 __imp_?Reset@Results@Database@@QAE_NXZ

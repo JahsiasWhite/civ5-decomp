@@ -1,0 +1,3 @@
+0x10008140 ?GetValue@Results_10008140@Database@@QAEXPBDAAN@Z
+0x10007e70 ?ColumnPosition@Results_10008140@Database@@QAEHPBD@Z
+0x10043f70 _sqlite3_column_double

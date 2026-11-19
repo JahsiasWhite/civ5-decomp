@@ -7,8 +7,15 @@
 
 namespace Database {
 
+class Connection;
+class ResultsCache;
+
 class XMLSerializer {
 public:
+    // src: EXE [0x100765c0]
+    CVGAMEDATABASE_API bool Load(const wchar_t* wszFilename, ResultsCache& kCache);
+    // src: EXE [0x10076390]
+    CVGAMEDATABASE_API bool LoadFromMemory(const wchar_t* wszFilename, char* szMemory, unsigned int uiSize, ResultsCache& kCache);
     CVGAMEDATABASE_API const char* ErrorMessage() const;
 
     CVGAMEDATABASE_API bool UseTransactions() const;

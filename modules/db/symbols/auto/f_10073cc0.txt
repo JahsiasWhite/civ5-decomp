@@ -1,0 +1,5 @@
+0x10073cc0 ??1XMLSerializer_10073cc0@@QAE@XZ
+0x100782ac __imp__free
+0x100781a4 __imp_??1?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QAE@XZ
+0x10073690 ?clear@?$list@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@QAEXXZ
+0x10076ab8 ??3@YAXPAX@Z

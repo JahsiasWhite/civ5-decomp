@@ -1,0 +1,2 @@
+0x10008790 ??0String@Localization@@QAE@XZ
+0x1008b3e8 ??_7String@Localization@@6B@

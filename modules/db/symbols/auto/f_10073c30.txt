@@ -1,0 +1,4 @@
+0x10073c30 ??0XMLSerializer@Database@@QAE@AAVConnection@1@@Z
+0x10076ad6 ??2@YAPAXI@Z
+0x10078218 __imp_??0?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QAE@XZ
+0x10076adc _memset
