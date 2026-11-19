@@ -33,6 +33,12 @@ address,symbol,status,bytes,source,since
 0x10003330,?CopyDwordBackward_10003330@@YAPAHPBH0PAH@Z,MATCH,34,modules/db/src/auto/f_10003330.cpp,2026-11-19
 0x10003360,?CopyDwordBackward_10003360@@YAPAHPBH0PAH@Z,MATCH,34,modules/db/src/auto/f_10003360.cpp,2026-11-19
 0x100034e0,?Open@Connection@Database@@QAE_NPBDH@Z,MATCH,102,modules/db/src/auto/f_100034e0.cpp,2026-11-19
+0x10003550,?SelectAt@Connection@Database@@QAE_NAAVResults@2@PBDH@Z,MATCH,160,modules/db/src/auto/f_10003550.cpp,2026-11-19
+0x100035f0,?SelectAt@Connection@Database@@QAE_NAAVResults@2@PBD11@Z,MATCH,190,modules/db/src/auto/f_100035f0.cpp,2026-11-19
+0x100036b0,?SelectAt@Connection@Database@@QAE_NAAVResults@2@PBD1H@Z,MATCH,190,modules/db/src/auto/f_100036b0.cpp,2026-11-19
+0x10003770,?SelectAt@Connection@Database@@QAE_NAAVResults@2@PBD1N@Z,MATCH,195,modules/db/src/auto/f_10003770.cpp,2026-11-19
+0x10003840,?SelectAll@Connection@Database@@QAE_NAAVResults@2@PBD@Z,MATCH,174,modules/db/src/auto/f_10003840.cpp,2026-11-19
+0x100038f0,?SelectWhere@Connection@Database@@QAE_NAAVResults@2@PBD1@Z,MATCH,182,modules/db/src/auto/f_100038f0.cpp,2026-11-19
 0x10003ad0,?ExecuteMultiple@Connection@Database@@QBE_NPBDH@Z,UNVERIFIED,263,modules/db/src/auto/f_10003ad0.cpp,2026-11-19
 0x10003be0,?Analyze@Connection@Database@@QBEXXZ,MATCH,71,modules/db/src/auto/f_10003be0.cpp,2026-11-19
 0x10003c30,?Vacuum@Connection@Database@@QBEXXZ,MATCH,71,modules/db/src/auto/f_10003c30.cpp,2026-11-19
@@ -120,6 +126,7 @@ address,symbol,status,bytes,source,since
 0x1000afe0,??1XmlDoc_1000afe0@@QAE@XZ,MATCH,96,modules/db/src/auto/f_1000afe0.cpp,2026-11-19
 0x1000b3b0,?lGetMemoryUsage@Lua@Scripting@Database@@SAHPAUlua_State@@@Z,MATCH,245,modules/db/src/auto/f_1000b3b0.cpp,2026-11-19
 0x1000be80,?PushDatabaseTable@Lua@Scripting@Database@@SAXPAUlua_State@@AAVConnection@3@PBD@Z,MATCH,280,modules/db/src/auto/f_1000be80.cpp,2026-11-19
+0x1000c040,?PushDatabase@Lua@Scripting@Database@@SAXPAUlua_State@@AAVConnection@3@@Z,MATCH,129,modules/db/src/auto/f_1000c040.cpp,2026-11-19
 0x1000c0d0,?Connection@ResultsCache@Database@@QAEAAV02@XZ,MATCH,3,modules/db/src/database/ResultsCache.cpp,2026-11-19
 0x1000c880,?FillDwordRange_1000c880@@YAXPAH0ABH@Z,MATCH,30,modules/db/src/auto/f_1000c880.cpp,2026-11-19
 0x1000c8c0,?ScalarDeletingDtor@Wrapper_1000c8c0@@QAEPAXI@Z,MATCH,34,modules/db/src/auto/f_1000c8c0.cpp,2026-11-19

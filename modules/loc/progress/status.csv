@@ -21,6 +21,7 @@ address,symbol,status,bytes,source,since
 0x100095b0,?SetGender@String@Localization@@QAE_NW4Gender@2@@Z,MATCH,39,modules/loc/src/auto/f_100095b0.cpp,2026-11-19
 0x100095e0,?SetGender@String@Localization@@QAE_NIW4Gender@2@@Z,MATCH,71,modules/loc/src/auto/f_100095e0.cpp,2026-11-19
 0x10009630,?GetGender@String@Localization@@QBE?AW4Gender@2@I@Z,MATCH,54,modules/loc/src/auto/f_10009630.cpp,2026-11-19
+0x10009670,?SetPlurality@String@Localization@@QAE_NPBDI@Z,UNVERIFIED,525,modules/loc/src/auto/f_10009670.cpp,2026-11-19
 0x10009880,?SetPlurality@String@Localization@@QAE_NI@Z,MATCH,123,modules/loc/src/auto/f_10009880.cpp,2026-11-19
 0x10009900,?SetPlurality@String@Localization@@QAE_NII@Z,MATCH,151,modules/loc/src/auto/f_10009900.cpp,2026-11-19
 0x1000b060,?HasKey@StringDictionary@Localization@@QBE_NPBDII@Z,MATCH,168,modules/loc/src/auto/f_1000b060.cpp,2026-11-19

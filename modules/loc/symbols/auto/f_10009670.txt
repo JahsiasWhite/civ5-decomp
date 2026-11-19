@@ -1,0 +1,3 @@
+0x10009670 ?SetPlurality@String@Localization@@QAE_NPBDI@Z
+0x100891e0 __imp__strncpy_s
+0x10089134 __imp__atoi

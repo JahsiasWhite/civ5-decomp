@@ -1,0 +1,3 @@
+0x1000c040 ?PushDatabase@Lua@Scripting@Database@@SAXPAUlua_State@@AAVConnection@3@@Z
+0x10079b88 ??_C@_0HB@LOELJHPA@SELECT?5rowid?5FROM?5sqlite_master?5@
+0x1000bfa0 ?LuaDBIndex_1000bfa0@Scripting@Database@@YAHPAUlua_State@@@Z
