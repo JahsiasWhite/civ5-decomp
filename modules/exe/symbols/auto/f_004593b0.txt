@@ -1,1 +1,0 @@
-0x004593b0 ?GetVal@Host_004593b0@@QBEHI@Z

@@ -1,0 +1,1 @@
+0x0080e350 ?GetOffset_008a82a0@@YAHXZ

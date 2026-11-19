@@ -1,7 +1,0 @@
-0x0059f820 ?l_Compare_0059f820@@YAHPAUlua_State@@@Z
-0x00923940 _lua_pushinteger
-0x009239fa _luaL_checklstring
-0x00923a0c _luaL_error
-0x009d6148 __imp_?GetCurrentLanguage@Localization@@YAABVLanguage@1@XZ
-0x009d6188 __imp_?Compare@Language@Localization@@QBE_NPBDI0IAAH@Z
-0x00a69a70 ?g_str_CompareError_00a69a70@@3QBDB

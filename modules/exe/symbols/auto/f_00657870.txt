@@ -1,3 +1,0 @@
-0x00657870 ?RejectFromLua_00657870@@YAXPAUlua_State@@H@Z
-0x00923a0c _luaL_error
-0x00a56370 ?kDontCallThis_00657870@@3QBDB

@@ -1,0 +1,1 @@
+0x0040cf60 ?GetCount@VecOwner_0067dd70@@QBEHXZ

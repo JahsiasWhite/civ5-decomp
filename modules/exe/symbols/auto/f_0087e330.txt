@@ -1,0 +1,1 @@
+0x0087e330 ?GetFloat@Class_009184e0@@QAEMXZ

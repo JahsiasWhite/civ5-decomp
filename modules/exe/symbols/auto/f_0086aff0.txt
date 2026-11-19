@@ -1,0 +1,5 @@
+0x0086aff0 ?IsString@LuaRef_00905250@@QAE_NXZ
+0x00889576 _lua_settop
+0x008895ac _lua_rawgeti
+0x008895b2 _lua_checkstack
+0x008895c4 _lua_isstring

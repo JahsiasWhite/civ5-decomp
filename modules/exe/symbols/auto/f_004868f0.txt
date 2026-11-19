@@ -1,0 +1,2 @@
+0x004868f0 ?Wait@Synch_00838f50@@QAE_NK@Z
+0x00939258 __imp__WaitForSingleObject@8

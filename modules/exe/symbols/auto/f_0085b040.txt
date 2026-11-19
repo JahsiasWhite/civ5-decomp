@@ -1,0 +1,2 @@
+0x0085b040 ?Init@Class_008f5910@@QAEPAV1@XZ
+0x00a1bc94 ?g_float_009ec9b8@@3MA

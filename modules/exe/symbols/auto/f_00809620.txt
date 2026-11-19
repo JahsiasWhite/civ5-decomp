@@ -1,0 +1,2 @@
+0x00809620 ?GetGlobal_008a3590@@YAHXZ
+0x00b2fce4 ?g_val_00c9ed24@@3HA

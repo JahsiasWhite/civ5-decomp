@@ -1,0 +1,1 @@
+0x00850e10 ?GetFirstOrNull@Host_008eb1b0@@QAEPAHXZ

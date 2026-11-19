@@ -1,1 +1,0 @@
-0x008e79d0 ?GetItemPtr@Host_008e79d0@@QAEPAUItem28_008e79d0@@H@Z

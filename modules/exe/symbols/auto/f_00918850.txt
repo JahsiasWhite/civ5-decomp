@@ -1,1 +1,0 @@
-0x00918850 ?RemoveListenerB@Registry_00918850@@QAEXPAX@Z

@@ -1,0 +1,5 @@
+0x00486430 ?ResetVtables@Unk_00b898d8@@QAEXXZ
+0x00a1b5ac ?kVtable_00b89890@@3QBQBXB
+0x00a1b5bc ?kVtable_00b898a0@@3QBQBXB
+0x00a1b5c8 ?kVtable_00b898ac@@3QBQBXB
+0x00a1b5e0 ?kVtable_00b898c4@@3QBQBXB

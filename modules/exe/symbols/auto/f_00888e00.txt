@@ -1,0 +1,3 @@
+0x00888e00 ?SetStreamRate_00923200@@YAHPAXH@Z
+0x00939ddc __imp__AIL_stream_sample_handle@4
+0x00939d28 __imp__AIL_set_sample_playback_rate@8

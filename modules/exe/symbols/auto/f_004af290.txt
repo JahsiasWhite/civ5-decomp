@@ -1,0 +1,2 @@
+0x004af290 ?Format_007747f0@@YAXPADPBDZZ
+0x00939610 __imp__vsprintf_s

@@ -1,0 +1,2 @@
+0x0089efa0 ?CallOrOne_0093bbf0@@YAHXZ
+0x05efda5c ?g_fn_0606cfbc@@3P6AHXZA

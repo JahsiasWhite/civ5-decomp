@@ -1,0 +1,1 @@
+0x0044bf10 ?CompareNoCase@CaseInsensitiveStringKey@@QBEHPBD@Z

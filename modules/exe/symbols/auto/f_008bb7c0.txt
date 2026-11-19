@@ -1,3 +1,0 @@
-0x008bb7c0 ?NotifyComObject_008bb7c0@@YAXXZ
-0x02f65e3e ?g_enabled_02f65e3e@@3_NA
-0x03010580 ?g_comObject_03010580@@3PAVUnkComObject_03010580@@A

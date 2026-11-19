@@ -1,0 +1,2 @@
+0x0084ac30 ?GetNegated@Host_008e4c80@@QBE?AUVec3_008e4c80@@XZ
+0x00a1bcd0 __mask@@NegFloat@

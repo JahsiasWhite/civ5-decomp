@@ -1,0 +1,1 @@
+0x00845b30 ?GetMember@MemberAddress_008dfb70@@QAEPAHXZ

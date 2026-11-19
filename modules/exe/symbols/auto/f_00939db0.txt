@@ -1,3 +1,0 @@
-0x00939db0 ?GetThreadId_00939db0@@YAKXZ
-0x0606cf94 ?g_fn_0606cf94@@3P6GKXZA
-0x009d649c __imp__GetCurrentThreadId@0

@@ -1,3 +1,0 @@
-0x00829c50 ?Release@LockState_00829c50@@QAEXH@Z
-0x009d646c __imp__InterlockedCompareExchange@12
-0x009d64b4 __imp__InterlockedDecrement@4

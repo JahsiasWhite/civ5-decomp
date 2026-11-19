@@ -1,2 +1,0 @@
-0x005d5680 ?GetLuaInt2_005d5680@@YAXPAUlua_State@@PAUTarget_005d5680@@@Z
-0x0092394c _lua_tointeger

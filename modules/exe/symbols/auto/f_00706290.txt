@@ -1,2 +1,0 @@
-0x00706290 ?AddRef@RefTable_00706290@@QAEHH@Z
-0x009d646c __imp__InterlockedCompareExchange@12

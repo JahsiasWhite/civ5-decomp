@@ -1,0 +1,1 @@
+0x00621140 ?Init@Class_005ccc10@@QAEPAV1@XZ

@@ -1,1 +1,0 @@
-0x008ec840 ?IsValid@Host_008ec840@@QBE_NXZ

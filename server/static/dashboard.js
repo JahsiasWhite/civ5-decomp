@@ -20,17 +20,56 @@ const modelColour = (() => {
   };
 })();
 
-// one colour per binary (exe / db / loc), the same on every chart and label
+// one colour per binary (exe / db / loc), the same on every chart and label. A legacy
+// build of a binary (exe-2014) is shown as that binary: same label, same colour.
 const MODS = ["exe", "db", "loc"];
-const modColour = (m) => (MODS.includes(m) ? `var(--mod-${m})` : "var(--faint)");
+const MOD_INFO = {};          // module -> {label, build?}; render() fills it from /api/stats
+const modLabel = (m) => (MOD_INFO[m] && MOD_INFO[m].label) || m.replace(/-\d+$/, "");
+const modColour = (m) => (MODS.includes(modLabel(m)) ? `var(--mod-${modLabel(m)})` : "var(--faint)");
 // each module's binary, shown when hovering its label; render() refreshes it from /api/stats
 const MOD_FILES = { exe: "CivilizationV_DX11.exe", db: "CvGameDatabaseWin32Final Release.dll",
                     loc: "CvLocalizationWin32Final Release.dll" };
+// "CivilizationV_DX11.exe, 2026 build": the binary, and for the exe which build
+const modFile = (m) => (MOD_FILES[m] || m) + (MOD_INFO[m] && MOD_INFO[m].build ? `, ${MOD_INFO[m].build} build` : "");
 // hover=false where the row already has its own tooltip naming the binary (What is left)
 function modTag(m, hover = true) {
-  const attrs = { class: `mod mod-${MODS.includes(m) ? m : "x"}` };
-  if (hover) attrs.title = MOD_FILES[m] || m;
-  return el("span", attrs, m);
+  const l = modLabel(m);
+  const attrs = { class: `mod mod-${MODS.includes(l) ? l : "x"}` };
+  if (hover) attrs.title = modFile(m);
+  return el("span", attrs, l);
+}
+
+// ---------- build switch ----------
+// Which exe build's figures to show (/api/stats `views`), remembered per viewer.
+const BUILD_KEY = "c5d-build";
+function savedBuild() {
+  try { return localStorage.getItem(BUILD_KEY); } catch (e) { return null; }
+}
+function saveBuild(b) {
+  try { localStorage.setItem(BUILD_KEY, b); } catch (e) { /* private window etc. */ }
+}
+let build = savedBuild() || "2026";
+let stats = null;
+function renderBuildSwitch(s) {
+  const box = $("build-switch"), builds = Object.keys(s.views || {});
+  box.textContent = "";
+  box.hidden = builds.length < 2;                      // nothing to switch before the move
+  for (const b of builds.sort().reverse()) {
+    const btn = el("button", { type: "button", "aria-pressed": String(b === build),
+      title: b === s.exe_build ? `The ${b} Steam build: the one all work happens on`
+                               : `The ${b} build: view-only, still verified, no new claims` }, b);
+    btn.addEventListener("click", () => { build = b; saveBuild(b); show(); });
+    box.appendChild(btn);
+  }
+}
+// the chosen view over the server-wide fields (older servers have no views: top level)
+function show() {
+  const s = stats;
+  if (!s.views || !s.views[build]) build = s.exe_build || "2026";
+  const v = s.views && s.views[build] ? { ...s, ...s.views[build] } : s;
+  renderBuildSwitch(s);
+  if (tierFilter !== "all" && !(tierFilter in (v.modules || {}))) tierFilter = "all";
+  render(v);
 }
 
 function el(tag, attrs, text) {
@@ -268,7 +307,7 @@ function renderBoard() {
     if (r.bands) tip(tr, () => ({
       title: `${r.who} · by module and size band`,
       rows: (r.modules || []).map((m) => ({
-        swatch: modColour(m.module), label: m.module,
+        swatch: modColour(m.module), label: modLabel(m.module),
         value: `${n0(m.functions)} fns · ${size(m.bytes)} · ${pct(m.bytes, r.bytes, 0)}` })).concat(
         r.bands.filter((b) => b.functions).map((b) => ({
           label: b.label, value: `${n0(b.functions)} fns · ${size(b.bytes)} · ${pct(b.bytes, r.bytes, 0)}` }))),
@@ -296,11 +335,14 @@ function render(s) {
   $("c-bytes-foot").textContent = `of ${size(s.bytes)} in scope · ${pct(s.matched_bytes, s.bytes, 3)}`;
   // the meter: one segment per module, each its share of all bytes in scope
   const mods = Object.entries(s.modules || {});
-  for (const [m, v] of mods) if (v.file) MOD_FILES[m] = v.file;
+  for (const [m, v] of mods) {
+    if (v.file) MOD_FILES[m] = v.file;
+    MOD_INFO[m] = { label: v.label || m, build: v.build };
+  }
   const meter = $("c-bytes-meter"); meter.textContent = "";
   for (const [m, v] of mods) {
     if (!v.matched_bytes) continue;
-    const seg = el("i", { title: `${MOD_FILES[m] || m}: ${size(v.matched_bytes)}` });
+    const seg = el("i", { title: `${modFile(m)}: ${size(v.matched_bytes)}` });
     seg.style.background = modColour(m);
     seg.style.width = Math.max(100 * v.matched_bytes / (s.bytes || 1), 0.5) + "%";
     meter.appendChild(seg);
@@ -325,13 +367,13 @@ function render(s) {
     title: p.day,
     rows: [{ label: "total", value: `${n0(p.functions)} functions · ${size(p.bytes)}` },
            ...Object.entries(p.modules || {}).map(([m, v]) => ({
-             swatch: modColour(m), label: m, value: `${n0(v.functions)} fns · ${size(v.bytes)}` })),
+             swatch: modColour(m), label: modLabel(m), value: `${n0(v.functions)} fns · ${size(v.bytes)}` })),
            { label: "that day", value: `+${n0(p.new_functions || 0)} fns · +${size(p.new_bytes || 0)}` }],
     note: `${pct(p.bytes, s.bytes, 3)} of the bytes in scope`,
   });
   // one marker per day, naming every module that joined then
   const joinDays = new Map();
-  for (const [m, v] of mods) if (m !== "exe" && v.joined) joinDays.set(v.joined, [...(joinDays.get(v.joined) || []), m]);
+  for (const [m, v] of mods) if (modLabel(m) !== "exe" && v.joined) joinDays.set(v.joined, [...(joinDays.get(v.joined) || []), m]);
   const joins = [...joinDays].map(([day, ms]) => ({ day, label: ms.join(" + ") + (ms.length > 1 ? " join" : " joins") }));
   lineChart($("ch-bytes"), s.trend, "bytes", (v) => size(v), dayTip, joins);
   lineChart($("ch-fns"), s.trend, "functions", (v) => n0(Math.round(v)), dayTip, joins);
@@ -351,7 +393,7 @@ function render(s) {
       if (d) rows.push({ label: "last 24 h", value: `+${n0(d.functions)} fns · +${size(d.bytes)}` });
       if (t) rows.push({ label: "hit rate", value: `${n0(t.matches)} / ${n0(t.reports)} reports · ${pct(t.matches, t.reports, 0)}` });
       for (const [m, v] of Object.entries(r.modules || {}))
-        rows.push({ swatch: modColour(m), label: m, value: `${n0(v.functions)} fns · ${size(v.bytes)}` });
+        rows.push({ swatch: modColour(m), label: modLabel(m), value: `${n0(v.functions)} fns · ${size(v.bytes)}` });
       return { title: r.model, rows };
     } })),
     (v) => kb(v) + " KB");
@@ -376,12 +418,12 @@ function render(s) {
   for (const [m, v] of mods) {
     const ts = s.tiers.filter((t) => t.module === m);
     const sum = (k) => ts.reduce((a, t) => a + t[k], 0);
-    tierRow(left, { label: m, total: sum("total"), matched: sum("matched"), open: sum("open"), untried: sum("untried"),
-                    bytes: sum("bytes"), matched_bytes: sum("matched_bytes") }, modTag(m, false), v.file);
+    tierRow(left, { label: modLabel(m), total: sum("total"), matched: sum("matched"), open: sum("open"), untried: sum("untried"),
+                    bytes: sum("bytes"), matched_bytes: sum("matched_bytes") }, modTag(m, false), modFile(m));
   }
   const filter = $("tier-filter"); filter.textContent = "";
   for (const m of ["all", ...mods.map(([m]) => m)]) {
-    const b = el("button", { type: "button", "aria-pressed": String(m === tierFilter) }, m === "all" ? "All" : m);
+    const b = el("button", { type: "button", "aria-pressed": String(m === tierFilter) }, m === "all" ? "All" : modLabel(m));
     b.addEventListener("click", () => { tierFilter = m; render(s); });
     filter.appendChild(b);
   }
@@ -399,7 +441,7 @@ let tierFilter = "all";
 function renderTiers(s) {
   const tiers = $("tiers"); tiers.textContent = "";
   for (const k of s.tiers.filter((t) => t.module === tierFilter))
-    tierRow(tiers, k, null, `${k.label} functions` + (tierFilter === "all" ? "" : ` · ${tierFilter}`));
+    tierRow(tiers, k, null, `${k.label} functions` + (tierFilter === "all" ? "" : ` · ${modLabel(tierFilter)}`));
 }
 // one bar: matched / tried and open / never tried. labelNode (a module label) replaces the text label.
 function tierRow(parent, k, labelNode, title) {
@@ -426,6 +468,6 @@ function tierRow(parent, k, labelNode, title) {
   }
 }
 
-fetch("/api/stats").then((r) => r.json()).then(render).catch(() => {
+fetch("/api/stats").then((r) => r.json()).then((s) => { stats = s; show(); }).catch(() => {
   $("updated").textContent = "Could not load the report";
 });

@@ -1,0 +1,2 @@
+0x00409510 ?Free@Allocator_007c2f90@@UAEXPAXI@Z
+0x00b42424 ?g_freeHook_00cb1484@@3P6AXPAX@ZA

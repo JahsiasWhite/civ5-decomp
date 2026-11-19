@@ -1,3 +1,0 @@
-0x0060d350 ?CheckReady_0060d350@@YAHXZ
-0x02e49edc ?g_state_02e49edc@@3HA
-0x00d90ee8 ?g_flag_00d90ee8@@3DA

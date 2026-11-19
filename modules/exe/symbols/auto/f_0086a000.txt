@@ -1,0 +1,10 @@
+0x0086a000 ?InitCodeBuddy_00904240@@YAXPAUlua_State@@@Z
+0x00889528 _lua_setfield
+0x00889534 _lua_createtable
+0x00889570 _lua_pushvalue
+0x00889576 _lua_settop
+0x0088957c _lua_type
+0x00889582 _lua_getfield
+0x008895b2 _lua_checkstack
+0x009cd700 ??_C@_09BBMIKNJD@CodeBuddy?$AA@
+0x009cd70c ??_C@_0L@GJBHAKFD@CodeBuddy?$AA?$AA@

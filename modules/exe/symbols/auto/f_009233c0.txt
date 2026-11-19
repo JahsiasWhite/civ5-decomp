@@ -1,2 +1,0 @@
-0x009233c0 ?GetStreamTotalMs_009233c0@@YAHPAX@Z
-0x009d6db8 __imp__AIL_stream_ms_position@12

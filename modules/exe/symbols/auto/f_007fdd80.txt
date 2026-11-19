@@ -1,0 +1,2 @@
+0x007fdd80 ?GetTimeIfActive_00897cf0@@YAHPAUTimer_00897cf0@@@Z
+0x02c72cb0 ?g_iGlobal_02de1e20@@3HA

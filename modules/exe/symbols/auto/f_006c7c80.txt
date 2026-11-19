@@ -1,0 +1,7 @@
+0x006c7c80 ?GetHexDirectionAngle@@YAMH@Z
+0x0094e78c __real@40278d32
+0x0094e790 __real@3fc90fdb
+0x0094e794 __real@3f060aa4
+0x0094e780 __real@40b84e87
+0x0094e784 __real@4096cbe4
+0x0094e788 __real@406a9284

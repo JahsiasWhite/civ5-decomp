@@ -1,1 +1,0 @@
-0x00620400 ?GetItem@Host_00620400@@QBEHI@Z

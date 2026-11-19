@@ -1,0 +1,2 @@
+0x0040a120 ?FormatBuffer512_0068a250@@YAXPADPBDZZ
+0x00939610 __imp__vsprintf_s

@@ -1,7 +1,0 @@
-0x0089ba50 ?UpdateSmoothing_0089ba50@@YAXPAUUnk_0089ba50@@@Z
-0x00a97a58 __real@4010000000000000
-0x00a97a60 __real@3f1a36e2e0000000
-0x00c9eca8 ?g_00c9eca8@@3MA
-0x00c9ecac ?g_00c9ecac@@3MA
-0x00c9ecb0 ?g_00c9ecb0@@3MA
-0x00c9ecb4 ?g_00c9ecb4@@3MA

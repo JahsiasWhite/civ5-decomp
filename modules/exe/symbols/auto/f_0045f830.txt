@@ -1,0 +1,1 @@
+0x0045f830 ?Find@CharString_008151e0@@QBEHPBDH@Z

@@ -1,0 +1,4 @@
+0x007bbac0 ?BeginText@TextSurface_004e5a00@@UAEXXZ
+0x009391f4 __imp__SelectObject@8
+0x009391c4 __imp__SetTextColor@8
+0x00939218 __imp__SetBkColor@8

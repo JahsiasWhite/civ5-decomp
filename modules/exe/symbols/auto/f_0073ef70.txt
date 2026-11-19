@@ -1,4 +1,0 @@
-0x0073ef70 ?PreGameStart@GameStarter_0073ef70@@QAEXXZ
-0x006d5c30 ?Continue_006d5c30@GameStarter_0073ef70@@QAEXXZ
-0x00cc8e74 ?g_pEngineOwner_00cc8e74@@3PAUEngineOwner_00cc8e74@@A
-0x00a17f48 ??_C@_0N@KMBJFIPH@PreGameStart?$AA@

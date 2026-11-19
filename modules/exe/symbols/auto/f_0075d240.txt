@@ -1,7 +1,0 @@
-0x0075d240 ?PushVec2_0075d240@@YAXPAUlua_State@@PBUVec2_0075d240@@@Z
-0x00a55c80 ?g_str_x_00a55c80@@3QBDB
-0x00a55c84 ?g_str_y_00a55c84@@3QBDB
-0x0092391c _lua_pushstring
-0x00923934 _lua_createtable
-0x00923958 _lua_pushnumber
-0x0092395e _lua_rawset

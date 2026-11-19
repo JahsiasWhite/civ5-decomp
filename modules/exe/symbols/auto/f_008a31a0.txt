@@ -1,1 +1,0 @@
-0x008a31a0 ?GetFlag100_008a31a0@@YAHPAX@Z

@@ -1,0 +1,2 @@
+0x006dbf40 ?GetLuaInt_00599900@@YAXPAUlua_State@@PAH@Z
+0x0088954c _lua_tointeger

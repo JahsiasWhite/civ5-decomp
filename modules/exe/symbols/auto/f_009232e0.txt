@@ -1,3 +1,0 @@
-0x009232e0 ?MSS_GetStreamVolume@@YAXPAXPAM@Z
-0x009d6e3c __imp__AIL_stream_sample_handle@4
-0x009d6dac __imp__AIL_sample_volume_pan@12

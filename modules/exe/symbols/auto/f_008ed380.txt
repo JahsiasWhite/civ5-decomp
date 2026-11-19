@@ -1,1 +1,0 @@
-0x008ed380 ?Get@Records_008ed380@@QAEPAURecord_008ed380@@I@Z

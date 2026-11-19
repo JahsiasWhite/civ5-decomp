@@ -1,0 +1,1 @@
+0x00456370 ?GetSelf@SelfReturner_00743bc0@@QAEPAV1@XZ

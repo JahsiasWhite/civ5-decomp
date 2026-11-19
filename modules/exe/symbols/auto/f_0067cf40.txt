@@ -1,2 +1,0 @@
-0x0067cf40 ?GetValue@Holder_0067cf40@@QBEMXZ
-0x00a0b4ec ?g_minPositive_00a0b4ec@@3MA

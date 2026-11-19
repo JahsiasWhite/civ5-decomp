@@ -1,2 +1,0 @@
-0x006d7b20 ?IsFlagClear_02dd2f5e@@YA_NXZ
-0x02dd2f5e ?g_bFlag_02dd2f5e@@3_NA

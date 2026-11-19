@@ -1,0 +1,2 @@
+0x008e0150 ?GetGlobal_00b63e34@@YAPAHXZ
+0x009f590c ?g_Global_00b63e34@@3HA

@@ -1,1 +1,0 @@
-0x008a8180 ?SetHolderValue_008a8180@@YAXPAUUnkDevice_008a8180@@M@Z

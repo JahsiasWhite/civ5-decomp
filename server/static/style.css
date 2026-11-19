@@ -66,6 +66,13 @@ nav a { font: 500 12px/1 var(--mono); text-transform: uppercase; letter-spacing:
 nav a:hover, nav a[aria-current="page"] { color: var(--ink); background: var(--panel-2); }
 nav.pages { margin-left: auto; }
 .updated { font: 11px/1.3 var(--mono); color: var(--faint); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.build-switch { display: inline-flex; border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; }
+.build-switch[hidden] { display: none; }
+.build-switch button { font: 12px var(--mono); color: var(--muted); background: transparent; border: 0;
+  padding: 4px 9px; cursor: pointer; }
+.build-switch button + button { border-left: 1px solid var(--rule); }
+.build-switch button:hover { color: var(--ink); }
+.build-switch button[aria-pressed="true"] { color: var(--ink); background: var(--panel-2); box-shadow: inset 0 -2px 0 var(--brass); }
 @media (max-width: 860px) { nav.pages { margin-left: 0; } .updated { width: 100%; } }
 
 /* ---------- hero ---------- */

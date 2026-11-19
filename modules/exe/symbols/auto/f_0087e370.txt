@@ -1,0 +1,2 @@
+0x0087e370 ??0Record_00918520@@QAE@XZ
+0x00a1bc50 _g_float_009f72f4

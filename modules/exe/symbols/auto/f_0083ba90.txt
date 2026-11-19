@@ -1,2 +1,0 @@
-0x0083ba90 ?SetGlobal_0083ba90@@YAXD@Z
-0x00cb0b8c ?g_val_00cb0b8c@@3DA

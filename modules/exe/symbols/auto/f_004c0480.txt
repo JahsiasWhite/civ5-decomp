@@ -1,0 +1,1 @@
+0x004c0480 ?WrapCoord@MapGrid_004b68e0@@QBE?AUCoord_004b68e0@@HH@Z

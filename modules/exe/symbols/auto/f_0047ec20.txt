@@ -1,0 +1,2 @@
+0x0047ec20 ?GetCompName_00831490@@YAHPADPAK@Z
+0x009393d8 __imp__GetComputerNameA@8

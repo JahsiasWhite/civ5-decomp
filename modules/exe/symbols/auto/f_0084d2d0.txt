@@ -1,0 +1,1 @@
+0x0084d2d0 ?GetBuffer70@UnkRecord70@@QAEPAXXZ

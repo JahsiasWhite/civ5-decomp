@@ -1,1 +1,0 @@
-0x008e7410 ?GetBuffer04@UnkRecord04@@QAEPAXXZ

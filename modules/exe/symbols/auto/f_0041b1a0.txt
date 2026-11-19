@@ -1,0 +1,1 @@
+0x0041b1a0 ?ProcessHeapAllocCallback@@YAPAXPAXK@Z

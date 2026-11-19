@@ -1,0 +1,2 @@
+0x0047a470 ?Matches@StringSource_0082ce50@@QAE_NPBDABI@Z
+0x00939668 __imp__strncmp

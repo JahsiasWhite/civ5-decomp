@@ -1,0 +1,3 @@
+0x00590a60 ?Calc_006a7420@@YAMXZ
+0x00c2e744 ?g_float_00da91c4@@3MA
+0x0094b6c0 ?g_float_009fa964@@3MA

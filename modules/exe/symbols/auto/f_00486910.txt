@@ -1,0 +1,2 @@
+0x00486910 ?Release@Sem_00838f70@@QAEXXZ
+0x00939434 __imp__ReleaseSemaphore@12

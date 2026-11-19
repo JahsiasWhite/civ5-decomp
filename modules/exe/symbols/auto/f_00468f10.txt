@@ -1,0 +1,2 @@
+0x00468f10 ?Close@HandleWrapper_00838f40@@QAEXXZ
+0x00939248 __imp__CloseHandle@4

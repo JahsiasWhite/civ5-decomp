@@ -1,0 +1,3 @@
+0x004080f0 ?Exec@Class_007c1bb0@@QAE_NXZ
+0x00a15928 _aSql_00b83e28
+0x00939104 __imp_?ExecuteMultiple@Connection@Database@@QBE_NPBDH@Z

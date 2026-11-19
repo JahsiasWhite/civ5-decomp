@@ -1,2 +1,0 @@
-0x008bcb60 ?CopyRecord_008bcb60@@YGXHPAUUnkRecord80_0313de88@@@Z
-0x0313de88 ?g_records_0313de88@@3PAUUnkRecord80_0313de88@@A

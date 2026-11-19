@@ -1,0 +1,2 @@
+0x007f98e0 ?SetFlag_00893850@@YAXXZ
+0x02c72cb4 ?g_val_02de1e24@@3HA

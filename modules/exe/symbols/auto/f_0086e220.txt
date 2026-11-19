@@ -1,0 +1,2 @@
+0x0086e220 ?erase@?$vector@PAUUnk_00908560@@V?$allocator@PAUUnk_00908560@@@std@@@std@@QAE?AV?$_Vector_iterator@PAUUnk_00908560@@V?$allocator@PAUUnk_00908560@@@std@@@2@V?$_Vector_const_iterator@PAUUnk_00908560@@V?$allocator@PAUUnk_00908560@@@std@@@2@0@Z
+0x00939800 __imp__memmove_s

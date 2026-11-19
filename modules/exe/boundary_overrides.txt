@@ -1,192 +1,160 @@
-# Function boundary fixes: <entry> <end-exclusive> [new]  # why
-#
-# Ghidra sometimes splits one function in two, usually at an early `ret` with more
-# code after it that is reached only by a jump from the first part. Neither piece
-# can match, because the compiler only emits whole functions. A line here makes
-# the function at <entry> span [entry, end) as one range, and drops every function
-# entry that starts inside it (split-off pieces, or entries Ghidra misread from the
-# middle of it). `new` marks a function Ghidra did not list at all; it is added.
-# All tools read data/functions.csv through this
-# (tools/config.py load_functions), so scope, queue, task bundles, fingerprints and
-# `manage.py push` (which updates the server) all see the fixed boundaries.
-#
-# `python tools/c5d.py boundaries` finds candidates (splits, and listed entries that
-# sit inside another function's code); `--write` appends them here.
-# After editing: `c5d scope`, `c5d queue` (rewrites data/callgraph.csv), `c5d fingerprint`,
-# then push to main.
+# Function boundary fixes for the current build; see tools/config.py read_boundary_overrides.
+# Carried over from legacy/2014/boundary_overrides.txt where the function is unchanged.
 
-0x00457a80 0x00457b36  # early ret at +0x1d; tail 0x00457a9e reached only by its je (found by hand)
-0x00473db0 0x0047405b  # auto (c5d boundaries): tail 0x00473e0b reached only by jumps from inside
-0x00508a40 0x00508af6  # auto (c5d boundaries): tail 0x00508a5e reached only by jumps from inside
-0x00586300 0x005864dd  # auto (c5d boundaries): tail 0x00586318 reached only by jumps from inside
-0x005a2850 0x005a2906  # auto (c5d boundaries): tail 0x005a286e reached only by jumps from inside
-0x0067c0f0 0x0067c14d  # auto (c5d boundaries): tail 0x0067c11b reached only by jumps from inside
-0x0068e390 0x0068e4fb  # auto (c5d boundaries): tail 0x0068e3c9 reached only by jumps from inside
-0x00702890 0x00702946  # auto (c5d boundaries): tail 0x007028ae reached only by jumps from inside
-0x0071e550 0x0071e5b1  # auto (c5d boundaries): tail 0x0071e57b reached only by jumps from inside
-0x00730fe0 0x00731096  # auto (c5d boundaries): tail 0x00730ffe reached only by jumps from inside
-0x00786f80 0x00787036  # auto (c5d boundaries): tail 0x00786f9e reached only by jumps from inside
-0x0081eb40 0x0081ebf2  # auto (c5d boundaries): tail 0x0081eb59 reached only by jumps from inside
-0x0082ae70 0x0082aedb  # auto (c5d boundaries): tail 0x0082aece reached only by jumps from inside
-0x009288c0 0x00928b4f  # auto (c5d boundaries): tail 0x00928913 reached only by jumps from inside
-0x0093d0f0 0x0093d1a0  # auto (c5d boundaries): tail 0x0093d145 reached only by jumps from inside
-0x0093d4f0 0x0093d5b5  # auto (c5d boundaries): tail 0x0093d536 reached only by jumps from inside
-0x0093d5c0 0x0093d685  # auto (c5d boundaries): tail 0x0093d606 reached only by jumps from inside
-0x0095e630 0x0095e67b  # auto (c5d boundaries): tail 0x0095e637 reached only by jumps from inside
-0x00970c30 0x00970d31  # auto (c5d boundaries): tail 0x00970c6a reached only by jumps from inside
-0x00977860 0x00977a01  # auto (c5d boundaries): tail 0x0097789b reached only by jumps from inside
-0x0097c310 0x0097c57d  # auto (c5d boundaries): tail 0x0097c382 reached only by jumps from inside
-
-# 0x0078bf20-0x0078e75c (found by hand, 2026-11-15): Ghidra's list here was mostly wrong.
-# Real functions start after int3 padding and are called or pointed to; Ghidra listed
-# entries mid-function (some mid-instruction, e.g. 0x0078d452, 0x0078d766), multi-range
-# rows overlapping their neighbours, and missed 9 functions entirely (`new`).
-0x0078bf20 0x0078c0e4 new  # not listed by Ghidra
-0x0078c0f0 0x0078c138 new  # not listed; pointer in data
-0x0078c140 0x0078c33d new  # not listed; pointer in data
-0x0078c380 0x0078c3c8 new  # not listed; pointer in data
-0x0078c6f0 0x0078c769 new  # not listed; called
-0x0078cc90 0x0078d0ee  # absorbs 0x0078d032 (row started at 0x0078ccad), 0x0078d078, 0x0078d0d4
-0x0078d110 0x0078d31f new  # not listed; absorbs 0x0078d120 .. 0x0078d304 (9 misaligned rows)
-0x0078d320 0x0078d394  # 3-range row; one contiguous function
-0x0078d3a0 0x0078d40e new  # not listed; absorbs 0x0078d3b0
-0x0078d410 0x0078d455 new  # not listed; absorbs 0x0078d452 (mid-instruction)
-0x0078d460 0x0078d557  # absorbs 0x0078d550
-0x0078d5c0 0x0078d642  # absorbs 0x0078d606
-0x0078d650 0x0078d9ff  # std::sort-style partition; absorbs 0x0078d6be .. 0x0078d972 (8 rows, incl. 0x0078d766)
-0x0078da00 0x0078dfc3  # absorbs 0x0078da10, 0x0078da44, 0x0078dc94, 0x0078dce2, 0x0078de32, 0x0078de8a, 0x0078ded6
-0x0078dfd0 0x0078dfd9 new  # not listed
-0x0078dfe0 0x0078e09d  # 2-range row; one contiguous function
-0x0078e0a0 0x0078e75c  # absorbs 0x0078e0da, 0x0078e188
-0x00617350 0x006173a3  # auto (c5d boundaries), checked by hand: entries inside it: 0x0061735c
-0x0064d890 0x0064dd60  # auto (c5d boundaries), checked by hand: switch; table at 0x0064dd48 ends it; entries inside it: 0x0064d91f
-0x008fe9c0 0x008fecae new  # auto (c5d boundaries), checked by hand: early ret at 0x008fea64; start not listed; entries inside it: 0x008fea65
-0x004023c0 0x00402443  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00404090 0x004040f9  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x004064f0 0x00406559  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00409610 0x00409711  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x00410980 0x00410a1e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0041ea40 0x0041eac3  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00427cf0 0x00427d72  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x004364e0 0x0043651a  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00437130 0x004371b3  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x004381f0 0x00438516  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x0043b050 0x0043b0ee  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0043f310 0x0043f38e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00441f80 0x00441fec  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0044a3e0 0x0044a432  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0044ee60 0x0044eee2  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00453180 0x00453281  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x00455200 0x004552f1  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x004599f0 0x00459a73  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0045d220 0x0045d273  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x004622d0 0x00462353  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0046d260 0x0046d2e3  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00473710 0x004737ae  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00483af0 0x00483b72  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00493f00 0x00493f82  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00497f40 0x0049800b  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0049b410 0x0049b485  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x004a0860 0x004a0892  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x004a8c90 0x004a8cd7  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x004ab570 0x004ab5f2  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x004b71d0 0x004b723c  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x004c3120 0x004c3221  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x004d82d0 0x004d8352  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00500e70 0x00500ed9  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00502df0 0x00502e72  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x005156c0 0x005157c1  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x00519ec0 0x00519fc1  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x00519fe0 0x0051ab07  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x00534880 0x005348e9  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0053ce00 0x0053ce83  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0053ced0 0x0053cf6e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x005432f0 0x005433f1  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x005493f0 0x005494ef  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0054b9f0 0x0054ba73  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00560fa0 0x0056103e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00567b90 0x00567c91  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x0056a3a0 0x0056a45b  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x00571200 0x00571282  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0057e2d0 0x0057e36e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00585b20 0x00585c21  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x0058b040 0x0058b0fb  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x00597b50 0x00597ba4  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x005a4e60 0x005a4f1b  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x005ae9c0 0x005aeac3  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x005c36e0 0x005c3747  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x005e1170 0x005e11e8  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x005f0d00 0x005f0d82  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x005f2ad0 0x005f2b52  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x005fed30 0x005fef43  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x005ff970 0x005ffa71  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x0060c090 0x0060c112  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0060f1e0 0x0060f24c  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0060f3b0 0x0060f4f0  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x00610360 0x006103fe  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00611cf0 0x00611d8e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0061efb0 0x0061f04e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00622800 0x0062283c  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00622920 0x00622a12  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00622f80 0x00623002  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0062bca0 0x0062bdba  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0062ca90 0x0062cb91  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00630d30 0x00630db2  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x006387e0 0x00638843  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x00638920 0x006389a2  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0063c1a0 0x0063c23e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00649b10 0x00649b93  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0064c9e0 0x0064ca62  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00655fb0 0x006560b1  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x0065e9f0 0x0065eb67  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x00661c00 0x00661d01  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x00664ca0 0x00664d3e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x006727c0 0x0067285e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00672df0 0x00672e6f  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00676500 0x00676582  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00686a60 0x00686ae2  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0068a140 0x0068a241  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x0068e7d0 0x0068e8d1  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x006917d0 0x0069186e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0069e900 0x0069eb02  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x006a02a0 0x006a033e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x006a0a00 0x006a0b01  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x006a7630 0x006a8c0c  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x006b1990 0x006b19d6  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x006b8d60 0x006b8e46  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x006cad00 0x006cae01  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x006cb4e0 0x006cb65c  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x006d4010 0x006d40c6  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x006daa40 0x006dab41  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x006db0e0 0x006db1b0  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x006e6cf0 0x006e6d8e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x006e9a00 0x006e9a9e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00701240 0x007012de  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00703740 0x00703841  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x007068c0 0x007068ee  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00707690 0x00707791  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x00708e10 0x00708e8b  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0070d760 0x0070d7fe  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0070d890 0x0070d92e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0071a070 0x0071b4fd  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x00731960 0x00731cd7  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x00737b90 0x00737c91  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x0073dc50 0x0073e30e  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x0074b3b0 0x0074b50e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00752e10 0x00752eae  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0075d240 0x0075d29d  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00762ab0 0x00762ad8  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00765ec0 0x00765f5e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0076c5d0 0x0076c650  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0076d2a0 0x0076db0d  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x00775ae0 0x00775be1  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x0077f0b0 0x0077f1b1  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x00781180 0x00781242  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00782a40 0x00782b41  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x0078b5e0 0x0078b67e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x00799900 0x00799982  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x0079d9f0 0x0079daf1  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x007a5b30 0x007a5d99  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
-0x007aceb0 0x007acf4e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
-0x009277f0 0x00927808  # auto (c5d boundaries): cut short at a call to DeleteCriticalSection, which returns
-0x00716160 0x007161d5 new  # not listed by Ghidra; Lua C closure only pointed to by 0x00404090 (lua_pushcclosure) (found by hand)
+0x005569c0 0x00556a76  # early ret at +0x1d; tail 0x00457a9e reached only by its je (found by hand)
+0x005890a0 0x0058934b  # auto (c5d boundaries): tail 0x00473e0b reached only by jumps from inside
+0x00556900 0x005569b6  # auto (c5d boundaries): tail 0x00508a5e reached only by jumps from inside
+0x004a5850 0x004a5a2d  # auto (c5d boundaries): tail 0x00586318 reached only by jumps from inside
+0x00556b40 0x00556bf6  # auto (c5d boundaries): tail 0x005a286e reached only by jumps from inside
+0x0051c7c0 0x0051c81d  # auto (c5d boundaries): tail 0x0067c11b reached only by jumps from inside
+0x006203c0 0x0062052b  # auto (c5d boundaries): tail 0x0068e3c9 reached only by jumps from inside
+0x00556cc0 0x00556d76  # auto (c5d boundaries): tail 0x007028ae reached only by jumps from inside
+0x0051c820 0x0051c881  # auto (c5d boundaries): tail 0x0071e57b reached only by jumps from inside
+0x00556c00 0x00556cb6  # auto (c5d boundaries): tail 0x00730ffe reached only by jumps from inside
+0x00556a80 0x00556b36  # auto (c5d boundaries): tail 0x00786f9e reached only by jumps from inside
+0x0046b580 0x0046b632  # auto (c5d boundaries): tail 0x0081eb59 reached only by jumps from inside
+0x00478010 0x0047807b  # auto (c5d boundaries): tail 0x0082aece reached only by jumps from inside
+0x0088bc90 0x0088bf1f  # auto (c5d boundaries): tail 0x00928913 reached only by jumps from inside
+0x008a04a0 0x008a0550  # auto (c5d boundaries): tail 0x0093d145 reached only by jumps from inside
+0x008a08a0 0x008a0965  # auto (c5d boundaries): tail 0x0093d536 reached only by jumps from inside
+0x008a0970 0x008a0a35  # auto (c5d boundaries): tail 0x0093d606 reached only by jumps from inside
+0x008c1970 0x008c19bb  # auto (c5d boundaries): tail 0x0095e637 reached only by jumps from inside
+0x008d4020 0x008d4121  # auto (c5d boundaries): tail 0x00970c6a reached only by jumps from inside
+0x008dabd0 0x008dad71  # auto (c5d boundaries): tail 0x0097789b reached only by jumps from inside
+0x008df6c0 0x008df92d  # auto (c5d boundaries): tail 0x0097c382 reached only by jumps from inside
+0x006afd30 0x006aff2d new  # not listed; pointer in data
+0x005f6790 0x005f6809  # not listed; called
+0x00469a90 0x00469eee  # absorbs 0x0078d032 (row started at 0x0078ccad), 0x0078d078, 0x0078d0d4
+0x00763930 0x00763b3f new  # not listed; absorbs 0x0078d120 .. 0x0078d304 (9 misaligned rows)
+0x00623190 0x00623204  # 3-range row; one contiguous function
+0x0076bd60 0x0076bda5 new  # not listed; absorbs 0x0078d452 (mid-instruction)
+0x0061ec90 0x0061ed87  # absorbs 0x0078d550
+0x00548df0 0x0054919f  # std::sort-style partition; absorbs 0x0078d6be .. 0x0078d972 (8 rows, incl. 0x0078d766)
+0x005b7860 0x005b7e23  # absorbs 0x0078da10, 0x0078da44, 0x0078dc94, 0x0078dce2, 0x0078de32, 0x0078de8a, 0x0078ded6
+0x007d79a0 0x007d805c  # absorbs 0x0078e0da, 0x0078e188
+0x0045e3c0 0x0045e413  # auto (c5d boundaries), checked by hand: entries inside it: 0x0061735c
+0x006126d0 0x00612ba0  # auto (c5d boundaries), checked by hand: switch; table at 0x0064dd48 ends it; entries inside it: 0x0064d91f
+0x008644d0 0x008647be new  # auto (c5d boundaries), checked by hand: early ret at 0x008fea64; start not listed; entries inside it: 0x008fea65
+0x006e4350 0x006e43b9  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00772b10 0x00772b79  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00749490 0x00749591  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x006ee130 0x006ee1b2  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x006dba80 0x006dbaba  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00765690 0x007659b6  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x006dce00 0x006dce7e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00772610 0x0077267c  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00758fb0 0x00759002  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x006efd50 0x006efdd2  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00736b70 0x00736c71  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x0068ddd0 0x0068dec1  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x006dd3a0 0x006dd3f3  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x006eee20 0x006eeea2  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00764d90 0x00764e5b  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x0077ca60 0x0077cad5  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x006e0660 0x006e0692  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x006db030 0x006db077  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x007723b0 0x0077241c  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00772930 0x00772999  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00772a20 0x00772a89  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x0073fc80 0x0073fd1e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x0073fd20 0x0073fe21  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x007764d0 0x007765cf  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00736ad0 0x00736b6e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00741ee0 0x00741fe1  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x006e3a60 0x006e3b1b  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x00738e00 0x00738e9e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x0074b9c0 0x0074bac1  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x00765fb0 0x0076606b  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x00674ca0 0x00674cf4  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x005d57a0 0x005d585b  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00773120 0x00773223  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00772c60 0x00772cc7  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00762810 0x00762888  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00767520 0x00767733  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x0074b690 0x0074b791  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x006ed7a0 0x006ed822  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x007724a0 0x0077250c  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x007716f0 0x00771830  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x00742a10 0x00742aae  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x006df7a0 0x006df7dc  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00691090 0x00691182  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x006f1730 0x006f17b2  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00775a40 0x00775b5a  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x0076b8e0 0x0076b9e1  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x007769c0 0x00776a23  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x006f4f70 0x006f4ff2  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x0074b250 0x0074b351  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x00779780 0x007798f7  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x0074a480 0x0074a581  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x007354a0 0x0073553e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x006da850 0x006da8cf  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x006eeb50 0x006eebd2  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x006f5ea0 0x006f5f22  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00738ea0 0x00738fa1  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x0076b2d0 0x0076b3d1  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x0076c840 0x0076ca42  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00735180 0x0073521e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x006dc840 0x006dc886  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x006e40e0 0x006e41c6  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00751960 0x00751a61  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x00759010 0x0075918c  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00775ee0 0x00775f96  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x006e2ca0 0x006e2d70  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x006dbe70 0x006dbe9e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x006db600 0x006db67b  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00733650 0x007336ee  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x0076fef0 0x0077137d  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x00763ec0 0x00764237  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x0074b470 0x0074b571  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x00762930 0x00762a8e  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x006da770 0x006da7cd  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x006dbf90 0x006dbfb8  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x00734310 0x007343ae  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x006db6f0 0x006db770  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x0074e550 0x0074e651  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x00742ab0 0x00742bb1  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x0075dfd0 0x0075e092  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x0074c8a0 0x0074c9a1  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x0074edd0 0x0074eed1  # auto (c5d boundaries): cut short at a call to lua_pushcclosure, which returns
+0x0088abd0 0x0088abe8  # auto (c5d boundaries): cut short at a call to DeleteCriticalSection, which returns
+0x0043cbc0 0x0043cbce  # carried over from 2014 (0x007f37f0); Ghidra: 226 bytes in 1 range(s)
+0x00665030 0x0066503d new  # carried over from 2014 (0x0060bfb0); Ghidra lists no start here
+0x00665290 0x0066529d new  # carried over from 2014 (0x0074f6f0); Ghidra lists no start here
+0x00665370 0x0066537d new  # carried over from 2014 (0x00490eb0); Ghidra lists no start here
+0x00792e70 0x00792e8b new  # carried over from 2014 (0x0044ffe0); Ghidra lists no start here
+0x007d3380 0x007d3397 new  # carried over from 2014 (0x0076e940); Ghidra lists no start here
+0x007dc3d0 0x007dc3d9 new  # carried over from 2014 (0x00525ac0); Ghidra lists no start here
+0x007dc3e0 0x007dc3e9 new  # carried over from 2014 (0x006b10c0); Ghidra lists no start here
+0x007dc3f0 0x007dc3f9 new  # carried over from 2014 (0x0064d840); Ghidra lists no start here
+0x00405180 0x00405327  # auto (c5d boundaries): entries inside it: 0x004051b0
+0x00405305 0x00405327 new  # auto (c5d boundaries): start not listed; entries inside it: 0x0040530b
+0x004bfd60 0x004bfe3b  # auto (c5d boundaries): entries inside it: 0x004bfd67
+0x0061ef10 0x0061efcf  # auto (c5d boundaries): entries inside it: 0x0061ef24, 0x0061efb4
+0x0061efe0 0x0061f120  # auto (c5d boundaries): entries inside it: 0x0061f0b4, 0x0061f108
+0x0061f120 0x0061f162  # auto (c5d boundaries): entries inside it: 0x0061f136
+0x0061f170 0x0061f1dc  # auto (c5d boundaries): entries inside it: 0x0061f172
+0x0061f1e0 0x0061f296  # auto (c5d boundaries): entries inside it: 0x0061f220, 0x0061f256
+0x0061f2a0 0x0061f39d  # auto (c5d boundaries): entries inside it: 0x0061f2a2, 0x0061f39c
+0x0061f410 0x0061f512  # auto (c5d boundaries): entries inside it: 0x0061f4c2
+0x0061f520 0x0061f61f  # auto (c5d boundaries): entries inside it: 0x0061f5b4, 0x0061f618
+0x0061f620 0x0061f6e2 new  # auto (c5d boundaries): start not listed; entries inside it: 0x0061f63c, 0x0061f662, 0x0061f6d8
+0x0061f6f0 0x0061f794  # auto (c5d boundaries): entries inside it: 0x0061f724
+0x0061f820 0x0061f98e  # auto (c5d boundaries): entries inside it: 0x0061f8c4, 0x0061f936, 0x0061f96a
+0x0061f990 0x0061fc56  # auto (c5d boundaries): entries inside it: 0x0061fac2, 0x0061fae6, 0x0061fb8c
+0x0061fc60 0x0061ff20  # auto (c5d boundaries): entries inside it: 0x0061fda8, 0x0061feb6
+0x007df7cf 0x007df7e7 new  # auto (c5d boundaries): start not listed; entries inside it: 0x007df7d1
+0x00692a70 0x00692b8d  # auto (c5d boundaries): cut short at a call to ?toUTF8@String@Localization@@QAEPBDXZ, which returns
+0x006a1e10 0x006a1f0b  # auto (c5d boundaries): cut short at a call to ?toUTF8@String@Localization@@QAEPBDXZ, which returns
+0x006a4360 0x006a447d  # auto (c5d boundaries): cut short at a call to ?toUTF8@String@Localization@@QAEPBDXZ, which returns
+0x006b92a0 0x006b93f7  # auto (c5d boundaries): cut short at a call to ?toUTF8@String@Localization@@QAEPBDXZ, which returns
+0x006bea50 0x006bebca  # auto (c5d boundaries): cut short at a call to ?toUTF8@String@Localization@@QAEPBDXZ, which returns
+0x006e6100 0x006e6183  # auto (c5d boundaries): cut short at a call to lua_pushstring, which returns
+0x0040a730 0x0040a763  # one function of 51 bytes, as its match shows (Ghidra split it into blocks)
+0x00421980 0x0042199d  # one function of 29 bytes, as its match shows (Ghidra split it into blocks)
+0x0045f600 0x0045f633  # one function of 51 bytes, as its match shows (Ghidra split it into blocks)
+0x004dad90 0x004dadeb  # one function of 91 bytes, as its match shows (Ghidra split it into blocks)
+0x004fc6e0 0x004fc71c  # one function of 60 bytes, as its match shows (Ghidra split it into blocks)
+0x00567210 0x0056724c  # one function of 60 bytes, as its match shows (Ghidra split it into blocks)
+0x00809630 0x008098ba  # one function of 650 bytes, as its match shows (Ghidra split it into blocks)
+0x00851220 0x00851256  # one function of 54 bytes, as its match shows (Ghidra split it into blocks)
+0x00471690 0x004716a2 new  # one function of 18 bytes, as its match shows (Ghidra split it into blocks)

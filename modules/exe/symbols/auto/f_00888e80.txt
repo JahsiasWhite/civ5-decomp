@@ -1,0 +1,2 @@
+0x00888e80 ?AIL_SampleVolumePanThunk_00923280@@YAXPAXHH@Z
+0x00939d3c __imp__AIL_sample_volume_pan@12

@@ -23,11 +23,24 @@ MODULES = {
     "exe": ("CivilizationV_DX11.exe", 0x00400000, 0x10000000),
     "db": ("CvGameDatabaseWin32Final Release.dll", 0x10000000, 0x20000000),
     "loc": ("CvLocalizationWin32Final Release.dll", 0x10000000, 0x20000000),
+    "exe-2014": ("CivilizationV_DX11.exe", 0x00400000, 0x10000000),
 }
 DEFAULT_MODULE = "exe"
+# legacy module -> (the module it is an older build of, that build). View-only: CI still
+# verifies it, but nobody can claim or report its functions, and its claims never count
+# toward the limit. switch-build turns the exe's rows into exe-2014.
+LEGACY = {"exe-2014": ("exe", "2014")}
+# meta.exe_build until switch-build runs: the exe module is still the 2014 build
+EXE_BUILD_BEFORE_SWITCH = "2014"
+
+
+def legacy_of(module, build):
+    """The legacy module holding `build` of `module` (exe, 2014 -> exe-2014), or None."""
+    return next((lm for lm, (base, b) in LEGACY.items() if base == module and b == build), None)
 
 
 def module_order(m):
+    m = LEGACY[m][0] if m in LEGACY else m           # a legacy build sorts where its binary does
     return list(MODULES).index(m) if m in MODULES else len(MODULES)
 
 
@@ -50,6 +63,7 @@ CREATE TABLE IF NOT EXISTS {t} (
     model       TEXT NOT NULL DEFAULT '',         -- model/tool credited with the match
     matched_day TEXT,                             -- YYYY-MM-DD (UTC) first verified
     tried       INTEGER NOT NULL DEFAULT 0,       -- ever attempted
+    twin_addr   INTEGER,                          -- exe: the same function's 2014 address
     PRIMARY KEY (module, addr)
 );
 """
@@ -64,6 +78,17 @@ CREATE TABLE IF NOT EXISTS {t} (
     model       TEXT NOT NULL DEFAULT '',         -- model the claimer works with
     PRIMARY KEY (module, addr),
     FOREIGN KEY (module, addr) REFERENCES functions(module, addr)
+);
+"""
+# matched totals at the end of each verify day, one row per view (exe build): the 2026
+# view counts exe + db + loc, the 2014 view exe-2014 + db + loc
+DAILY_DDL = """
+CREATE TABLE IF NOT EXISTS {t} (
+    day         TEXT NOT NULL,                    -- YYYY-MM-DD
+    view        TEXT NOT NULL DEFAULT '2014',     -- exe build: '2026' / '2014'
+    matched     INTEGER NOT NULL,
+    matched_bytes INTEGER NOT NULL,
+    PRIMARY KEY (day, view)
 );
 """
 # after the migration (they name the module column)
@@ -94,10 +119,10 @@ CREATE TABLE IF NOT EXISTS events (
 );
 CREATE INDEX IF NOT EXISTS ix_events_ts ON events(ts);
 
-CREATE TABLE IF NOT EXISTS daily (
-    day         TEXT PRIMARY KEY,                 -- YYYY-MM-DD
-    matched     INTEGER NOT NULL,
-    matched_bytes INTEGER NOT NULL
+""" + DAILY_DDL.format(t="daily") + """
+CREATE TABLE IF NOT EXISTS meta (                 -- server-wide settings
+    key         TEXT PRIMARY KEY,                 -- exe_build: the exe build work happens on
+    value       TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS runs (                 -- verify runs (every push to main)
@@ -137,7 +162,9 @@ MIGRATIONS = [
     ("milestones", "key", "TEXT"),                                # set on automatic milestones
     ("claims", "model", "TEXT NOT NULL DEFAULT ''"),             # model the claimer works with
     ("events", "module", "TEXT NOT NULL DEFAULT 'exe'"),
+    ("functions", "twin_addr", "INTEGER"),                       # exe: the 2014 address
     # functions/claims gain `module` by a table rebuild (it joins the primary key): _key_by_module
+    # daily gains `view` the same way (_daily_by_view)
 ]
 
 # automatic milestones (check_milestones): verified function counts, and percent of
@@ -181,6 +208,8 @@ class DB:
                 self.conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")
         if "module" not in self.columns("functions"):
             self._key_by_module()
+        if "view" not in self.columns("daily"):
+            self._daily_by_view()
         self.conn.executescript(INDEXES)
         # matches nobody reported used to be credited to "maintainer"; now they carry no
         # model and show as "unspecified" (idempotent)
@@ -215,6 +244,87 @@ class DB:
                 raise
         finally:
             self.conn.execute("PRAGMA foreign_keys=ON")
+
+    def _daily_by_view(self):
+        """One-time migration: daily was keyed by day alone; every existing row is the
+        2014 view (it counted the 2014 exe)."""
+        self.conn.execute("BEGIN IMMEDIATE")
+        try:
+            self.conn.execute(DAILY_DDL.format(t="daily__new"))
+            self.conn.execute("INSERT INTO daily__new(day,view,matched,matched_bytes) "
+                              "SELECT day,?,matched,matched_bytes FROM daily", (EXE_BUILD_BEFORE_SWITCH,))
+            self.conn.execute("DROP TABLE daily")
+            self.conn.execute("ALTER TABLE daily__new RENAME TO daily")
+            self.conn.execute("COMMIT")
+        except BaseException:
+            self.conn.execute("ROLLBACK")
+            raise
+
+    # ------------------------------------------------------------ builds
+    def exe_build(self):
+        """The exe build work happens on: '2014' until switch-build, then '2026'."""
+        r = self.one("SELECT value FROM meta WHERE key='exe_build'")
+        return r["value"] if r else EXE_BUILD_BEFORE_SWITCH
+
+    def views(self):
+        """{build: [modules]} for each exe build the site can show, the current one first.
+        The current build's view is the exe and the DLLs; a legacy build with rows on the
+        server gets a view with its legacy module in the exe's place."""
+        cur = self.exe_build()
+        extra = sorted({r["module"] for r in self.q("SELECT DISTINCT module FROM functions")}
+                       - set(MODULES))
+        base = [m for m in MODULES if m not in LEGACY] + extra
+        out = {cur: base}
+        for lm, (of, build) in LEGACY.items():
+            if build != cur and self.one("SELECT 1 FROM functions WHERE module=? LIMIT 1", (lm,)):
+                out[build] = [lm if m == of else m for m in base]
+        return out
+
+    def view_modules(self, build=None):
+        return self.views().get(build or self.exe_build(), [])
+
+    def switch_build(self, build, legacy, rows, twins, same=None):
+        """Make `build` the exe build (manage.py switch-build), in one transaction: every
+        exe row, claim and event moves to `legacy`; `rows` (queue rows, as for
+        import_functions) become the new exe; twins {new addr: legacy addr} set twin_addr,
+        and each new function in `same` (identical code; None = every twin) whose twin was
+        matched takes over its credit (by_user, model, matched_day, tried). A twin whose
+        code changed is new work and carries nothing. Statuses stay as imported until verify confirms them, which
+        keeps the credit and the day (see _verify); no milestone fires. The daily history
+        becomes the legacy view's and is copied for the new one. Returns
+        (moved, imported, twinned, credited)."""
+        with self.tx():
+            if self.exe_build() == build:
+                raise ValueError(f"the exe is already on the {build} build")
+            if self.one("SELECT 1 FROM functions WHERE module=? LIMIT 1", (legacy,)):
+                raise ValueError(f"{legacy} already has functions")
+            old = self.exe_build()
+            # claims reference functions(module, addr): check them at COMMIT, once both moved
+            self.conn.execute("PRAGMA defer_foreign_keys=ON")
+            moved = self.conn.execute("UPDATE functions SET module=? WHERE module=?",
+                                      (legacy, DEFAULT_MODULE)).rowcount
+            for table in ("claims", "events"):
+                self.conn.execute(f"UPDATE {table} SET module=? WHERE module=?", (legacy, DEFAULT_MODULE))
+            self._import_rows(rows, DEFAULT_MODULE)
+            twinned = credited = 0
+            for new, old_addr in twins.items():
+                twinned += self.conn.execute("UPDATE functions SET twin_addr=? WHERE module=? AND addr=?",
+                                             (old_addr, DEFAULT_MODULE, new)).rowcount
+                t = self.one("SELECT by_user, model, matched_day, tried FROM functions "
+                             "WHERE module=? AND addr=? AND status='matched'", (legacy, old_addr))
+                if t and (same is None or new in same):
+                    credited += self.conn.execute(
+                        "UPDATE functions SET by_user=?, model=?, matched_day=?, tried=?, updated=? "
+                        "WHERE module=? AND addr=?",
+                        (t["by_user"], t["model"], t["matched_day"], t["tried"], time.time(),
+                         DEFAULT_MODULE, new)).rowcount
+            self.conn.execute("UPDATE daily SET view=? WHERE view<>?", (old, build))
+            self.conn.execute("INSERT OR REPLACE INTO daily(day,view,matched,matched_bytes) "
+                              "SELECT day,?,matched,matched_bytes FROM daily WHERE view=?", (build, old))
+            self.conn.execute("INSERT OR REPLACE INTO meta(key,value) VALUES ('exe_build',?)", (build,))
+            self.log("switch", None, None, "", f"exe moved from the {old} build to {build}: "
+                     f"{moved} rows to {legacy}, {credited} matches carried over", module=DEFAULT_MODULE)
+            return moved, len(rows), twinned, credited
 
     # ------------------------------------------------------------ helpers
     def q(self, sql, args=()):
@@ -302,11 +412,15 @@ class DB:
         that reaches verify while still claimed (see credit_claims). The claim limit counts
         every module. Returns list of (module, addr, worker)."""
         model = clean_model(model) if model else ""
+        if module in LEGACY:
+            raise PermissionError(f"{module} is the legacy {LEGACY[module][1]} build: view-only, "
+                                  "nothing in it can be claimed")
         self.expire_claims()
         self.expire_reports()
         now = time.time()
         with self.tx():
-            active = self.one("SELECT COUNT(*) c FROM claims WHERE user_id=?", (user_id,))["c"]
+            active = self.one(f"SELECT COUNT(*) c FROM claims WHERE user_id=? AND module NOT IN "
+                              f"({','.join('?' * len(LEGACY))})", (user_id, *LEGACY))["c"]
             room = max(0, MAX_ACTIVE_CLAIMS - active)
             if room == 0:
                 raise ValueError(f"you already hold {active} claims (limit {MAX_ACTIVE_CLAIMS})")
@@ -388,6 +502,8 @@ class DB:
         """Contributor reports a local result. MATCH becomes 'reported' until verified.
         model/tokens describe what produced it (for the per-model and cost panels)."""
         status = status.upper()
+        if module in LEGACY:
+            raise PermissionError(f"{module} is the legacy {LEGACY[module][1]} build: view-only")
         if status not in ("MATCH", "DIFF"):
             raise ValueError("status must be MATCH or DIFF")
         nums = [max(0, min(int(x or 0), 10 ** 10)) for x in (tokens_in, tokens_out, tokens_cached, tries)]
@@ -401,8 +517,8 @@ class DB:
             if f["status"] != "matched":
                 new = "reported" if status == "MATCH" else "diff"
                 self.conn.execute(
-                    "UPDATE functions SET status=?, by_user=?, model=?, tried=1, updated=? "
-                    "WHERE module=? AND addr=?",
+                    "UPDATE functions SET status=?, by_user=?, model=?, tried=1, matched_day=NULL, "
+                    "updated=? WHERE module=? AND addr=?",
                     (new, user_id if new == "reported" else None, model if new == "reported" else "",
                      time.time(), *key))
             self.conn.execute("DELETE FROM claims WHERE module=? AND addr=?", key)
@@ -414,15 +530,18 @@ class DB:
         replacing the empty ("unspecified") default, also for older matches. A contributor's
         own report always wins. Returns how many credits changed."""
         changed = 0
+        # a match carried over from the 2014 build was reported at its 2014 address
+        twin_module = legacy_of(module, EXE_BUILD_BEFORE_SWITCH) or ""
         with self.tx():
             for addr, model in models.items():
                 model = clean_model(model)
                 changed += self.conn.execute(
                     "UPDATE functions SET model=? WHERE module=? AND addr=? AND status='matched' "
                     "AND model<>? AND NOT EXISTS (SELECT 1 FROM events e WHERE e.kind='report' "
-                    "AND e.status='MATCH' AND e.module=functions.module AND e.addr=functions.addr "
-                    "AND e.user_id=functions.by_user)",
-                    (model, module, addr, model)).rowcount
+                    "AND e.status='MATCH' AND e.user_id=functions.by_user AND "
+                    "((e.module=functions.module AND e.addr=functions.addr) OR "
+                    "(e.module=? AND e.addr=functions.twin_addr)))",
+                    (model, module, addr, model, twin_module)).rowcount
         return changed
 
     def credit_owner(self, user_id):
@@ -442,13 +561,15 @@ class DB:
         closed = 0
         with self.tx():
             # walk the open claims (a few), not the statuses (every function on each push)
-            for c in self.q("SELECT c.addr, c.user_id, c.model, f.status FROM claims c "
+            for c in self.q("SELECT c.addr, c.user_id, c.model, f.status, f.matched_day FROM claims c "
                             "JOIN functions f ON f.module=c.module AND f.addr=c.addr WHERE c.module=?",
                             (module,)):
                 addr = c["addr"]
                 if statuses.get(addr) != "MATCH":
                     continue
-                if c["status"] not in ("matched", "reported"):
+                # matched_day on a row not matched yet: credit carried over from the 2014
+                # build (switch-build), which the original author keeps
+                if c["status"] not in ("matched", "reported") and not c["matched_day"]:
                     self.conn.execute("UPDATE functions SET by_user=?, model=?, updated=? "
                                       "WHERE module=? AND addr=?",
                                       (c["user_id"], c["model"], time.time(), module, addr))
@@ -473,9 +594,11 @@ class DB:
             for module, statuses in by_module.items():
                 c, k, kb, r = self._verify(module, statuses, default_model, today)
                 changed, kept, kept_bytes, rejected = changed + c, kept + k, kept_bytes + kb, rejected + r
-            m = self.one("SELECT COUNT(*) c, COALESCE(SUM(size),0) b FROM functions WHERE status='matched'")
-            self.conn.execute("INSERT OR REPLACE INTO daily(day,matched,matched_bytes) VALUES (?,?,?)",
-                              (today, m["c"], m["b"]))
+            for view, mods in self.views().items():
+                m = self.one(f"SELECT COUNT(*) c, COALESCE(SUM(size),0) b FROM functions "
+                             f"WHERE status='matched' AND module IN ({','.join('?' * len(mods))})", mods)
+                self.conn.execute("INSERT OR REPLACE INTO daily(day,view,matched,matched_bytes) "
+                                  "VALUES (?,?,?,?)", (today, view, m["c"], m["b"]))
             self.conn.execute("INSERT INTO runs(ts,kept,kept_bytes,rejected) VALUES (?,?,?,?)",
                               (time.time(), kept, kept_bytes, rejected))
         return changed
@@ -485,21 +608,25 @@ class DB:
         Returns (changed, kept, kept_bytes, rejected)."""
         changed = kept = kept_bytes = rejected = 0
         for addr, st in statuses.items():
-            f = self.one("SELECT status, by_user, model, size FROM functions WHERE module=? AND addr=?",
-                         (module, addr))
+            f = self.one("SELECT status, by_user, model, size, matched_day FROM functions "
+                         "WHERE module=? AND addr=?", (module, addr))
             if not f:
                 continue
             new = "matched" if st == "MATCH" else ("diff" if st in ("DIFF", "MATCH?") else f["status"])
             if new == "matched" and f["status"] != "matched":
+                # a day already set: a match carried over from the 2014 build (switch-build).
+                # It keeps its day and isn't new work for this run.
+                carried = bool(f["matched_day"])
                 self.conn.execute(
-                    "UPDATE functions SET status='matched', tried=1, matched_day=?, model=?, updated=? "
-                    "WHERE module=? AND addr=?",
+                    "UPDATE functions SET status='matched', tried=1, matched_day=COALESCE(matched_day,?), "
+                    "model=?, updated=? WHERE module=? AND addr=?",
                     (today, f["model"] or default_model, time.time(), module, addr))
-                self.log("verify", f["by_user"], addr, "MATCH", model=f["model"] or default_model,
-                         module=module)
+                self.log("verify", f["by_user"], addr, "MATCH", "carried over" if carried else "",
+                         model=f["model"] or default_model, module=module)
                 changed += 1
-                kept += 1
-                kept_bytes += f["size"]
+                if not carried:
+                    kept += 1
+                    kept_bytes += f["size"]
             elif new == "diff" and f["status"] in ("reported", "todo"):
                 self.conn.execute("UPDATE functions SET status='diff', tried=1, updated=? "
                                   "WHERE module=? AND addr=?", (time.time(), module, addr))
@@ -527,8 +654,11 @@ class DB:
         day = day or utc_day()
         added = []
         with self.tx():
-            tot = self.one("SELECT COUNT(*) c, COALESCE(SUM(size),0) b FROM functions")
-            m = self.one("SELECT COUNT(*) c, COALESCE(SUM(size),0) b FROM functions WHERE status='matched'")
+            mods = self.view_modules()           # the current build: the two exe builds aren't summed
+            inm = f"module IN ({','.join('?' * len(mods))})"
+            tot = self.one(f"SELECT COUNT(*) c, COALESCE(SUM(size),0) b FROM functions WHERE {inm}", mods)
+            m = self.one(f"SELECT COUNT(*) c, COALESCE(SUM(size),0) b FROM functions "
+                         f"WHERE status='matched' AND {inm}", mods)
             have = {r["key"] for r in self.q("SELECT key FROM milestones WHERE key IS NOT NULL")}
             due = []
             for n in FUNCTION_MILESTONES:
@@ -552,24 +682,29 @@ class DB:
         queue info. The first import of a DLL logs a "joins" milestone (the trend charts
         mark that day)."""
         with self.tx():
-            had = {r["module"] for r in self.q("SELECT DISTINCT module FROM functions")}
-            got = {}
-            for r in rows:
-                r = {"module": module, **r}
-                got[r["module"]] = got.get(r["module"], 0) + 1
-                self.conn.execute(
-                    "INSERT INTO functions(module,addr,size,name,conv,depth,cluster,ready,queue_pos) "
-                    "VALUES (:module,:addr,:size,:name,:conv,:depth,:cluster,:ready,:queue_pos) "
-                    "ON CONFLICT(module,addr) DO UPDATE SET size=excluded.size, name=excluded.name, "
-                    "conv=excluded.conv, depth=excluded.depth, cluster=excluded.cluster, "
-                    "ready=excluded.ready, queue_pos=excluded.queue_pos", r)
-            keys = {r["key"] for r in self.q("SELECT key FROM milestones WHERE key LIKE 'module:%'")}
-            for m in sorted(set(got) - had - {DEFAULT_MODULE}, key=module_order):
-                if f"module:{m}" not in keys:
-                    file = MODULES.get(m, (m,))[0]
-                    self.conn.execute("INSERT INTO milestones(day,text,key) VALUES (?,?,?)",
-                                      (utc_day(), f"{file} joins the project ({got[m]:,} functions)",
-                                       f"module:{m}"))
+            self._import_rows(rows, module)
+
+    def _import_rows(self, rows, module):
+        """import_functions inside the caller's transaction."""
+        had = {r["module"] for r in self.q("SELECT DISTINCT module FROM functions")}
+        got = {}
+        for r in rows:
+            r = {"module": module, **r}
+            got[r["module"]] = got.get(r["module"], 0) + 1
+            self.conn.execute(
+                "INSERT INTO functions(module,addr,size,name,conv,depth,cluster,ready,queue_pos) "
+                "VALUES (:module,:addr,:size,:name,:conv,:depth,:cluster,:ready,:queue_pos) "
+                "ON CONFLICT(module,addr) DO UPDATE SET size=excluded.size, name=excluded.name, "
+                "conv=excluded.conv, depth=excluded.depth, cluster=excluded.cluster, "
+                "ready=excluded.ready, queue_pos=excluded.queue_pos", r)
+        keys = {r["key"] for r in self.q("SELECT key FROM milestones WHERE key LIKE 'module:%'")}
+        # the exe never "joins", and neither does a legacy build of it
+        for m in sorted(set(got) - had - {DEFAULT_MODULE} - set(LEGACY), key=module_order):
+            if f"module:{m}" not in keys:
+                file = MODULES.get(m, (m,))[0]
+                self.conn.execute("INSERT INTO milestones(day,text,key) VALUES (?,?,?)",
+                                  (utc_day(), f"{file} joins the project ({got[m]:,} functions)",
+                                   f"module:{m}"))
 
     def apply_merges(self, merges, module=DEFAULT_MODULE):
         """Boundary fixes (boundary_overrides.txt): [{"addr", "size", "absorbed": [addr],
@@ -615,35 +750,75 @@ class DB:
             "(SELECT COUNT(*) FROM claims), (SELECT MAX(rowid) FROM claims), "
             "(SELECT MAX(rowid) FROM spend), (SELECT MAX(rowid) FROM milestones), "
             "(SELECT COUNT(*) FROM users), (SELECT COUNT(*) FROM functions), "
-            "(SELECT MAX(updated) FROM functions)"))
+            "(SELECT MAX(updated) FROM functions), (SELECT value FROM meta WHERE key='exe_build')"))
 
     def stats(self):
-        """Everything the dashboard shows. Days are UTC."""
+        """Everything the dashboard shows. Days are UTC.
+
+        Progress is per view (exe build): `views` maps each build the site can show to its
+        figures, the 2026 view covering exe + db + loc and the 2014 view exe-2014 + db +
+        loc. The top-level fields are the current build's view (older pages read those);
+        tokens, hit rates, verify runs, cost and the log are server-wide."""
         now = time.time()
         today = utc_day(now)
-        tot = self.one("SELECT COUNT(*) c, COALESCE(SUM(size),0) b FROM functions")
-        by = {r["status"]: (r["c"], r["b"]) for r in self.q(
-            "SELECT status, COUNT(*) c, COALESCE(SUM(size),0) b FROM functions GROUP BY status")}
-        matched, matched_b = by.get("matched", (0, 0))
-        claimed = self.one("SELECT COUNT(*) c FROM claims")["c"]
-        tdy = self.one("SELECT COUNT(*) c, COALESCE(SUM(size),0) b FROM functions "
-                       "WHERE status='matched' AND matched_day=?", (today,))
         tok = self.one("SELECT COALESCE(SUM(tokens_in),0) i, COALESCE(SUM(tokens_out),0) o, "
                        "COALESCE(SUM(tokens_cached),0) c FROM events WHERE kind='report'")
-        models_on_board = self.one("SELECT COUNT(DISTINCT model) c FROM functions "
-                                   "WHERE status='matched' AND model<>''")["c"]
-
-        # ---- per module: always every known binary (zeros until it's imported), in order
-        mods = list(MODULES) + sorted({r["module"] for r in self.q("SELECT DISTINCT module FROM functions")}
-                                      - set(MODULES))
+        tries = [dict(r) for r in self.q(
+            "SELECT CASE WHEN model='' THEN 'unspecified' ELSE model END model, COUNT(*) reports, "
+            "SUM(status='MATCH') matches, SUM(tries) tries FROM events WHERE kind='report' "
+            "GROUP BY 1 ORDER BY reports DESC")]
+        runs = [{"day": utc_day(r["ts"]), "kept": r["kept"], "kept_bytes": r["kept_bytes"],
+                 "rejected": r["rejected"]} for r in self.q(
+            "SELECT * FROM runs WHERE kept>0 OR rejected>0 ORDER BY ts DESC LIMIT 14")]
+        ledger = [dict(r) for r in self.q(
+            "SELECT CASE WHEN model='' THEN 'unspecified' ELSE model END source, SUM(tokens_in) input, "
+            "SUM(tokens_out) output, SUM(tokens_cached) cached FROM events WHERE kind='report' "
+            "GROUP BY 1 HAVING SUM(tokens_in)+SUM(tokens_out)+SUM(tokens_cached)>0 ORDER BY 2 DESC")]
+        spend = [dict(r) for r in self.q("SELECT day, source, dollars, note FROM spend ORDER BY day DESC")]
         joined = {r["key"][len("module:"):]: r["day"] for r in self.q(
             "SELECT key, MIN(day) day FROM milestones WHERE key LIKE 'module:%' GROUP BY key")}
-        modules = {m: {"file": MODULES.get(m, (m,))[0], "functions": 0, "bytes": 0, "matched": 0,
-                       "matched_bytes": 0, "reported": 0, "diff": 0, "claimed": 0, "ready": 0,
-                       "matched_today": 0, "matched_today_bytes": 0, "joined": joined.get(m)}
+        cur = self.exe_build()
+        views = {}
+        for build, mods in self.views().items():
+            v = views[build] = {"build": build, **self._view_stats(mods, now, today, joined, cur)}
+            v["squad"].update(tries=tries, runs=runs)     # server-wide, the same in every view
+        return {
+            "updated": now,
+            **views[cur],
+            "exe_build": cur,
+            "views": views,
+            "contributors": self.one("SELECT COUNT(*) c FROM users WHERE accepted_terms IS NOT NULL")["c"],
+            "tokens": {"input": tok["i"], "output": tok["o"], "cached": tok["c"]},
+            "cost": {"ledger": ledger, "spend": spend,
+                     "total_dollars": sum(s["dollars"] for s in spend)},
+            "log": [dict(r) for r in self.q("SELECT day, text FROM milestones ORDER BY day DESC, id DESC")],
+        }
+
+    def _view_stats(self, mods, now, today, joined, cur):
+        """stats() for one view: the functions of `mods` only."""
+        inm = f"module IN ({','.join('?' * len(mods))})"
+        ma = tuple(mods)
+        tot = self.one(f"SELECT COUNT(*) c, COALESCE(SUM(size),0) b FROM functions WHERE {inm}", ma)
+        by = {r["status"]: (r["c"], r["b"]) for r in self.q(
+            f"SELECT status, COUNT(*) c, COALESCE(SUM(size),0) b FROM functions WHERE {inm} GROUP BY status", ma)}
+        matched, matched_b = by.get("matched", (0, 0))
+        claimed = self.one(f"SELECT COUNT(*) c FROM claims WHERE {inm}", ma)["c"]
+        tdy = self.one(f"SELECT COUNT(*) c, COALESCE(SUM(size),0) b FROM functions "
+                       f"WHERE status='matched' AND matched_day=? AND {inm}", (today, *ma))
+        models_on_board = self.one(f"SELECT COUNT(DISTINCT model) c FROM functions "
+                                   f"WHERE status='matched' AND model<>'' AND {inm}", ma)["c"]
+
+        # ---- per module: always every binary of the view (zeros until it's imported), in order.
+        # `label` is what the site shows (exe-2014 is "exe"), `build` the exe build it is.
+        def describe(m):
+            base, build = LEGACY.get(m, (m, cur if m == DEFAULT_MODULE else None))
+            return {"label": base, **({"build": build} if build else {})}
+        modules = {m: {"file": MODULES.get(m, (m,))[0], **describe(m), "functions": 0, "bytes": 0,
+                       "matched": 0, "matched_bytes": 0, "reported": 0, "diff": 0, "claimed": 0,
+                       "ready": 0, "matched_today": 0, "matched_today_bytes": 0, "joined": joined.get(m)}
                    for m in mods}
-        for r in self.q("SELECT module, status, COUNT(*) c, COALESCE(SUM(size),0) b FROM functions "
-                        "GROUP BY module, status"):
+        for r in self.q(f"SELECT module, status, COUNT(*) c, COALESCE(SUM(size),0) b FROM functions "
+                        f"WHERE {inm} GROUP BY module, status", ma):
             mm = modules[r["module"]]
             mm["functions"] += r["c"]
             mm["bytes"] += r["b"]
@@ -651,49 +826,51 @@ class DB:
                 mm["matched"], mm["matched_bytes"] = r["c"], r["b"]
             elif r["status"] in ("reported", "diff"):
                 mm[r["status"]] = r["c"]
-        for r in self.q("SELECT module, COUNT(*) c FROM claims GROUP BY module"):
+        for r in self.q(f"SELECT module, COUNT(*) c FROM claims WHERE {inm} GROUP BY module", ma):
             modules[r["module"]]["claimed"] = r["c"]
-        for r in self.q("SELECT module, COUNT(*) c FROM functions WHERE ready=1 AND status IN ('todo','diff') "
-                        "GROUP BY module"):
+        for r in self.q(f"SELECT module, COUNT(*) c FROM functions WHERE ready=1 AND status IN ('todo','diff') "
+                        f"AND {inm} GROUP BY module", ma):
             modules[r["module"]]["ready"] = r["c"]
-        for r in self.q("SELECT module, COUNT(*) c, COALESCE(SUM(size),0) b FROM functions "
-                        "WHERE status='matched' AND matched_day=? GROUP BY module", (today,)):
+        for r in self.q(f"SELECT module, COUNT(*) c, COALESCE(SUM(size),0) b FROM functions "
+                        f"WHERE status='matched' AND matched_day=? AND {inm} GROUP BY module", (today, *ma)):
             modules[r["module"]].update(matched_today=r["c"], matched_today_bytes=r["b"])
         for mm in modules.values():
             mm["todo"], mm["todo_bytes"] = mm["functions"] - mm["matched"], mm["bytes"] - mm["matched_bytes"]
 
         # ---- map: what is left, per size tier; combined ("all") first, then each module
         tiers = []
-        for module in ["all"] + mods:
+        for module in ["all"] + list(mods):
             for lo, hi, label in SIZE_TIERS:
                 r = self.one(
                     "SELECT COUNT(*) total, SUM(status='matched') matched, "
                     "SUM(status IN ('todo','diff','reported') AND tried=0) untried, "
                     "SUM(status IN ('diff','reported') OR (status='todo' AND tried=1)) open, "
                     "COALESCE(SUM(size),0) bytes, COALESCE(SUM(CASE WHEN status='matched' THEN size END),0) mbytes "
-                    "FROM functions WHERE size>=? AND size<? AND (?='all' OR module=?)", (lo, hi, module, module))
+                    f"FROM functions WHERE size>=? AND size<? AND (?='all' OR module=?) AND {inm}",
+                    (lo, hi, module, module, *ma))
                 tiers.append({"module": module, "label": label, "total": r["total"],
                               "matched": r["matched"] or 0, "untried": r["untried"] or 0,
                               "open": r["open"] or 0, "bytes": r["bytes"], "matched_bytes": r["mbytes"]})
 
         # ---- leaderboard (verified matches only)
+        fm = f"f.module IN ({','.join('?' * len(mods))})"
         board = [dict(r) for r in self.q(
             "SELECT u.id uid, CASE WHEN u.display='' THEN 'anonymous' ELSE u.display END who, "
             "COUNT(*) functions, SUM(f.size) bytes, "
             "(SELECT MIN(e.ts) FROM events e WHERE e.user_id=u.id) since "
-            "FROM functions f JOIN users u ON u.id=f.by_user WHERE f.status='matched' "
-            "GROUP BY u.id ORDER BY bytes DESC LIMIT 50")]
+            f"FROM functions f JOIN users u ON u.id=f.by_user WHERE f.status='matched' AND {fm} "
+            "GROUP BY u.id ORDER BY bytes DESC LIMIT 50", ma)]
         # each contributor's matches by size tier (the dashboard's hover breakdown)
         tier_case = "CASE " + " ".join(f"WHEN f.size<{hi} THEN {i}" for i, (_lo, hi, _l) in
                                        enumerate(SIZE_TIERS)) + f" ELSE {len(SIZE_TIERS) - 1} END"
         per_band = {}
         for r in self.q(f"SELECT f.by_user uid, {tier_case} t, COUNT(*) c, SUM(f.size) b "
-                        "FROM functions f WHERE f.status='matched' AND f.by_user IS NOT NULL "
-                        "GROUP BY uid, t"):
+                        f"FROM functions f WHERE f.status='matched' AND f.by_user IS NOT NULL AND {fm} "
+                        "GROUP BY uid, t", ma):
             per_band[(r["uid"], r["t"])] = (r["c"], r["b"])
         per_mod = {}
         for r in self.q("SELECT by_user uid, module, COUNT(*) c, SUM(size) b FROM functions "
-                        "WHERE status='matched' AND by_user IS NOT NULL GROUP BY uid, module"):
+                        f"WHERE status='matched' AND by_user IS NOT NULL AND {inm} GROUP BY uid, module", ma):
             per_mod.setdefault(r["uid"], []).append({"module": r["module"], "functions": r["c"], "bytes": r["b"]})
         for row in board:
             uid = row.pop("uid")
@@ -704,8 +881,9 @@ class DB:
 
         # ---- trend: cumulative by first-matched day (combined, and per module for the
         # tooltip), and new bytes per day per model
-        per_day = self.q("SELECT matched_day d, module, COUNT(*) c, SUM(size) b FROM functions "
-                         "WHERE status='matched' AND matched_day IS NOT NULL GROUP BY d, module ORDER BY d")
+        per_day = self.q(f"SELECT matched_day d, module, COUNT(*) c, SUM(size) b FROM functions "
+                         f"WHERE status='matched' AND matched_day IS NOT NULL AND {inm} "
+                         "GROUP BY d, module ORDER BY d", ma)
         cum_f = cum_b = 0
         trend = []
         for r in per_day:
@@ -729,57 +907,36 @@ class DB:
         by_model_day = [dict(r) for r in self.q(
             "SELECT matched_day day, CASE WHEN model='' THEN 'unspecified' ELSE model END model, "
             "SUM(size) bytes FROM functions "
-            "WHERE status='matched' AND matched_day IS NOT NULL GROUP BY day, model ORDER BY day")]
+            f"WHERE status='matched' AND matched_day IS NOT NULL AND {inm} GROUP BY day, model ORDER BY day", ma)]
 
         # ---- squad: matches by the model that wrote them
         def squad(where="", args=()):
             rows = self.q("SELECT CASE WHEN model='' THEN 'unspecified' ELSE model END model, COUNT(*) functions, "
-                          "SUM(size) bytes FROM functions WHERE status='matched' " + where +
-                          " GROUP BY 1 ORDER BY bytes DESC", args)
+                          f"SUM(size) bytes FROM functions WHERE status='matched' AND {inm} " + where +
+                          " GROUP BY 1 ORDER BY bytes DESC", (*ma, *args))
             split = {}
             for r in self.q("SELECT CASE WHEN model='' THEN 'unspecified' ELSE model END model, module, "
-                            "COUNT(*) functions, SUM(size) bytes FROM functions WHERE status='matched' " + where +
-                            " GROUP BY 1, 2", args):
+                            f"COUNT(*) functions, SUM(size) bytes FROM functions WHERE status='matched' AND {inm} "
+                            + where + " GROUP BY 1, 2", (*ma, *args)):
                 split.setdefault(r["model"], {})[r["module"]] = {"functions": r["functions"], "bytes": r["bytes"]}
             total = sum(r["bytes"] for r in rows) or 1
             return [{**dict(r), "share": r["bytes"] / total,
                      "modules": dict(sorted(split.get(r["model"], {}).items(), key=lambda kv: module_order(kv[0])))}
                     for r in rows]
         day_ago = utc_day(now - 86400)
-        squad_all = squad()
-        squad_24h = squad("AND matched_day>=?", (day_ago,))
-        tries = [dict(r) for r in self.q(
-            "SELECT CASE WHEN model='' THEN 'unspecified' ELSE model END model, COUNT(*) reports, "
-            "SUM(status='MATCH') matches, SUM(tries) tries FROM events WHERE kind='report' "
-            "GROUP BY 1 ORDER BY reports DESC")]
-        runs = [{"day": utc_day(r["ts"]), "kept": r["kept"], "kept_bytes": r["kept_bytes"],
-                 "rejected": r["rejected"]} for r in self.q(
-            "SELECT * FROM runs WHERE kept>0 OR rejected>0 ORDER BY ts DESC LIMIT 14")]
-
-        # ---- cost
-        ledger = [dict(r) for r in self.q(
-            "SELECT CASE WHEN model='' THEN 'unspecified' ELSE model END source, SUM(tokens_in) input, "
-            "SUM(tokens_out) output, SUM(tokens_cached) cached FROM events WHERE kind='report' "
-            "GROUP BY 1 HAVING SUM(tokens_in)+SUM(tokens_out)+SUM(tokens_cached)>0 ORDER BY 2 DESC")]
-        spend = [dict(r) for r in self.q("SELECT day, source, dollars, note FROM spend ORDER BY day DESC")]
 
         return {
-            "updated": now,
             "functions": tot["c"], "bytes": tot["b"],
             "matched": matched, "matched_bytes": matched_b,
             "todo": tot["c"] - matched, "todo_bytes": tot["b"] - matched_b,
             "matched_today": tdy["c"], "matched_today_bytes": tdy["b"],
             "reported": by.get("reported", (0, 0))[0], "diff": by.get("diff", (0, 0))[0],
             "claimed": claimed,
-            "ready": self.one("SELECT COUNT(*) c FROM functions WHERE ready=1 AND status IN ('todo','diff')")["c"],
-            "contributors": self.one("SELECT COUNT(*) c FROM users WHERE accepted_terms IS NOT NULL")["c"],
+            "ready": self.one(f"SELECT COUNT(*) c FROM functions WHERE ready=1 AND status IN ('todo','diff') "
+                              f"AND {inm}", ma)["c"],
             "models_on_board": models_on_board,
             "modules": modules,
-            "tokens": {"input": tok["i"], "output": tok["o"], "cached": tok["c"]},
             "tiers": tiers, "leaderboard": board,
             "trend": trend, "trend_by_model": by_model_day,
-            "squad": {"all": squad_all, "day": squad_24h, "tries": tries, "runs": runs},
-            "cost": {"ledger": ledger, "spend": spend,
-                     "total_dollars": sum(s["dollars"] for s in spend)},
-            "log": [dict(r) for r in self.q("SELECT day, text FROM milestones ORDER BY day DESC, id DESC")],
+            "squad": {"all": squad(), "day": squad("AND matched_day>=?", (day_ago,))},
         }

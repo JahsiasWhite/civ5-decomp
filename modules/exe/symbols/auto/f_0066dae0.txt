@@ -1,2 +1,0 @@
-0x0066dae0 ?Init@SubClass_0066dae0@@QAEPAV1@XZ
-0x00b82570 ?vt_00b82570@@3PAXA

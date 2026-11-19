@@ -1,2 +1,0 @@
-0x0044dad0 ?PushVec2_0044dad0@@YAXPAUlua_State@@PBUVec2_0044dad0@@@Z
-0x00923958 _lua_pushnumber

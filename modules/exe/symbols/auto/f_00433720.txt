@@ -1,0 +1,2 @@
+0x00433720 ?Close@Socket_007ea8b0@@UAEXXZ
+0x00939a4c __imp__closesocket@4

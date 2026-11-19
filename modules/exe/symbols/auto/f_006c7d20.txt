@@ -1,2 +1,0 @@
-0x006c7d20 ??0Wrapper_006c7d20@@QAE@PAX@Z
-0x00a92110 ??_7Wrapper_006c7d20@@6B@

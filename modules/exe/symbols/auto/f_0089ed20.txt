@@ -1,0 +1,2 @@
+0x0089ed20 ?Call_0093b970@@YAXPAXI@Z
+0x00b34770 _g_fn_00ca37d8

@@ -1,2 +1,0 @@
-0x00813d30 ?Init@CritSec_00813d30@@QAEPAV1@XZ
-0x009d63a0 __imp__InitializeCriticalSection@4

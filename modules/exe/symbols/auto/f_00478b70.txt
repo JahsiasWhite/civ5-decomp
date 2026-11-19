@@ -1,0 +1,1 @@
+0x00478b70 ?GetRemaining@UnkCounts_0082b4f0@@QAEHXZ

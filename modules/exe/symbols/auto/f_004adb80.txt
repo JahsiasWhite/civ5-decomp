@@ -1,0 +1,4 @@
+0x004adb80 ?PreGameStart@GameStarter_0073ef70@@QAEXXZ
+0x004adaa0 ?Continue_006d5c30@GameStarter_0073ef70@@QAEXXZ
+0x00b49338 ?g_pEngineOwner_00cc8e74@@3PAUEngineOwner_00cc8e74@@A
+0x00945ca0 ??_C@_0N@KMBJFIPH@PreGameStart?$AA@

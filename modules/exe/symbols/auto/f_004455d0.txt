@@ -1,2 +1,0 @@
-0x004455d0 ?CreateHandle_004455d0@@YA?AUHandle_004455d0@@XZ
-0x02dd201c ?g_handleFactory_02dd201c@@3P6APAXXZA

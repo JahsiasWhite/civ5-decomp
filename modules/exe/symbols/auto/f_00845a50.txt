@@ -1,3 +1,0 @@
-0x00845a50 ?GetLog_00845a50@@YAPAVFILogFile@@XZ
-0x06196a54 _s_pLogFileMgr
-0x00a1806c ??_C@_0BB@DPKMEFKH@leaderboards?4log?$AA@

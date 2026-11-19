@@ -1,0 +1,2 @@
+0x0047a660 ??0Class_0082d000@@QAE@ABV0@@Z
+0x00a1b42c ?kVtable_00b8971c@@3QBQBXB

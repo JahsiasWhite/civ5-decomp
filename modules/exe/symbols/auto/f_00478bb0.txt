@@ -1,0 +1,1 @@
+0x00478bb0 ?CallSlot@Class_0082b530@@QAEXPAX@Z

@@ -1,1 +1,0 @@
-0x009bbf90 ?GetConstant_009bbf90@@YAHXZ

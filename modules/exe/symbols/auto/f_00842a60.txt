@@ -1,0 +1,1 @@
+0x00842a60 ?GetMember@MemberAddress_008dc9a0@@QAEPAHXZ

@@ -1,2 +1,0 @@
-0x008337a0 ?GetStr@Class_008337a0@@QAEPADXZ
-0x00b6445e _aEmpty_00b6445e

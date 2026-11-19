@@ -1,0 +1,1 @@
+0x00842fd0 ??4RefPtr_008dcef0@@QAEAAV0@PAVRefObject_008dcef0@@@Z

@@ -496,11 +496,18 @@ def test_admin_verify_credits_direct_commits_to_pusher(srv):
     assert req(base, "POST", "/api/admin/verify", {"statuses": {}}, token=boss)[1]["owned"] == 0
 
 
+def on_build_2026(db):
+    """A server already switched to the 2026 exe (manage.py push sends the exe's build)."""
+    with db.tx():
+        db.conn.execute("INSERT OR REPLACE INTO meta(key,value) VALUES ('exe_build','2026')")
+
+
 def test_manage_push(srv, tmp_path):
     base, db = srv
     import argparse
     import manage
     boss = make_user(db, "boss")
+    on_build_2026(db)            # the repo's config.json names the exe build: 2026
     csvp = tmp_path / "status.csv"
     csvp.write_text("address,symbol,status,bytes,source,since\n"
                     "0x00401020,?F2@@YAXXZ,MATCH,22,src/auto/f.cpp,2026-11-15\n")
@@ -522,6 +529,7 @@ def test_manage_push_readiness_from_callgraph(srv, tmp_path):
     import argparse
     import manage
     boss = make_user(db, "boss")
+    on_build_2026(db)            # the repo's config.json names the exe build: 2026
     csvp = tmp_path / "status.csv"
     csvp.write_text("address,symbol,status,bytes,source,since\n"
                     "0x00401020,?F2@@YAXXZ,MATCH,22,src/auto/f.cpp,2026-11-15\n")
@@ -922,6 +930,7 @@ def test_manage_push_several_modules_is_one_run(srv, tmp_path, monkeypatch):
     import manage
     monkeypatch.setattr(manage, "read_merges", lambda module="exe": [])
     boss = make_user(db, "boss")
+    on_build_2026(db)            # the repo's config.json names the exe build: 2026
     row = {"size": 16, "name": "F", "conv": "stack", "depth": 0, "ready": 1, "queue_pos": 0}
     db.import_functions([{**row, "addr": 0x401000, "cluster": 0x401000}])
     db.import_functions([{**row, "addr": 0x10001000, "cluster": 0x10001000}], module="db")
@@ -948,3 +957,291 @@ def test_claim_in_module_not_imported_yet(srv):
                           "cluster": 0x10002000, "ready": 1, "queue_pos": 0}], module="db")
     with pytest.raises(LookupError, match="out-of-scope"):
         db.claim(uid, addr=0x10001000, module="db")
+
+
+# ---------------------------------------------------------------- exe build switch (2014 -> 2026)
+
+QUEUE_HEAD = "entry,size,name,status,conv,entry_regs,depth,callees,pending_callees,callers,cluster,cluster_size\n"
+
+
+def build_2014_history(base, db):
+    """In the fixture's (2014) exe: alice reports and gets 0x401000 verified, 0x401010 is
+    committed directly (credited to boss, the pusher), bob holds a claim on 0x401020."""
+    alice, bob, boss = make_user(db, "alice"), make_user(db, "bob"), make_user(db, "boss")
+    assert req(base, "POST", "/api/claim", {"addr": "0x401000", "model": "m-a"}, token=alice)[0] == 200
+    assert req(base, "POST", "/api/report", {"addr": "0x401000", "status": "MATCH"}, token=alice)[0] == 200
+    code, _ = req(base, "POST", "/api/admin/verify",
+                  {"statuses": {"0x401000": "MATCH", "0x401010": "MATCH"}}, token=boss)
+    assert code == 200
+    assert req(base, "POST", "/api/claim", {"addr": "0x401020"}, token=bob)[0] == 200
+    db.conn.execute("UPDATE functions SET matched_day='2026-01-02' WHERE module='exe' AND addr=0x401010")
+    return alice, bob, boss
+
+
+def switch(db, tmp_path, monkeypatch, mapping=None):
+    """manage.py switch-build against the fixture's DB: a 2026 queue of three functions,
+    twinned with 0x401000 / 0x401010 / 0x401020."""
+    import argparse
+    import manage
+    monkeypatch.setenv("C5D_DB", db.path)
+    (tmp_path / "queue26.csv").write_text(
+        QUEUE_HEAD + "".join(f"0x{0x402000 + i * 0x10:08x},{s},G{i},todo,stack,,0,0,0,0,0x{0x402000 + i * 0x10:08x},1\n"
+                             for i, s in enumerate((20, 21, 40))))
+    (tmp_path / "addrmap.csv").write_text(mapping or (
+        "kind,addr_2026,addr_2014\nfunc,0x00402000,0x00401000\nfunc,0x00402010,0x00401010\n"
+        "func,0x00402020,0x00401020\ndata,0x00c00000,0x00b00000\n"))
+    manage.cmd_switch_build(None, argparse.Namespace(
+        map=str(tmp_path / "addrmap.csv"), queue=str(tmp_path / "queue26.csv"), build="2026",
+        from_build="2014", backup_dir=str(tmp_path / "bk"), keep=3))
+
+
+def test_switch_build_moves_exe_and_carries_credit(srv, tmp_path, monkeypatch):
+    base, db = srv
+    alice, bob, boss = build_2014_history(base, db)
+    milestones = db.one("SELECT COUNT(*) c FROM milestones")["c"]
+    daily = [tuple(r) for r in db.q("SELECT day, matched, matched_bytes FROM daily")]
+    assert db.exe_build() == "2014" and list(db.views()) == ["2014"]
+    switch(db, tmp_path, monkeypatch)
+    assert len(list((tmp_path / "bk").glob("c5d-*.sqlite"))) == 1           # backed up first
+    assert db.exe_build() == "2026" and list(db.views()) == ["2026", "2014"]
+    assert db.views()["2014"] == ["exe-2014", "db", "loc"]
+    # the 2014 rows, claims and events all moved; the 2026 queue is the exe now
+    assert db.one("SELECT COUNT(*) c FROM functions WHERE module='exe-2014'")["c"] == 10
+    assert {r["module"] for r in db.q("SELECT module FROM claims")} == {"exe-2014"}
+    assert db.one("SELECT COUNT(*) c FROM events WHERE module='exe' AND kind<>'switch'")["c"] == 0
+    rows = {r["addr"]: r for r in db.q("SELECT * FROM functions WHERE module='exe'")}
+    assert sorted(rows) == [0x402000, 0x402010, 0x402020]
+    assert {a: r["twin_addr"] for a, r in rows.items()} == {0x402000: 0x401000, 0x402010: 0x401010,
+                                                            0x402020: 0x401020}
+    uid = {r["login"]: r["id"] for r in db.q("SELECT id, login FROM users")}
+    g0, g1, g2 = rows[0x402000], rows[0x402010], rows[0x402020]
+    assert (g0["by_user"], g0["model"], g0["tried"], g0["status"]) == (uid["alice"], "m-a", 1, "todo")
+    assert (g1["by_user"], g1["matched_day"], g1["status"]) == (uid["boss"], "2026-01-02", "todo")
+    assert g2["by_user"] is None and g2["matched_day"] is None            # its twin wasn't matched
+    # no milestone fired; the daily history is the 2014 view's and was copied for 2026
+    assert db.one("SELECT COUNT(*) c FROM milestones")["c"] == milestones
+    for view in ("2014", "2026"):
+        assert [tuple(r) for r in db.q("SELECT day, matched, matched_bytes FROM daily WHERE view=?",
+                                       (view,))] == daily
+    assert not db.q("PRAGMA foreign_key_check")
+    # running it twice is refused
+    with pytest.raises(SystemExit, match="already on the 2026 build"):
+        switch(db, tmp_path, monkeypatch)
+
+
+def test_switch_build_rejects_bad_map(srv, tmp_path, monkeypatch):
+    _base, db = srv
+    with pytest.raises(SystemExit, match="paired twice"):
+        switch(db, tmp_path, monkeypatch,
+               "kind,addr_2026,addr_2014\nfunc,0x00402000,0x00401000\nfunc,0x00402010,0x00401000\n")
+    with pytest.raises(SystemExit, match="header"):
+        switch(db, tmp_path, monkeypatch, "a,b\n1,2\n")
+    assert db.exe_build() == "2014"
+
+
+def test_verify_keeps_carried_over_credit(srv, tmp_path, monkeypatch):
+    base, db = srv
+    alice, bob, boss = build_2014_history(base, db)
+    switch(db, tmp_path, monkeypatch)
+    uid = {r["login"]: r["id"] for r in db.q("SELECT id, login FROM users")}
+    day0 = db.one("SELECT matched_day d FROM functions WHERE module='exe' AND addr=0x402000")["d"]
+    other = make_user(db, "other")                                        # another admin pushes
+    code, j = req(base, "POST", "/api/admin/verify",
+                  {"build": {"exe": "2026", "exe-2014": "2014"},
+                   "statuses": {"0x402000": "MATCH", "0x402010": "MATCH", "exe-2014:0x401000": "MATCH"},
+                   "models": {"0x402000": "from-a-c5d-model-line", "0x402010": "tool-x"}}, token=other)
+    assert code == 200, j
+    rows = {r["addr"]: r for r in db.q("SELECT * FROM functions WHERE module='exe'")}
+    assert rows[0x402000]["status"] == rows[0x402010]["status"] == "matched"
+    assert rows[0x402000]["matched_day"] == day0 and rows[0x402010]["matched_day"] == "2026-01-02"
+    assert rows[0x402000]["by_user"] == uid["alice"]                      # not the pusher
+    assert rows[0x402010]["by_user"] == uid["boss"]
+    assert rows[0x402000]["model"] == "m-a"        # alice reported it (at its 2014 address)
+    assert rows[0x402010]["model"] == "tool-x"     # nobody reported it: a model line may credit it
+    run = db.one("SELECT kept, kept_bytes FROM runs ORDER BY id DESC LIMIT 1")
+    assert (run["kept"], run["kept_bytes"]) == (0, 0)                     # carried over, not new work
+    # a new 2026 match is new work, dated today
+    carol = make_user(db, "carol")
+    assert req(base, "POST", "/api/claim", {"addr": "0x402020", "build": "2026"}, token=carol)[0] == 200
+    assert req(base, "POST", "/api/report", {"addr": "0x402020", "status": "MATCH", "build": "2026"},
+               token=carol)[0] == 200
+    assert req(base, "POST", "/api/admin/verify", {"build": "2026", "statuses": {"0x402020": "MATCH"}},
+               token=boss)[0] == 200
+    g2 = db.one("SELECT * FROM functions WHERE module='exe' AND addr=0x402020")
+    import db as dbmod
+    carol_id = db.one("SELECT id FROM users WHERE login='carol'")["id"]
+    assert g2["by_user"] == carol_id and g2["matched_day"] == dbmod.utc_day()
+    assert db.one("SELECT kept FROM runs ORDER BY id DESC LIMIT 1")["kept"] == 1
+
+
+def test_claim_on_carried_over_function_keeps_credit(srv, tmp_path, monkeypatch):
+    """Someone claims a 2026 function whose 2014 twin was matched; its ported source
+    reaches verify while the claim is open: the original author keeps it."""
+    base, db = srv
+    alice, bob, boss = build_2014_history(base, db)
+    switch(db, tmp_path, monkeypatch)
+    carol = make_user(db, "carol")
+    assert req(base, "POST", "/api/claim", {"addr": "0x402000", "build": "2026"}, token=carol)[0] == 200
+    assert req(base, "POST", "/api/admin/verify", {"build": "2026", "statuses": {"0x402000": "MATCH"}},
+               token=boss)[0] == 200
+    g0 = db.one("SELECT by_user FROM functions WHERE module='exe' AND addr=0x402000")
+    assert g0["by_user"] == db.one("SELECT id FROM users WHERE login='alice'")["id"]
+    assert not db.q("SELECT * FROM claims WHERE module='exe'")
+
+
+def test_legacy_module_is_view_only(srv, tmp_path, monkeypatch):
+    base, db = srv
+    alice, bob, boss = build_2014_history(base, db)
+    switch(db, tmp_path, monkeypatch)
+    code, j = req(base, "POST", "/api/claim", {"addr": "exe-2014:0x401030", "build": "2014"}, token=bob)
+    assert code == 400 and "view-only" in j["error"]
+    code, j = req(base, "POST", "/api/claim", {"module": "exe-2014", "n": 2}, token=bob)
+    assert code == 400
+    code, j = req(base, "POST", "/api/report", {"addr": "exe-2014:0x401020", "status": "MATCH"}, token=bob)
+    assert code == 400
+    with pytest.raises(PermissionError):
+        db.claim(db.one("SELECT id FROM users WHERE login='bob'")["id"], module="exe-2014")
+    # bob's moved 2014 claim doesn't count toward his limit
+    import db as dbmod
+    assert db.one("SELECT COUNT(*) c FROM claims WHERE module='exe-2014'")["c"] == 1
+    monkeypatch.setattr(dbmod, "MAX_ACTIVE_CLAIMS", 1)
+    assert req(base, "POST", "/api/claim", {"addr": "0x402020", "build": "2026"}, token=bob)[0] == 200
+
+
+def test_build_mismatch_refused_after_switch(srv, tmp_path, monkeypatch):
+    base, db = srv
+    alice, bob, boss = build_2014_history(base, db)
+    switch(db, tmp_path, monkeypatch)
+    for body in ({"n": 1}, {"addr": "0x402020"}, {"addr": "0x402020", "build": "2014"}):
+        code, j = req(base, "POST", "/api/claim", body, token=alice)
+        assert code == 409 and j["error"] == "git pull: the project moved to the 2026 build"
+    for path in ("/api/release", "/api/report"):
+        code, j = req(base, "POST", path, {"addr": "0x402020", "status": "MATCH"}, token=alice)
+        assert code == 409 and "git pull" in j["error"]
+    # the DLLs don't care which exe build a client is on
+    add_dll(db)
+    assert req(base, "POST", "/api/claim", {"addr": "db:0x10001000"}, token=alice)[0] == 200
+    # verify: the exe needs build 2026; exe-2014, if named, must be 2014
+    for body in ({"statuses": {"0x402020": "MATCH"}},
+                 {"build": "2014", "statuses": {"0x402020": "MATCH"}},
+                 {"build": {"exe": "2026", "exe-2014": "2026"}, "statuses": {"exe-2014:0x401020": "MATCH"}},
+                 {"build": {"exe": "2014"}, "statuses": {"db:0x10001000": "MATCH"}, "ready": {"0x402020": 1}}):
+        code, j = req(base, "POST", "/api/admin/verify", body, token=boss)
+        assert code == 409, body
+    assert db.one("SELECT status FROM functions WHERE module='exe' AND addr=0x402020")["status"] == "todo"
+    assert db.one("SELECT status FROM functions WHERE module='db' AND addr=0x10001000")["status"] == "todo"
+    assert req(base, "POST", "/api/admin/verify", {"statuses": {"db:0x10001000": "MATCH"}}, token=boss)[0] == 200
+    assert req(base, "POST", "/api/admin/verify", {"build": 7, "statuses": {}}, token=boss)[0] == 400
+
+
+def test_before_switch_behaviour_unchanged(srv):
+    base, db = srv
+    alice, boss = make_user(db, "alice"), make_user(db, "boss")
+    assert db.exe_build() == "2014"
+    assert req(base, "POST", "/api/claim", {"addr": "0x401000"}, token=alice)[0] == 200
+    assert req(base, "POST", "/api/release", {"addr": "0x401000"}, token=alice)[0] == 200
+    assert req(base, "POST", "/api/claim", {"addr": "0x401000", "build": "2014"}, token=alice)[0] == 200
+    assert req(base, "POST", "/api/report", {"addr": "0x401000", "status": "MATCH"}, token=alice)[0] == 200
+    # a checkout already on 2026 can't push 2026 addresses into the 2014 rows
+    code, j = req(base, "POST", "/api/claim", {"addr": "0x401010", "build": "2026"}, token=alice)
+    assert code == 409 and "still on the 2014" in j["error"]
+    code, _ = req(base, "POST", "/api/admin/verify", {"build": {"exe": "2026"}, "statuses": {"0x401000": "MATCH"}},
+                  token=boss)
+    assert code == 409
+    assert req(base, "POST", "/api/admin/verify", {"statuses": {"0x401000": "MATCH"}}, token=boss)[0] == 200
+    code, s = req(base, "GET", "/api/stats")
+    assert list(s["views"]) == ["2014"] and s["exe_build"] == "2014"
+    assert s["matched"] == 1 and s["modules"]["exe"]["build"] == "2014" and "exe-2014" not in s["modules"]
+    assert [r["view"] for r in db.q("SELECT view FROM daily")] == ["2014"]
+
+
+def test_old_daily_table_migrates_to_views(tmp_path):
+    import sqlite3
+    import db as dbmod
+    p = tmp_path / "d.sqlite"
+    c = sqlite3.connect(p)
+    c.execute("CREATE TABLE daily (day TEXT PRIMARY KEY, matched INTEGER NOT NULL, matched_bytes INTEGER NOT NULL)")
+    c.execute("INSERT INTO daily VALUES ('2026-11-01', 5, 500)")
+    c.commit()
+    c.close()
+    db = dbmod.DB(p)
+    assert [tuple(r) for r in db.q("SELECT day, view, matched, matched_bytes FROM daily")] == \
+           [("2026-11-01", "2014", 5, 500)]
+    assert "twin_addr" in db.columns("functions")
+    dbmod.DB(p)                                                    # reopening is a no-op
+
+
+def test_stats_views_after_switch(srv, tmp_path, monkeypatch):
+    base, db = srv
+    alice, bob, boss = build_2014_history(base, db)
+    add_dll(db)
+    assert req(base, "POST", "/api/admin/verify", {"statuses": {"db:0x10001000": "MATCH"}}, token=boss)[0] == 200
+    _, before = req(base, "GET", "/api/stats")
+    switch(db, tmp_path, monkeypatch)
+    assert req(base, "POST", "/api/admin/verify", {"build": "2026", "statuses": {"0x402000": "MATCH",
+               "0x402010": "MATCH"}}, token=boss)[0] == 200
+    code, s = req(base, "GET", "/api/stats")
+    assert code == 200 and s["exe_build"] == "2026" and list(s["views"]) == ["2026", "2014"]
+    v26, v14 = s["views"]["2026"], s["views"]["2014"]
+    assert list(v26["modules"]) == ["exe", "db", "loc"] and list(v14["modules"]) == ["exe-2014", "db", "loc"]
+    assert v14["modules"]["exe-2014"]["label"] == "exe" and v14["modules"]["exe-2014"]["build"] == "2014"
+    assert v26["modules"]["exe"]["build"] == "2026" and "build" not in v26["modules"]["db"]
+    # 2026: 3 exe functions (2 carried over) + 4 db; 2014: as before the switch
+    assert (v26["functions"], v26["matched"], v26["matched_bytes"]) == (7, 3, 20 + 21 + 100)
+    for k in ("functions", "matched", "matched_bytes", "trend", "trend_by_model"):
+        assert v14[k] == {**before, "trend": [{**p, "modules": {("exe-2014" if m == "exe" else m): x
+                                                               for m, x in p["modules"].items()}}
+                                             for p in before["trend"]]}[k], k
+    assert [p["functions"] for p in v26["trend"]] == [p["functions"] for p in before["trend"]]
+    assert [(r["who"], r["functions"], r["bytes"]) for r in v26["leaderboard"]] == \
+           [(r["who"], r["functions"], r["bytes"]) for r in before["leaderboard"]]
+    assert [(r["who"], r["functions"]) for r in v14["leaderboard"]] == \
+           [(r["who"], r["functions"]) for r in before["leaderboard"]]
+    assert {m["module"] for r in v14["leaderboard"] for m in r["modules"]} == {"exe-2014", "db"}
+    for v in (v26, v14):
+        assert sum(t["total"] for t in v["tiers"] if t["module"] == "all") == v["functions"]
+        assert {t["module"] for t in v["tiers"]} == {"all", *v["modules"]}
+    for k, val in v26.items():                                    # old pages read the top level
+        assert s[k] == val, k
+    assert s["claimed"] == 0 and v14["claimed"] == 1              # bob's moved claim is in 2014
+
+
+def test_manage_push_legacy_build_with_builds(srv, tmp_path, monkeypatch):
+    """CI's push: exe (2026) and exe-2014 in one payload, each with its build; exe-2014
+    sends no readiness (view-only)."""
+    base, db = srv
+    import argparse
+    import manage
+    from remote import Remote
+    alice, bob, boss = build_2014_history(base, db)
+    switch(db, tmp_path, monkeypatch)
+    monkeypatch.setattr(manage, "read_merges", lambda module="exe": [])
+    sent = []
+    real_call = Remote.call
+    monkeypatch.setattr(Remote, "call", lambda self, m, path, body=None: (sent.append(body), real_call(self, m, path, body))[1])
+    for mid, rows in (("exe", "0x00402020,G2,MATCH,40,,2026-11-19\n"),
+                      ("exe-2014", "0x00401030,F3,MATCH,23,,2026-11-19\n")):
+        (tmp_path / mid).mkdir()
+        (tmp_path / mid / "status.csv").write_text("address,symbol,status,bytes,source,since\n" + rows)
+    manage.cmd_push(None, argparse.Namespace(modules="exe,exe-2014", status_pattern=str(tmp_path / "{module}" / "status.csv"),
+                                             server=base, token=boss, module="exe"))
+    body = sent[-1]
+    assert body["build"] == {"exe": "2026", "exe-2014": "2014"}
+    assert set(body["statuses"]) == {"0x00402020", "exe-2014:0x00401030"}
+    assert not any(k.startswith("exe-2014:") for k in body.get("ready", {}))
+    st = {(r["module"], r["addr"]): r["status"] for r in db.q("SELECT module, addr, status FROM functions")}
+    assert st[("exe", 0x402020)] == "matched" and st[("exe-2014", 0x401030)] == "matched"
+    assert manage.module_build("db") is None and manage.module_build("exe-2014") == "2014"
+
+
+def test_switch_build_carries_credit_only_for_same_code(srv, tmp_path, monkeypatch):
+    """addrmap.csv's `same` column: 0 = placed by its callers, code changed. The pair still
+    sets twin_addr, but the 2014 match's credit doesn't carry over."""
+    base, db = srv
+    build_2014_history(base, db)
+    switch(db, tmp_path, monkeypatch, "kind,addr_2026,addr_2014,same\nfunc,0x00402000,0x00401000,1\n"
+                                      "func,0x00402010,0x00401010,0\nfunc,0x00402020,0x00401020,0\n")
+    rows = {r["addr"]: r for r in db.q("SELECT * FROM functions WHERE module='exe'")}
+    assert rows[0x402010]["twin_addr"] == 0x401010
+    assert rows[0x402000]["by_user"] is not None and rows[0x402000]["matched_day"]
+    assert rows[0x402010]["by_user"] is None and rows[0x402010]["matched_day"] is None

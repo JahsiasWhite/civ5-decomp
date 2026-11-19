@@ -1,0 +1,1 @@
+0x00479c50 ?FindActive@Finder_0082c630@@QBE_NPAUResult_0082c630@@@Z

@@ -1,0 +1,1 @@
+0x004442b0 ?IsAtLimit@VirtualCountPair@@QAE_NXZ

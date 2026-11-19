@@ -1,0 +1,3 @@
+0x0091f0e0 ?Assert_009bbd00@@YAXPAX@Z
+0x00a05e80 _aGrannyMeshBindingCpp_00b743a0
+0x00b44854 _g_iGlobalB_00cb38b4

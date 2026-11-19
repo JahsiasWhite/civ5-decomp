@@ -1,0 +1,1 @@
+0x008cd320 ?ResolvePtr_00969f40@@YAPAHPAHPBUFlagsRec_00969f40@@@Z

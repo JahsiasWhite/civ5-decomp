@@ -1,0 +1,2 @@
+0x004a4d30 ?ReadIntOp_006d7db0@@YAAAUStream_0082bde0@@AAU1@AAH@Z
+0x004795d0 ?ReadInt@Stream_0082bde0@@QAEXPAH@Z

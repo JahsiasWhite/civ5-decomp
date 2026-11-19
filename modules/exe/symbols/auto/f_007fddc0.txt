@@ -1,0 +1,1 @@
+0x007fddc0 ?GetOffset_00897d30@@YAPADPAD@Z

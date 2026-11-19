@@ -36,11 +36,43 @@ def load(module_id=None):
     at the exe."""
     cfg = json.loads(SHARED.read_text())
     cfg.update(load_local())
-    m = cfg["modules"][current_module_id(module_id, cfg)]
+    mid = current_module_id(module_id, cfg)
+    m = cfg["modules"][mid]
+    build = current_build(mid, cfg)
+    if build:
+        m = dict(m, **m["legacy"][build])
     cfg["target_exe"] = m["file"]
     cfg["target_build_hash"] = m.get("build_hash", "")
     cfg["target_build"] = m.get("build", "")
+    cfg["target_legacy_build"] = build
     return cfg
+
+
+def current_build(module_id, cfg=None):
+    """The legacy build tools work on ($C5D_BUILD, set from --build), or None for the
+    module's current build. A legacy build is view-only: CI checks matches against it
+    (fingerprint mode), but nothing is claimed or written for it."""
+    build = os.environ.get("C5D_BUILD") or None
+    if build is None:
+        return None
+    spec = (cfg or json.loads(SHARED.read_text()))["modules"][module_id]
+    legacy = spec.get("legacy", {})
+    if build not in legacy:
+        if build == spec.get("build_id"):
+            return None
+        raise SystemExit(f"module {module_id!r} has no legacy build {build!r}"
+                         + (f" (has: {', '.join(legacy)})" if legacy else ""))
+    return build
+
+
+def build_from_argv(argv):
+    """--build X / --build=X from a command line, or None."""
+    for i, a in enumerate(argv):
+        if a == "--build" and i + 1 < len(argv):
+            return argv[i + 1]
+        if a.startswith("--build="):
+            return a.split("=", 1)[1]
+    return None
 
 
 # ---------------------------------------------------------------- modules
@@ -66,22 +98,38 @@ def current_module_id(module_id=None, cfg=None):
 class Module:
     """One binary's paths. Everything under the repo, so relative_to(ROOT) works."""
 
-    def __init__(self, mid, spec):
+    def __init__(self, mid, spec, build=None):
         self.id = mid
         self.file = spec["file"]
-        self.build_hash = spec.get("build_hash", "")
-        self.build_label = spec.get("build", "")
+        self.build_id = spec.get("build_id", "")
+        self.legacy_builds = list(spec.get("legacy", {}))
         self.root = MODULES_DIR / mid
         self.src = self.root / "src"
         self.symbols_txt = self.root / "symbols.txt"
         self.symbols_dir = self.root / "symbols"
-        self.boundary_overrides = self.root / "boundary_overrides.txt"
         self.scope_overrides = self.root / "scope_overrides.txt"
-        self.data = self.root / "data"
         self.names = self.root / "names"
-        self.progress = self.root / "progress"
+        # A legacy build (view-only, see current_build) shares src/ and the symbol
+        # files, whose addresses are the current build's: tools translate them through
+        # legacy/<build>/addrmap.csv. Its own data, boundary fixes and results live in
+        # legacy/<build>/, with the matches that exist only in that build.
+        self.legacy = build
+        base = self.root / "legacy" / build if build else self.root
+        if build:
+            spec = dict(spec, **spec["legacy"][build])
+            self.build_id = build
+            self.addrmap = base / "addrmap.csv"
+            self.legacy_src = base / "src"
+            self.legacy_symbols = base / "symbols"
+        self.build_hash = spec.get("build_hash", "")
+        self.build_label = spec.get("build", "")
+        self.boundary_overrides = base / "boundary_overrides.txt"
+        self.data = base / "data"
+        self.progress = base / "progress"
         self.status_csv = self.progress / "status.csv"
-        self.build = BUILD_ROOT / mid
+        self.build = BUILD_ROOT / (f"{mid}-{build}" if build else mid)
+        # the server's name for this binary: a legacy build is its own (view-only) module
+        self.server_id = f"{mid}-{build}" if build else mid
 
     def rel(self, p):
         """`p` as a repo-relative posix path (how sources are named in status.csv)."""
@@ -128,7 +176,7 @@ def module_from_argv(argv):
 def module(module_id=None):
     cfg = json.loads(SHARED.read_text())
     mid = current_module_id(module_id, cfg)
-    return Module(mid, cfg["modules"][mid])
+    return Module(mid, cfg["modules"][mid], current_build(mid, cfg))
 
 
 def all_modules():

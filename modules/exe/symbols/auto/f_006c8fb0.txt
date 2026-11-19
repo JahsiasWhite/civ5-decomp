@@ -1,0 +1,1 @@
+0x006c8fb0 ?GetModeSize_005efb40@@YAHH@Z

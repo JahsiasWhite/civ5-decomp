@@ -1,0 +1,3 @@
+0x0086aea0 ?Push@LuaRef_009050d0@@QAE_NXZ
+0x008895b2 _lua_checkstack
+0x008895ac _lua_rawgeti

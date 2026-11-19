@@ -13,7 +13,7 @@ You need Windows and the following:
 
 | Tool | Version | Notes |
 |---|---|---|
-| Civilization V | Steam, final build (Nov 2014) | Let Steam keep it updated. Setup checks the exact exe. |
+| Civilization V | Steam, current build (Nov 2026) | Let Steam keep it updated. Setup checks the exact exe. |
 | Python | 3.10 or newer | [python.org](https://www.python.org/downloads/). Tick "Add to PATH". |
 | Git | any | [git-scm.com](https://git-scm.com/) |
 | Ghidra | 10.3.2 | [GitHub releases](https://github.com/NationalSecurityAgency/ghidra/releases/tag/Ghidra_10.3.2_build). Unzip anywhere (Desktop and Downloads are searched automatically). |
@@ -56,7 +56,8 @@ Setup:
 2. finds the game in your Steam libraries and checks the build hash of the exe and of both
    DLLs against `config.json`. The hash covers the code and data sections only (Steam stamps
    every download differently elsewhere in the file). A different build changes every
-   address, so it has to match exactly.
+   address, so it has to match exactly. The project works on the November 2026 Steam build;
+   the 2014 build it started on is kept as a view-only legacy build (see below).
 3. finds Ghidra, Java and the compiler (plus the Windows SDK headers)
 4. saves your paths in `config.local.json` (git-ignored, so it never leaves your machine)
 5. builds the scope and work queue from the shared function list (`modules/exe/data/functions.csv`;
@@ -265,7 +266,8 @@ game files" also restores the originals.
 
 | Problem | Fix |
 |---|---|
-| `not the build this project targets` | In Steam: Properties → Installed Files → Verify integrity, and make sure no beta branch is selected. |
+| `not the build this project targets` | In Steam: let the game update, then Properties → Installed Files → Verify integrity, and make sure no beta branch is selected. Setup says so if your copy is the old 2014 build. |
+| the server says `git pull` | Your checkout is older than the move to the 2026 build: `git pull`, then `python tools/c5d.py setup`. |
 | `no 15.00.30729.01 compiler found` | See "The compiler" above. Banners for other versions are printed under the error. |
 | `Java 17+` | Install a JDK 17 or newer and reopen the terminal, so `java` is on PATH. |
 | `compile failed` while matching | The error is printed above it. Missing types go in `include/`. |

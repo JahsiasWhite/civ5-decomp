@@ -1,8 +1,0 @@
-0x006336e0 ?MakeSaveFileName@SaveNamer_006336e0@@QAEXAAVFStringW@@PB_WPBD@Z
-0x005c59a0 ?GetSaveFileExtensionAlias@@YAPB_WXZ
-0x00815f10 ?GetInitData@FStringW@@SAPAUFStringInitData@@XZ
-0x0072b770 ??0?$FStringFixedBufferW@$0BAE@@@QAE@AAVFStringW@@@Z
-0x00816f60 ?SetUTF8@FStringW@@QAEXPBD@Z
-0x00816930 ?Format@FStringW@@QAAXPB_WZZ
-0x00813d10 ?FStringFree@@YAXPAX@Z
-0x00a776c4 ??_C@_1O@JBBHAGJJ@?$AA?$CF?$AAs?$AA?$CF?$AAs?$AA?$CF?$AAs?$AA?$AA@

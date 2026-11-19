@@ -1,0 +1,1 @@
+0x0045e100 ?Delete@FCriticalSection@@QAEXXZ

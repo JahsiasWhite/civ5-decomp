@@ -1,7 +1,0 @@
-0x00905160 ?GetTypeName@LuaRef_00905160@@QAEPBDXZ
-0x00923976 _lua_settop
-0x0092397c _lua_type
-0x009239a6 _lua_typename
-0x009239ac _lua_rawgeti
-0x009239b2 _lua_checkstack
-0x00a9dbcc ??_C@_08LHIEJEFD@Invalid?$AA?$AA@

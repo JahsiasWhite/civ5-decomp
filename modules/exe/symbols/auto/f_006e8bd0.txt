@@ -1,2 +1,0 @@
-0x006e8bd0 ?Destroy@Unk_00b84494@@QAEXXZ
-0x00b84494 ?g_vtable_00b84494@@3QBQAXB

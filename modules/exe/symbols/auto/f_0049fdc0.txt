@@ -1,0 +1,2 @@
+0x0049fdc0 ?AppendLine@LineBuffer_004ab0f0@@QAE_NPBD@Z
+0x0093eedc ??_C@_01EEMJAFIK@?6?$AA@

@@ -1,1 +1,0 @@
-0x0059b3f0 ?Start@TickTimer@@QAEXH@Z

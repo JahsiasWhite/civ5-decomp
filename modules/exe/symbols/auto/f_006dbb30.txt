@@ -1,0 +1,2 @@
+0x006dbb30 ?PushFlags_00595400@@YAXPAUlua_State@@PBUFlags_00595400@@@Z
+0x0088953a _lua_pushboolean

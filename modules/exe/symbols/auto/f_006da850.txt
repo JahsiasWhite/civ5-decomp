@@ -1,0 +1,8 @@
+0x006da850 ?PushVec3_00672df0@@YAXPAUlua_State@@PBUVec3_00672df0@@@Z
+0x0088951c _lua_pushstring
+0x00889534 _lua_createtable
+0x00889558 _lua_pushnumber
+0x0088955e _lua_rawset
+0x0098599c ??_C@_01FJMABOPO@x?$AA@
+0x009859a0 ??_C@_01EANLCPLP@y?$AA@
+0x009859a4 ??_C@_01GLPGHMHM@z?$AA@

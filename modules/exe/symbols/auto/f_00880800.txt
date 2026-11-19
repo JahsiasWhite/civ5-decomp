@@ -1,0 +1,1 @@
+0x00880800 ?IsReady@Host_0091a960@@QBEHXZ

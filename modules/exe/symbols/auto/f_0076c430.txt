@@ -1,2 +1,0 @@
-0x0076c430 ?Destroy@Unk_00a7f9c0@@QAEXXZ
-0x00a7f9c0 ?g_vtable_00a7f9c0@@3QBQAXB

@@ -1,0 +1,1 @@
+0x00636570 ?IsCountAtLimitAndIdle@@YGHPAUUnk6C5830Obj@@@Z

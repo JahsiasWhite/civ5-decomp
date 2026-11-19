@@ -1,1 +1,0 @@
-0x006ab760 ?FindLastBeforeChainEnd@@YAPAUChainNode@@PAU1@@Z

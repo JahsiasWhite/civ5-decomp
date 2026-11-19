@@ -1,0 +1,2 @@
+0x007bf2d0 ?GetFlag_02dd2f5b@@YA_NXZ
+0x02c63dcb ?g_bFlag_02dd2f5b@@3_NA

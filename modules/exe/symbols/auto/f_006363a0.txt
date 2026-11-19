@@ -1,0 +1,1 @@
+0x006363a0 ?GetCurrentEntryValue@@YGPAHPAUTable_00548910@@@Z

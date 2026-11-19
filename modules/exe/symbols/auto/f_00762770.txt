@@ -1,0 +1,7 @@
+0x00762770 ?l_Compare_0059f820@@YAHPAUlua_State@@@Z
+0x00889540 _lua_pushinteger
+0x008895fa _luaL_checklstring
+0x0088960c _luaL_error
+0x00939148 __imp_?GetCurrentLanguage@Localization@@YAABVLanguage@1@XZ
+0x00939188 __imp_?Compare@Language@Localization@@QBE_NPBDI0IAAH@Z
+0x009997b0 ?g_str_CompareError_00a69a70@@3QBDB

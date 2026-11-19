@@ -1,0 +1,2 @@
+0x008d5a40 ?GetStr_00972670@@YAPADXZ
+0x05eff450 _g_str_0606e9b0

@@ -1,0 +1,1 @@
+0x008529a0 ?GetRecord@UnkRecordArray_008ecf10@@QAEPAUUnkRecord3C_008ecf10@@I@Z

@@ -1,1 +1,0 @@
-0x0082b4a0 ?ResetAndApply@UnkResetApply_0082b4a0@@QAEXH@Z

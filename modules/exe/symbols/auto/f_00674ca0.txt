@@ -1,0 +1,9 @@
+0x00674ca0 ?MetatableToString@@YAHPAUlua_State@@@Z
+0x0088951c _lua_pushstring
+0x00889582 _lua_getfield
+0x008895c4 _lua_isstring
+0x00889576 _lua_settop
+0x008895be _lua_concat
+0x00970cb0 ??_C@_0BF@HKGECHHA@Metatable?5for?5type?3?5?$AA@
+0x00970c9c ??_C@_09HNNEEOPG@CTypeName?$AA@
+0x00970ca8 ??_C@_07NBCGADJA@Unknown?$AA@

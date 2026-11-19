@@ -1,2 +1,0 @@
-0x008bbbd0 ?CalcScaledValue_008bbbd0@@YGHHHH@Z
-0x02e49f68 ?g_aInts_02e49f68@@3PAHA

@@ -1,0 +1,2 @@
+0x00477330 ?Free@TlsSlot_0082a440@@QAEXXZ
+0x00939268 __imp__TlsFree@4

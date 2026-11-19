@@ -1,1 +1,0 @@
-0x008ed340 ?GetId@Records_008ed340@@QBEHI@Z

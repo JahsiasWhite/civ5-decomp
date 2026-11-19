@@ -1,2 +1,0 @@
-0x0046d5e0 ?GetLuaFloat_0046d5e0@@YAXPAUlua_State@@PAM@Z
-0x00923952 _lua_tonumber

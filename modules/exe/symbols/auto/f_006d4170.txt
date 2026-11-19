@@ -1,2 +1,0 @@
-0x006d4170 ?ExchangeByte_006d4170@@YADD@Z
-0x00c8eff8 ?g_byte_00c8eff8@@3DA

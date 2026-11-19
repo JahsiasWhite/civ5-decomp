@@ -1,2 +1,0 @@
-0x006f5240 ?PushFixedString_006f5240@@YAXPAUlua_State@@PBD@Z
-0x00923a1e _lua_pushlstring

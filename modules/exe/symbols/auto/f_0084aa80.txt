@@ -1,0 +1,2 @@
+0x0084aa80 ?Init@Unk_00b86914@@QAEXXZ
+0x00a1b844 ?g_vtable_00b86914@@3QBQAXB

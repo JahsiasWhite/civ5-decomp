@@ -1,4 +1,0 @@
-0x004f9c90 ?PushFloatIntIntFlagRecordToLua@@YAXPAUlua_State@@PBUFloatIntIntFlagRecord@@@Z
-0x0092393a _lua_pushboolean
-0x00923940 _lua_pushinteger
-0x00923958 _lua_pushnumber

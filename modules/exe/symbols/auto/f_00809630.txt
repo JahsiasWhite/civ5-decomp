@@ -1,0 +1,2 @@
+0x00809630 ?AllocBlock_008a35a0@@YAPAXIHHPAI@Z
+0x00b2fce4 ?g_val_00c9ed24@@3HA

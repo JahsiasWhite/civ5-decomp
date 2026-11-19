@@ -1,3 +1,0 @@
-0x00750270 ?PushRecord_00750270@@YAXPAUlua_State@@PBURecord_00750270@@@Z
-0x0092393a _lua_pushboolean
-0x00923940 _lua_pushinteger

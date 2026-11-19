@@ -1,0 +1,2 @@
+0x007fdd60 ?AdvanceGlobalCursor_00897cd0@@YAXXZ
+0x02c72cb0 ?g_iGlobal_02de1e20@@3HA

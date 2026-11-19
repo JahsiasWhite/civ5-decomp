@@ -1,2 +1,0 @@
-0x007747f0 ?Format_007747f0@@YAXPADPBDZZ
-0x009d68a8 __imp__vsprintf_s

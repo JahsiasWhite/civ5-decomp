@@ -1,2 +1,0 @@
-0x005dd2c0 ?ReadData_005dd2c0@@YAXPAUlua_State@@PAUUnk_005dd2c0@@@Z
-0x0092394c _lua_tointeger

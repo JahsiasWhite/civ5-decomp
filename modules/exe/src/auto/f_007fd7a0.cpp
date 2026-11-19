@@ -1,11 +1,14 @@
-// Returns value 8 of the info block, or -1 when there is none.
+// c5d-model: Gemini 3.8 Flash
+// c5d-cflags: -/O2 -/Ob1 +/Od
 
-#include "FieldHolder_007e9250.h"
+// src: GUESS (confidence: high) [0x00897710]
+struct Host_00897710 {
+    char m_pad[0xe8];
+    int m_val;
+};
 
-int FieldHolder_007e9250::GetInfo08()
+// src: GUESS (confidence: high) [0x00897710]
+int GetByteField_00897710(const Host_00897710* host)
 {
-    int result = -1;
-    if (GetInfo())
-        result = GetInfo()->m_value08;
-    return result;
+    return host->m_val & 0xff;
 }

@@ -1,0 +1,2 @@
+0x006990f0 ?GetStr@Class_00553580@@QAEPADXZ
+0x0097913a _aDefault_00a498c2

@@ -1,2 +1,0 @@
-0x005fd9a0 ?PackARGB@FColorRGBAf@@QBEIXZ
-0x009d9f84 ?g_fColorScale_009d9f84@@3MB

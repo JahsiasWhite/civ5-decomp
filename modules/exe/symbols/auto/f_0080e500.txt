@@ -1,0 +1,2 @@
+0x0080e500 ?ClearFlag_008a8450@@YAXXZ
+0x02c72d30 ?g_val_02de1ea0@@3HA

@@ -1,0 +1,1 @@
+0x0086c000 ?SetPitch@Sound_00906230@@QAEXM@Z

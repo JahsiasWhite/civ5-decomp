@@ -1,0 +1,2 @@
+0x006dbcb0 ?ReadUIntArg_00457340@@YAXPAUlua_State@@PAUUIntResult_00457340@@@Z
+0x00889552 _lua_tonumber

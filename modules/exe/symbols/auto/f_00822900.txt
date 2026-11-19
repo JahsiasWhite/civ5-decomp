@@ -1,0 +1,3 @@
+0x00822900 ?GetRecord_008bc840@@YGPAUUnkRecord398_04170b80@@I@Z
+0x03fcf1c0 ?g_recordCount_0413e300@@3IA
+0x04001a40 ?g_records_04170b80@@3PAUUnkRecord398_04170b80@@A

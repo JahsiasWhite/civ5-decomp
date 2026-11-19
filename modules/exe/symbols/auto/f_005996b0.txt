@@ -1,2 +1,0 @@
-0x005996b0 ?Upload@PixelBlock_005996b0@@UAEPADXZ
-0x00926848 _memcpy

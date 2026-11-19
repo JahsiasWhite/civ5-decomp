@@ -1,1 +1,0 @@
-0x00480a10 ?Clear@StringHost_00480a10@@QAEXXZ

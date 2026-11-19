@@ -1,0 +1,1 @@
+0x00785a70 ?FindLastBeforeChainEnd@@YAPAUChainNode@@PAU1@@Z

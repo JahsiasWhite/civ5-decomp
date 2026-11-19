@@ -1,0 +1,3 @@
+0x007fda30 ?GetMaxDuration_008979a0@@YAMPAUUnkSub_008979a0@@@Z
+0x00a1bd28 __real@bf800000
+0x00a1bc60 __real@0000000000000000

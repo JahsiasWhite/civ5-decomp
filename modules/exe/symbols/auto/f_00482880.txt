@@ -1,0 +1,1 @@
+0x00482880 ?GetValue@Host_00834ff0@@QBEHXZ

@@ -1,3 +1,0 @@
-0x00669650 ?TechAcquiredFromLua@@YAXPAUlua_State@@H@Z
-0x00923a0c _luaL_error
-0x00a561b0 ??_C@_0DI@BHFIEPKD@FromLua?5called?5on?5TechAcquired?5?9@

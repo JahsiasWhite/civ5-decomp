@@ -1,0 +1,2 @@
+0x006c92a0 ??0Record_006a4790@@QAE@XZ
+0x0094b9a0 __real@3f000000

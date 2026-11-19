@@ -1,0 +1,4 @@
+0x00776b30 ?GetRegistration_00469be0@@YAPAURegistration_00469be0@@XZ
+0x00776950 ?Handler_0088ebe0@@YAXXZ
+0x02c62ec4 ?$S1@?1??GetRegistration_00469be0@@YAPAURegistration_00469be0@@XZ@4IA
+0x02c62ebc ?s_registration@?1??GetRegistration_00469be0@@YAPAURegistration_00469be0@@XZ@4U2@A

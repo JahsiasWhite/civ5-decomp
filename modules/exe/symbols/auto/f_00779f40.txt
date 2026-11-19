@@ -1,0 +1,2 @@
+0x00779f40 ?GetUIEnumsLibraryName@@YAPBDXZ
+0x009a0e9c ??_C@_0P@PFHOJAFC@UIEnumsLibrary?$AA@

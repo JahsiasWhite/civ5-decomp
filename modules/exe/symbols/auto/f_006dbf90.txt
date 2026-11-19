@@ -1,0 +1,3 @@
+0x006dbf90 ?PushNumberedName@@YAXPAUlua_State@@PBUNumberedName_00762ab0@@@Z
+0x00889558 _lua_pushnumber
+0x0088951c _lua_pushstring

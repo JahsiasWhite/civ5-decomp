@@ -1,0 +1,1 @@
+0x00850e70 ?CalcValue@Host_008eb210@@QBEHXZ

@@ -1,1 +1,0 @@
-0x00502be0 ?IsActive@Host_00502be0@@QBEHXZ

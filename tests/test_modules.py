@@ -104,7 +104,8 @@ def test_remote_adds_module_to_function_calls(monkeypatch):
     monkeypatch.setenv("C5D_MODULE", "exe")
     sent.clear()
     remote.Remote().call("POST", "/api/release", {"addr": "0x00401000"})
-    assert sent[0][1] == {"addr": "0x00401000"}          # the exe needs no module (older servers)
+    # the exe needs no module (older servers), but says which build this checkout targets
+    assert sent[0][1] == {"addr": "0x00401000", "build": "2026"}
 
 
 def test_claims_for_another_module_are_given_back(monkeypatch):

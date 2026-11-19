@@ -1,1 +1,0 @@
-0x00895ae0 ?UnkStateHolder_GetField12C@@YAHPAUUnkStateHolder@@@Z

@@ -1,0 +1,1 @@
+0x0084a970 ?GetVec@Host_008e49d0@@QBEXPAUVec3_008e49d0@@@Z

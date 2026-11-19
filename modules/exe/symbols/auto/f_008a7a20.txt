@@ -1,0 +1,2 @@
+0x008a7a20 ?ClearIntBuffer@@YAXPAUIntBuffer_00944640@@@Z
+0x00889ce2 _memset

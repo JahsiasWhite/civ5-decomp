@@ -1,0 +1,1 @@
+0x00797060 ?GetMember@MemberGetter_0042dd80@@QBEHXZ

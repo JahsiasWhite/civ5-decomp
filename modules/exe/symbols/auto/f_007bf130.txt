@@ -1,0 +1,2 @@
+0x007bf130 ?CheckGlobal_0050a880@@YADXZ
+0x02c63de8 ?g_ptr_02dd2f78@@3PAXA

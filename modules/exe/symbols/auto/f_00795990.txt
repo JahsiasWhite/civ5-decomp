@@ -1,0 +1,1 @@
+0x00795990 ?GetMember@MemberAddress_0062e8a0@@QAEPAHXZ

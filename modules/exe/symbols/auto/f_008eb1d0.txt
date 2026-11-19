@@ -1,1 +1,0 @@
-0x008eb1d0 ?GetCurrentIfAny@Holder008eb1d0@@QAEPAXXZ

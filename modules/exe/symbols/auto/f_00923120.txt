@@ -1,3 +1,0 @@
-0x00923120 ?MSS_PauseSample@@YAXPAX_N@Z
-0x009d6d7c __imp__AIL_stop_sample@4
-0x009d6d84 __imp__AIL_resume_sample@4

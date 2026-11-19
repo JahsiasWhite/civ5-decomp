@@ -1,3 +1,0 @@
-0x005a6040 ??0UnkNamed_005a6040@@QAE@PBD@Z
-0x009dea08 _aDefault_009dea08
-0x009d64ec __imp_??0?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QAE@PBD@Z

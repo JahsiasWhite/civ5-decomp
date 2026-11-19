@@ -1,2 +1,0 @@
-0x0050e840 ?ReadData_0050e840@@YAXPAUlua_State@@PAUUnk_0050e840@@@Z
-0x0092394c _lua_tointeger

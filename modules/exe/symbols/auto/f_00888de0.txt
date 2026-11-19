@@ -1,0 +1,2 @@
+0x00888de0 ?MSS_AIL_set_sample_playback_rate@@YAHPAX0@Z
+0x00939d28 __imp__AIL_set_sample_playback_rate@8

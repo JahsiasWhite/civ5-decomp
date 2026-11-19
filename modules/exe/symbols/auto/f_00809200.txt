@@ -1,0 +1,1 @@
+0x00809200 ?GetLowFlags_008a3170@@YAHPAX@Z

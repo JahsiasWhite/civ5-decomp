@@ -20,17 +20,43 @@ if [ "$kind" = "pr" ]; then
     $1 ~ /^C/ || ($1 ~ /^R/ && $1 != "R100") { print $3 }' > build/changed.txt
 fi
 rc=0
-for m in $(tr -d '\r' < build/modules_ran.txt 2>/dev/null); do
-  prev="build/$m/base_status.csv"
-  git show "$base:modules/$m/progress/status.csv" > "$prev" 2>/dev/null ||
-    { [ "$m" = "exe" ] && git show "$base:progress/status.csv" > "$prev" 2>/dev/null; } ||
-    rm -f "$prev"
+# the build each module targeted at a commit (its build hash), so a baseline from a
+# different build (the commit that moved the exe to 2026) isn't compared address by address
+build_at() {
+  git show "$1:config.json" 2>/dev/null |
+    python -c "import json,sys; print(json.load(sys.stdin)['modules']['$2'].get('build_hash', ''))" 2>/dev/null
+}
+for id in $(tr -d '\r' < build/modules_ran.txt 2>/dev/null); do
+  m=${id%%-*}                                  # exe-2014: module exe, legacy build 2014
+  b=""
+  [ "$id" != "$m" ] && b=${id#*-}
+  prev="build/$id/base_status.csv"
+  if [ -n "$b" ]; then
+    # a legacy build's results: in legacy/<b>/ now, or in the module's own place back when
+    # that build was the current one
+    git show "$base:modules/$m/legacy/$b/progress/status.csv" > "$prev" 2>/dev/null ||
+      { [ "$(build_at "$base" "$m")" = "$(python -c "import json; print(json.load(open('config.json'))['modules']['$m']['legacy']['$b']['build_hash'])")" ] &&
+        git show "$base:modules/$m/progress/status.csv" > "$prev" 2>/dev/null; } ||
+      rm -f "$prev"
+    export C5D_BUILD="$b"
+  else
+    if [ "$(build_at "$base" "$m")" = "$(build_at HEAD "$m")" ]; then
+      git show "$base:modules/$m/progress/status.csv" > "$prev" 2>/dev/null ||
+        { [ "$m" = "exe" ] && git show "$base:progress/status.csv" > "$prev" 2>/dev/null; } ||
+        rm -f "$prev"
+    else
+      echo "$id: the base commit targets a different build; no baseline to compare with"
+      rm -f "$prev"
+    fi
+    unset C5D_BUILD
+  fi
   if [ "$kind" = "pr" ]; then
-    C5D_MODULE="$m" python tools/ci_report.py --status "build/$m/status.csv" \
+    C5D_MODULE="$m" python tools/ci_report.py --status "build/$id/status.csv" \
       --changed build/changed.txt --base-status "$prev" || rc=1
   else
-    C5D_MODULE="$m" python tools/ci_report.py --status "build/$m/status.csv" --base-status "$prev" || rc=1
+    C5D_MODULE="$m" python tools/ci_report.py --status "build/$id/status.csv" --base-status "$prev" || rc=1
   fi
   echo
 done
+unset C5D_BUILD
 exit $rc

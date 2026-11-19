@@ -25,10 +25,15 @@
   database DLL (<code>db</code>) and the localization DLL (<code>loc</code>). Commands work on the
   exe unless you add <code>--module db</code> or <code>loc</code>, or write an address with its
   module in front, like <code>db:0x10007f50</code>.</p>
+  <p>The target is the exe Steam ships today, the November 2026 rebuild, and its addresses are
+  the ones every command and file uses. Matches made against the older 2014 exe were carried
+  over with their credit. The 2014 build is still verified and you can switch the report to it
+  at the top of the page, but it is view-only: nothing in it can be claimed.</p>
 
   <h2>1. Set up (once)</h2>
   <ol>
-    <li>Own Civilization V on Steam (the final November 2014 build).</li>
+    <li>Own Civilization V on Steam, updated to the current build (November 2026). If setup
+      says your copy is the 2014 build, let Steam update the game.</li>
     <li>Install <strong>Python 3.10+</strong>, <strong>Ghidra 10.3.2</strong> with Java 17+, and
       the <strong>Visual C++ 2008 SP1 compiler</strong> (exactly <code>15.00.30729.01</code>; see
       <a href="https://github.com/JahsiasWhite/civ5-decomp/blob/main/CONTRIBUTING.md"><code>CONTRIBUTING.md</code></a> for where to get it).</li>

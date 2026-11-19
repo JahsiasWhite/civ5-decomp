@@ -1,0 +1,2 @@
+0x00821ba0 ?GetEntryField_008bbae0@@YGHHH@Z
+0x02eb1720 ?g_aEntries_03020860@@3PAUEntry_008bbae0@@A

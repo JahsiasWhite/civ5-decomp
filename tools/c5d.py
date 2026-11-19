@@ -22,6 +22,9 @@ if __name__ == "__main__":
     _mid = config.module_from_argv(sys.argv[1:])
     if _mid:
         os.environ["C5D_MODULE"] = _mid
+    _build = config.build_from_argv(sys.argv[1:])     # --build 2014: a legacy build (view-only)
+    if _build:
+        os.environ["C5D_BUILD"] = _build
 CFG = config.load()        # config.json overlaid with config.local.json (see tools/config.py)
 M = config.module()        # the binary worked on: modules/<id>/ files, build/<id>/ output
 
@@ -155,8 +158,37 @@ def load_symbols():
 
     Workers each write their own symbols/auto/f_<addr>.txt so parallel tasks
     never edit the same file."""
-    syms = {}
     files = [M.symbols_txt] + sorted(M.symbols_dir.rglob("*.txt"))
+    if not M.legacy:
+        return read_symbol_files(files)
+    # The shared symbol files hold current-build addresses: each is translated (names
+    # with no twin dropped), and the legacy-only files join them. A name listed with two
+    # different addresses resolves to the last file read, so files are read in the order
+    # they had in the legacy build (by legacy address), which keeps its results exactly.
+    import addrmap
+    am = addrmap.load(M.addrmap)
+    back = {n: o for n, o in am.funcs.items()}
+
+    def key(f, base):
+        rel = f.relative_to(base)
+        if rel.parent.name == "auto" and f.stem.startswith("f_"):
+            a = _addr_of(f)
+            if base == M.symbols_dir:
+                a = back.get(a, a)
+            return (rel.parent.as_posix(), f"f_{a:08x}")
+        return (rel.parent.as_posix(), f.name)
+
+    ordered = sorted([(key(f, M.symbols_dir), f, True) for f in files[1:]] +
+                     [(key(f, M.legacy_symbols), f, False) for f in M.legacy_symbols.rglob("*.txt")])
+    syms = am.to_legacy(read_symbol_files([M.symbols_txt]))
+    for _k, f, shared in ordered:
+        part = read_symbol_files([f])
+        syms.update(am.to_legacy(part) if shared else part)
+    return syms
+
+
+def read_symbol_files(files):
+    syms = {}
     for f in files:
         if not f.exists():
             continue
@@ -203,7 +235,30 @@ def default_sources():
     half-written file must not break everyone else's LTCG link)."""
     held = claims()
     out = []
-    for p in sorted(M.src.rglob("*.cpp")):
+    files = sorted(M.src.rglob("*.cpp"))
+    if M.legacy:
+        # a function whose code changed has its legacy version in legacy/<build>/src;
+        # the shared file is the current build's and would define the same names twice
+        import addrmap
+        same = addrmap.load(M.addrmap).same
+        files = [p for p in files if not (p.parent.name == "auto" and p.stem.startswith("f_")
+                                          and _addr_of(p) not in same)]
+        files += sorted(M.legacy_src.rglob("*.cpp"))      # plus the legacy-only matches
+        # link in the order the legacy build had (LTCG keeps the first copy of an inline
+        # function it sees, so the order can change code)
+        back = addrmap.load(M.addrmap).funcs
+
+        def key(p):
+            base = M.legacy_src if M.legacy_src in p.parents else M.src
+            rel = p.relative_to(base)
+            if rel.parent.name == "auto" and p.stem.startswith("f_"):
+                a = _addr_of(p)
+                if base == M.src:
+                    a = back.get(a, a)
+                return (rel.parent.as_posix(), f"f_{a:08x}.cpp")
+            return (rel.parent.as_posix(), p.name)
+        files.sort(key=key)
+    for p in files:
         if p.parent.name == "auto" and p.stem.startswith("f_"):
             try:
                 owner = held.get(int(p.stem[2:], 16))
@@ -213,6 +268,13 @@ def default_sources():
                 continue
         out.append(p)
     return out
+
+
+def _addr_of(p):
+    try:
+        return int(p.stem[2:], 16)
+    except ValueError:
+        return None
 
 
 def winsdk_dir():
@@ -980,6 +1042,16 @@ def cmd_status(_args):
         lines.append(f"| {m.id} | `{m.file}` | {p['matched']:,} / {p['functions']:,} "
                      f"({pct(p['matched'], p['functions'], 2)}) | {p['matched_bytes']:,} / {p['bytes']:,} "
                      f"({pct(p['matched_bytes'], p['bytes'], 3)}) | {p['open']} | {p['review']} |")
+    legacy = []                         # view-only builds: listed, not counted in the totals
+    for m, _p in mods:
+        for b in m.legacy_builds:
+            lm = config.Module(m.id, json.loads(config.SHARED.read_text())["modules"][m.id], b)
+            lp = module_progress(lm)
+            if lp:
+                legacy.append(f"| {m.id} ({b}, view-only) | `{m.file}` | {lp['matched']:,} / {lp['functions']:,} "
+                              f"({pct(lp['matched'], lp['functions'], 2)}) | {lp['matched_bytes']:,} / "
+                              f"{lp['bytes']:,} ({pct(lp['matched_bytes'], lp['bytes'], 3)}) | | |")
+    lines += legacy
     if tot and tot["review"]:
         lines += ["", "Flagged for review: fake matches, marked `// c5d-review:` in the source (see README)."]
     if tot and tot["attempts"]:
@@ -1206,7 +1278,17 @@ NEEDS_SETUP = {"env", "analyze", "dump", "match", "scope", "queue", "task", "age
                "fingerprint", "classes"}
 
 
+# what a legacy build (--build 2014) can do: it's view-only, checked in fingerprint mode
+LEGACY_OK = {"match", "status"}
+
+
 def require_setup(cmd, args=None):
+    if M.legacy:
+        if cmd not in LEGACY_OK:
+            sys.exit(f"the {M.legacy} build is view-only: `{cmd}` works on the current build "
+                     f"({M.build_label or 'see config.json'}); drop --build")
+        if cmd == "match":
+            args.fingerprints = True        # its exe isn't on anyone's disk any more
     if cmd not in NEEDS_SETUP:
         return
     if cmd == "match" and fingerprint_mode(args):
@@ -1230,6 +1312,9 @@ def main():
     p.add_argument("--module", default=None, choices=[m.id for m in config.all_modules()],
                    help="which binary to work on (default: exe, or the module of a qualified "
                         "address such as db:0x10001000). Its files are in modules/<id>/")
+    p.add_argument("--build", default=None,
+                   help="a legacy build of the module, e.g. 2014 for the exe: view-only, only "
+                        "`match` (fingerprint mode) and `status` work on it")
     sub = p.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("setup", help="find and check the game, Ghidra and VC++ 2008; write config.local.json")
     s.add_argument("--game", help="folder containing CivilizationV_DX11.exe (default: search Steam libraries)")

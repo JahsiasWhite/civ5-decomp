@@ -41,6 +41,12 @@ class Remote:
         if (method == "POST" and path in FUNCTION_CALLS and self.module != config.DEFAULT_MODULE
                 and "module" not in (body or {})):
             body = {**(body or {}), "module": self.module}
+        if method == "POST" and path in FUNCTION_CALLS and "build" not in (body or {}):
+            # which build of the binary this checkout targets; the server refuses work
+            # from a checkout that's behind (e.g. still on the 2014 exe)
+            build = config.module((body or {}).get("module") or self.module).build_id
+            if build:
+                body = {**(body or {}), "build": build}
         req = urllib.request.Request(
             self.server + path, method=method,
             data=json.dumps(body or {}).encode() if method == "POST" else None,

@@ -1,1 +1,0 @@
-0x005d7380 ?SafeStrlen_005d7380@@YAIPBD@Z

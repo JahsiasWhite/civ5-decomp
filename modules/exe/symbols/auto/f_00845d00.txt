@@ -1,4 +1,0 @@
-0x00845d00 ?AllocTrace_00845d00@@YAPAXXZ
-0x009d647c __imp__InterlockedExchangeAdd@8
-0x01a0e400 ?g_currentHandler_01a0e400@@3HA
-0x01a0f080 ?g_traceRings_01a0f080@@3PAUTraceRing_00845d00@@A

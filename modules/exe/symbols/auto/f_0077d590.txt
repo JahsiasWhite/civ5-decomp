@@ -1,0 +1,1 @@
+0x0077d590 ?AppendFormat_0066ab70@@YAXPAUTextBuffer_0066ab70@@PBDZZ

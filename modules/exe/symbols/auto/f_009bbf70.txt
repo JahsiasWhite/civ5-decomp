@@ -1,1 +1,0 @@
-0x009bbf70 ?GetField18_009bbf70@@YAPAXPAUUnk_009bbf70@@@Z

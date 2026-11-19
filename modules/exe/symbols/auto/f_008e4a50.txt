@@ -1,1 +1,0 @@
-0x008e4a50 ?GetPoint@PointSet_008e4a50@@QBEXAAUVec3_008e4a50@@H@Z

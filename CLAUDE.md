@@ -20,6 +20,10 @@ A batch works on one module. For the exe, the commands below are used as written
 addresses as `db:0x10001234`; the commands in a DLL's TASK.md are already written that way. Both
 DLLs load at `0x10000000`, so the same address can mean a different function in each.
 
+The exe is the Steam build from November 2026; every exe address in the repo is a 2026
+address. The original 2014 build is a view-only legacy build in `modules/exe/legacy/2014/`
+(README, "Two builds of the exe"): don't claim, write or edit anything there. CI checks it.
+
 ## A batch of matches, in order
 
 Skip no step. If a step fails or a permission check blocks it, stop and tell the user. Don't

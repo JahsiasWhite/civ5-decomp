@@ -1,2 +1,0 @@
-0x00658f50 ?Format32_00658f50@@YAXPADPBDZZ
-0x009d68a8 __imp__vsprintf_s

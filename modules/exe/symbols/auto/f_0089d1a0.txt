@@ -1,0 +1,3 @@
+0x0089d1a0 ?DispatchBySign_00939dd0@@YAXHH@Z
+0x05efda20 ?g_negHandler_0606cf80@@3P6AXHH@ZA
+0x05efda24 ?g_nonNegHandler_0606cf84@@3P6AXHH@ZA

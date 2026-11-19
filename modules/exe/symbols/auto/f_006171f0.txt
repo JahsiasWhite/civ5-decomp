@@ -1,1 +1,0 @@
-0x006171f0 ?IsAboveThreshold@FloatRangeObject@@QBEHXZ

@@ -1,0 +1,2 @@
+0x006db920 ?PushBoolToLua@@YAXPAUlua_State@@PB_N@Z
+0x0088953a _lua_pushboolean

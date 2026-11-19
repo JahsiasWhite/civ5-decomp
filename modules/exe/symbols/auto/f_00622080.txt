@@ -1,1 +1,0 @@
-0x00622080 ?Erase@Values_00622080@@QAE?AV?$_Vector_iterator@UValue_00622080@@V?$allocator@UValue_00622080@@@std@@@std@@V23@0@Z

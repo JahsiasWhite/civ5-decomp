@@ -1,0 +1,1 @@
+0x007ba830 ?GetBuffer04@UnkRecord04@@QAEPAXXZ

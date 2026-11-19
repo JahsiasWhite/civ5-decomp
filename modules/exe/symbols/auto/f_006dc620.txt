@@ -1,0 +1,2 @@
+0x006dc620 ?ReadFromLua_0050c4a0@@YAXPAUlua_State@@PAURecord_0050c4a0@@@Z
+0x0088954c _lua_tointeger

@@ -1,0 +1,11 @@
+0x0076b2d0 ?Lua_InitMetatable_0068e7d0@@YAXPAUlua_State@@H@Z
+0x0076afa0 ?Lua_MetaSetValue_0044bb50@@YAHPAUlua_State@@@Z
+0x00759a10 ?Lua_MetaGc_006c6420@@YAHPAUlua_State@@@Z
+0x0076ae50 ?Lua_MetaGetValue_0078a780@@YAHPAUlua_State@@@Z
+0x0076b1a0 ?Lua_MetaQuery_007b6190@@YAHPAUlua_State@@@Z
+0x0099c070 ?g_str_gc_00a6c230@@3QBDB
+0x0099c078 ?g_str_index_00a6c238@@3QBDB
+0x0099c080 ?g_str_GetValue_00a6c240@@3QBDB
+0x0099c08c ?g_str_SetValue_00a6c24c@@3QBDB
+0x0099c098 ?g_str_Query_00a6c258@@3QBDB
+0x0099c0a0 ?g_str_newindex_00a6c260@@3QBDB

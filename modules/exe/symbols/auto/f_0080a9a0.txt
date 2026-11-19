@@ -1,0 +1,3 @@
+0x0080a9a0 ?PushValue_008a4900@@YAHPAUObject_008a4900@@@Z
+0x02c72d08 ?g_stackCount_02de1e78@@3HA
+0x02c72ce0 ?g_stack_02de1e50@@3PAHA

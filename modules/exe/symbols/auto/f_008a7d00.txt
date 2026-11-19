@@ -1,2 +1,0 @@
-0x008a7d00 ?AdvanceAnim_008a7d00@@YAXPAUAnimPlayer_008a7d00@@M@Z
-0x009f08a8 __real@0000000000000000

@@ -1,0 +1,3 @@
+0x00427500 ?SetGlobalStr_007deaf0@@YAXABV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z
+0x060275d0 ?g_Global_06196b30@@3V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@A
+0x009395b4 __imp_??4?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QAEAAV01@ABV01@@Z

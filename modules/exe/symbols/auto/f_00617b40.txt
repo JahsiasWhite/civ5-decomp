@@ -1,0 +1,2 @@
+0x00617b40 ?SetEntry@IndexedFloatFlags@@QAEXH_NM@Z
+0x00889f90 __allshl

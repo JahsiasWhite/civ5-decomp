@@ -1,0 +1,5 @@
+0x0086b040 ?IsTable@LuaRef_009052a0@@QBE_NXZ
+0x00889576 _lua_settop
+0x0088957c _lua_type
+0x008895ac _lua_rawgeti
+0x008895b2 _lua_checkstack

@@ -1,0 +1,12 @@
+0x0077ca60 ?WrapReadOnlyTable_0049b410@@YAXPAUlua_State@@@Z
+0x0077ca40 ?l_NewIndex_0078e9c0@@YAHPAUlua_State@@@Z
+0x00889528 _lua_setfield
+0x00889534 _lua_createtable
+0x0088953a _lua_pushboolean
+0x0088956a _lua_pushcclosure
+0x00889570 _lua_pushvalue
+0x00889594 _lua_remove
+0x008895dc _lua_setmetatable
+0x009a244c ??_C@_0L@OMOCGCFD@__index?$AA?$AA?$AA?$AA@
+0x009a2454 ??_C@_0N@IKIPPFCJ@__metatable?$AA?$AA@
+0x009a2460 ??_C@_0M@EILEDFOG@__newindex?$AA?$AA@

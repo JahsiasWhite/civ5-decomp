@@ -4,51 +4,51 @@
 # Names are the decorated names the compiler emits (extern "C" cdecl = _Name).
 
 # --- FSBA (Firaxis small-block allocator) ---
-0x00813750 _GetSmallObjectAllocator
-0x00813920 _FSBADisable
-0x00813940 _FSBAIsDisabled
-0x00813960 _FSBAIsSmallBlock
-0x00813a00 _FSBAGetMaxAllocatorSize
-0x00813a20 _FSBAPreventCreation
-0x06196937 _s_bPreventCreation
-0x0081c2a0 ?IsSmallBlock@FSmallObjectAllocator@@QAE_NPBXPAI@Z
-0x0081c250 ?Allocate@FSmallObjectAllocator@@QAEPAXI@Z
-0x0081c360 ?GetAllocatorForSize@FSmallObjectAllocator@@QAEPAVFSmallBlockAllocator@@I@Z
-0x0081be80 ?Allocate@FSmallBlockAllocator@@QAEPAXXZ
-0x06196fa4 _s_bAllocationFailed
-0x007cccf0 ?Unk_007cccf0@@YAPAXXZ
-0x005c63f0 ?Unk_005c63f0@@YAXXZ
-0x007e6480 ??0Unk_007e6480@@QAE@XZ
-0x06196944 _s_pUnk_06196944
-0x00813870 _FSBAAllocate
-0x00813990 _FSBAHasAllocatorForSize
-0x006f8d70 _GetSmallObjectAllocatorInitParams
-0x0081ba00 ??0FSmallObjectAllocatorInitParams@@QAE@IIIIII_NHH@Z
-0x00cc8eb8 ?s_params@?1??GetSmallObjectAllocatorInitParams@@9@4UFSmallObjectAllocatorInitParams@@A
-0x00cc8ef4 ?$S1@?1??GetSmallObjectAllocatorInitParams@@9@4IA
+0x0045dac0 _GetSmallObjectAllocator
+0x0045dc90 _FSBADisable
+0x0045dcb0 _FSBAIsDisabled
+0x0045dcd0 _FSBAIsSmallBlock
+0x0045dd70 _FSBAGetMaxAllocatorSize
+0x0045dd90 _FSBAPreventCreation
+0x060273d7 _s_bPreventCreation
+0x004675c0 ?IsSmallBlock@FSmallObjectAllocator@@QAE_NPBXPAI@Z
+0x00467570 ?Allocate@FSmallObjectAllocator@@QAEPAXI@Z
+0x00467680 ?GetAllocatorForSize@FSmallObjectAllocator@@QAEPAVFSmallBlockAllocator@@I@Z
+0x004671a0 ?Allocate@FSmallBlockAllocator@@QAEPAXXZ
+0x06027a44 _s_bAllocationFailed
+0x00414ae0 ?Unk_007cccf0@@YAPAXXZ
+0x00425470 ?Unk_005c63f0@@YAXXZ
+0x0042f010 ??0Unk_007e6480@@QAE@XZ
+0x060273e4 _s_pUnk_06196944
+0x0045dbe0 _FSBAAllocate
+0x0045dd00 _FSBAHasAllocatorForSize
+0x00492260 _GetSmallObjectAllocatorInitParams
+0x00466d20 ??0FSmallObjectAllocatorInitParams@@QAE@IIIIII_NHH@Z
+0x00b4937c ?s_params@?1??GetSmallObjectAllocatorInitParams@@9@4UFSmallObjectAllocatorInitParams@@A
+0x00b493b8 ?$S1@?1??GetSmallObjectAllocatorInitParams@@9@4IA
 
 # --- Core exports ---
-0x00813f70 _FStringA_GetStringInitData
-0x00815f10 _FStringW_GetStringInitData
-0x00829aa0 _GetTempHeap
-0x00824800 _GetMemTrackerForDLL
-0x00824750 ?GetMemTracker@@YAPAVFMemTracker@@XZ
-0x06196a1c _s_FStringAInitData
-0x06196a2c _s_FStringWInitData
-0x06196a54 _s_pLogFileMgr
-0x06196d70 _s_TempHeap
+0x0045e5c0 _FStringA_GetStringInitData
+0x004605d0 _FStringW_GetStringInitData
+0x004769c0 _GetTempHeap
+0x00471690 _GetMemTrackerForDLL
+0x004715e0 ?GetMemTracker@@YAPAVFMemTracker@@XZ
+0x060274bc _s_FStringAInitData
+0x060274cc _s_FStringWInitData
+0x060274f4 _s_pLogFileMgr
+0x06027810 _s_TempHeap
 
 # --- FJobSet ---
-0x0081d660 _FJobSetInitImpl
-0x0081d6a0 _FJobSetWaitImpl
-0x0081d6b0 _FJobSetAddJobImpl
-0x0081d790 ?Wait@FJobSetImpl@@QAEXXZ
-0x0081d950 ?AddJobToSet@@YAXPAXPAVFJobSetImpl@@0H@Z
+0x00468e80 _FJobSetInitImpl
+0x00468ec0 _FJobSetWaitImpl
+0x00468ed0 _FJobSetAddJobImpl
+0x00468fc0 ?Wait@FJobSetImpl@@QAEXXZ
+0x00469180 ?AddJobToSet@@YAXPAXPAVFJobSetImpl@@0H@Z
 
-0x0081cd50 _PeekLogFileMgr
+0x00468350 _PeekLogFileMgr
 
 # --- Lua bindings ---
-0x00540240 ?PushUIntValueToLua@@YAXPAUlua_State@@PBUUIntHolder@@@Z
-0x00923958 _lua_pushnumber
-0x009dc7b0 __real@41f0000000000000
-0x005faa60 ?GetKindFlags@KindQueryObject@@QAEHXZ
+0x006dbcf0 ?PushUIntValueToLua@@YAXPAUlua_State@@PBUUIntHolder@@@Z
+0x00889558 _lua_pushnumber
+0x00a1bd30 __real@41f0000000000000
+0x0068c350 ?GetKindFlags@KindQueryObject@@QAEHXZ

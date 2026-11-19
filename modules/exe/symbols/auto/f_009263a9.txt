@@ -1,3 +1,0 @@
-0x009263a9 ?ServiceThunk_009263a9@@YGKK@Z
-0x0606c9d4 ?g_serviceActive_0606c9d4@@3HA
-0x06198000 ?g_serviceTable_06198000@@3PAUUnkServiceTable@@A

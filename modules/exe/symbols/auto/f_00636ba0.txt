@@ -1,0 +1,1 @@
+0x00636ba0 ?GetOpponentLayer@Layers_00520230@@QAEPAULayer_00520230@@H@Z

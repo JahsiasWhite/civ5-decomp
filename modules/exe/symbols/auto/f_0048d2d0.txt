@@ -1,0 +1,6 @@
+0x0048d2d0 ??0Unk_00b89dcc@@QAE@XZ
+0x00a1b5ac ?g_vtable_00b89890@@3QBQAXB
+0x00a1b5bc ?kVtable_00b898a0@@3QBQBXB
+0x00a1baf0 ?kVtable_00b89dcc@@3QBQBXB
+0x00a1bb18 ?kVtable_00b89df4@@3QBQBXB
+0x00a1bb24 ?kVtable_00b89e00@@3QBQBXB

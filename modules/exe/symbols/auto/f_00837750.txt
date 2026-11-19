@@ -1,1 +1,0 @@
-0x00837750 ?IsChildReady@Unk_00b89800@@QAEHXZ

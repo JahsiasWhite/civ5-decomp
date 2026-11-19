@@ -1,0 +1,1 @@
+0x00636380 ?GetCurrentEntryField6c@@YGPAHPAUOwner004ac3d0@@@Z

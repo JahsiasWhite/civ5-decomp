@@ -1,0 +1,2 @@
+0x0077cc60 ?Append@ByteBuffer_00506e50@@QAEXPBXI@Z
+0x00889ce8 _memcpy

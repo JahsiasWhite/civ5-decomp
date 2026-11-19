@@ -1,0 +1,1 @@
+0x00480f70 ?GetDataAfterHeader@UnkHeaderedBuffer@@QAEPADXZ

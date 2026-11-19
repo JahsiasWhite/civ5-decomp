@@ -1,3 +1,0 @@
-0x008e4bc0 ?CalcSpanDeg@Host_008e4bc0@@QBENXZ
-0x009de700 __real@404ca5dc1a63c1f8
-0x009fcf90 __real@3f000000

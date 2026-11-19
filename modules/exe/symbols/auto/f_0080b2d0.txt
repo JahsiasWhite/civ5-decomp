@@ -1,0 +1,2 @@
+0x0080b2d0 ?CloseStream_008a5230@@YAXPAUOwner_008a5230@@@Z
+0x02c72d1c ?g_freeHook_02de1e8c@@3P6AXPAX@ZA

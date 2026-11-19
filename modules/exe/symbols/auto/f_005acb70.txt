@@ -1,1 +1,0 @@
-0x005acb70 ?GetConstant_005acb70@@YAHXZ

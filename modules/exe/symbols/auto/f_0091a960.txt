@@ -1,1 +1,0 @@
-0x0091a960 ?IsReady@Host_0091a960@@QBEHXZ

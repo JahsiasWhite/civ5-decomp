@@ -45,6 +45,33 @@ for dir in modules/*/; do
     echo "::error::$m: match run failed"
     failed="$failed $m"
   fi
+  # the module's legacy builds (view-only, e.g. the 2014 exe): the same sources, checked
+  # against legacy/<build>/data/fingerprints.csv; results go to build/<id>-<build>/, and
+  # <id>-<build> is the name the site knows that build by
+  for b in $(python -c "import json; print(' '.join(json.load(open('config.json'))['modules']['$m'].get('legacy', {})))"); do
+    lid="$m-$b"
+    if [ ! -f "$dir/legacy/$b/data/fingerprints.csv" ]; then
+      echo "$lid: no legacy/$b/data/fingerprints.csv, skipped"
+      continue
+    fi
+    mkdir -p "build/$lid"
+    lscope=""
+    if [ -n "$scope" ]; then
+      lscope="--around-from build/$m/around.txt"
+    fi
+    echo "::group::$lid"
+    python tools/c5d.py --module "$m" --build "$b" match --fingerprints $lscope \
+      --status-out "build/$lid/status.csv" > "build/$lid/match.txt" 2>&1
+    tail -n 40 "build/$lid/match.txt"
+    echo "::endgroup::"
+    if grep -q "fingerprint mode\]" "build/$lid/match.txt"; then
+      echo "$lid" >> build/modules_ran.txt
+      echo "::notice title=Match results ($lid)::$(tail -n 1 "build/$lid/match.txt" | sed 's/^\[[^]]*\] *//')"
+    else
+      echo "::error::$lid: match run failed"
+      failed="$failed $lid"
+    fi
+  done
 done
 du -sh build/objcache 2>/dev/null || true
 [ -z "$failed" ]

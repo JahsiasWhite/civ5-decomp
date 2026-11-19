@@ -1,1 +1,1 @@
-0x007fd7a0 ?GetInfo08@FieldHolder_007e9250@@UAEHXZ
+0x007fd7a0 ?GetByteField_00897710@@YAHPBUHost_00897710@@@Z

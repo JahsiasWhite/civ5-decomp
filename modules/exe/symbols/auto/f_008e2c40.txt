@@ -1,3 +1,0 @@
-0x008e2c40 ?SetIdentity_008e2c40@@YAXPAUMatrix4_008e2c40@@@Z
-0x00926842 _memset
-0x009f72f4 _g_float_009f72f4

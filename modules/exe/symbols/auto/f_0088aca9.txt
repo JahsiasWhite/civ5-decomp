@@ -1,0 +1,2 @@
+0x0088aca9 ?Free@Heap_009278c9@@QAEXPAX@Z
+0x00939364 __imp__HeapFree@12

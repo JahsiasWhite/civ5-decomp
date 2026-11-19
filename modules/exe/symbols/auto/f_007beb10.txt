@@ -1,0 +1,2 @@
+0x007beb10 ?Describe@NetPlayerSyncCheck@@UAEXPADI@Z
+0x009bef24 ??_C@_0DC@CBNBHCCK@NetPlayerSyncCheck?$CIPlayer?$DN?$CFd?$CJ?0?5A@

@@ -1,2 +1,0 @@
-0x005e81a0 ??0Host_005e81a0@@QAE@XZ
-0x009f72f4 _g_float_009f72f4

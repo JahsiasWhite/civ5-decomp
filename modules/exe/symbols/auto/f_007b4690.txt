@@ -1,2 +1,0 @@
-0x007b4690 ?PushIntPair_007b4690@@YAXPAUlua_State@@PBUIntPair_007b4690@@@Z
-0x00923958 _lua_pushnumber

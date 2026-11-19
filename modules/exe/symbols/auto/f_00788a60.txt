@@ -1,1 +1,0 @@
-0x00788a60 ?SetPosition@Mover_00788a60@@QAEXPBUVec3i_00788a60@@@Z

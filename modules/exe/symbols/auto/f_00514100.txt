@@ -1,2 +1,0 @@
-0x00514100 ?PushData_00514100@@YAXPAUlua_State@@PBUUnk_00514100@@@Z
-0x00923940 _lua_pushinteger

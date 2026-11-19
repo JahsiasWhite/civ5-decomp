@@ -1,1 +1,0 @@
-0x006c8e00 ?CreateHandle_006c8e00@@YA?AUHandle_006c8e00@@H@Z

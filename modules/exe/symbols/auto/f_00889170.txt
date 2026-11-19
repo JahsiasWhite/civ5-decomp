@@ -1,0 +1,2 @@
+0x00889170 ?SetSampleCone_00923570@@YAXPAXHHM@Z
+0x00939d60 __imp__AIL_set_sample_3D_cone@16

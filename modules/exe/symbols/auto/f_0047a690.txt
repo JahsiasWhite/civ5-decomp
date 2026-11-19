@@ -1,0 +1,1 @@
+0x0047a690 ?CountChildren@UnkNodeCursor_0082d030@@QAEHXZ

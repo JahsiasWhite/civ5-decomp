@@ -1,0 +1,4 @@
+0x0048c870 ?ResetVtables@Host_0083ee60@@QAEXXZ
+0x00a1b848 ?kVtable_00b89b24@@3QBQBXB
+0x00a1b5ac ?kVtable_00b89890@@3QBQBXB
+0x00a1b844 ?kVtable_00b86914@@3QBQBXB

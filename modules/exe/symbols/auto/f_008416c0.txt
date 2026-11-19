@@ -1,0 +1,2 @@
+0x008416c0 ?SetTarget@Unk_008db640@@QAEXH@Z
+0x05de5df4 ?g_unk_05f54f34@@3HA

@@ -1,1 +1,0 @@
-0x0073bc00 ?CallB2@Derived_0073bc00@@QAEXH@Z

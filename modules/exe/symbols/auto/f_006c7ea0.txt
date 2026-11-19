@@ -1,0 +1,2 @@
+0x006c7ea0 ?MakeHandle_0066a390@@YA?AUUnkHandle_0066a390@@XZ
+0x02c62d88 ?g_handleFactory_02dd201c@@3P6APAXXZA

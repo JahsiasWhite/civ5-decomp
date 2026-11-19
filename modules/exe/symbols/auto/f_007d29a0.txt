@@ -1,1 +1,0 @@
-0x007d29a0 ?Reset@BoundCallbackReset@@QAEXH@Z

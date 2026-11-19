@@ -1,1 +1,0 @@
-0x0075f080 ?GetInfo@Registry_0075f080@@QBEPAUInfo_0075f080@@H@Z

@@ -1,5 +1,0 @@
-0x0073b5c0 ?ForwardCall_0073b5c0@@YAHPAUlua_State@@@Z
-0x0092392e _lua_gettop
-0x00923970 _lua_pushvalue
-0x009239d0 _lua_insert
-0x00923a48 _lua_call

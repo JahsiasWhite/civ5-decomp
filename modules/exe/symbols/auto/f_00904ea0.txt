@@ -1,4 +1,0 @@
-0x00904ea0 ??0LuaRef_00904ea0@@QAE@ABU0@@Z
-0x009239ac _lua_rawgeti
-0x009239b2 _lua_checkstack
-0x00923aea _luaL_ref

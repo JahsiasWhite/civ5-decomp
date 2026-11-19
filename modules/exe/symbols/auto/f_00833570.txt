@@ -1,0 +1,1 @@
+0x00833570 ?Reset@Host_008cd4f0@@QAEXXZ

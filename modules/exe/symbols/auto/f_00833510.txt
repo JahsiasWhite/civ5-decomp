@@ -1,0 +1,1 @@
+0x00833510 ?Reset@ResetState8cd490@@QAEXXZ

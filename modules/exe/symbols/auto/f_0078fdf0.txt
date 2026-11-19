@@ -1,0 +1,1 @@
+0x0078fdf0 ?GetCurrent@Cursor_007a0d30@@QBE_NPAH@Z

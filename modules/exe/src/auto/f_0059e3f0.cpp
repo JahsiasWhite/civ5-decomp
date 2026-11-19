@@ -1,10 +1,17 @@
-// Writes `count` copies of a character starting at dest; returns the end.
+// c5d-model: Gemini 4 Hydrogen
+class Host_005309f0 {
+public:
+    float m_limit;
+    char pad[0x60];
+    float m_val;
+    unsigned char m_flag;
+    // src: GUESS (confidence: high) [0x005309f0]
+    int __thiscall Check() const;
+};
 
-#include <algorithm>
-
-// src: GUESS (confidence: low) [0x0059e3f0]
-char* __stdcall FillChars_0059e3f0(char* dest, unsigned int count, const char* value)
-{
-    std::fill_n(dest, count, *value);
-    return dest + count;
+int Host_005309f0::Check() const {
+    if (!m_flag || m_val > m_limit) {
+        return 1;
+    }
+    return 0;
 }

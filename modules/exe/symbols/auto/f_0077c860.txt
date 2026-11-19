@@ -1,0 +1,3 @@
+0x0077c860 ?ToBoolOr_00596c00@@YA_NPAUlua_State@@H_N@Z
+0x0088957c _lua_type
+0x00889546 _lua_toboolean

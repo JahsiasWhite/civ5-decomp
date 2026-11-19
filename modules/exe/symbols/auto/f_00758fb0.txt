@@ -1,0 +1,8 @@
+0x00758fb0 ?SetupTable_0044a3e0@@YAXPAUlua_State@@@Z
+0x0088951c _lua_pushstring
+0x00889534 _lua_createtable
+0x0088955e _lua_rawset
+0x008895b8 _lua_pushnil
+0x008895dc _lua_setmetatable
+0x009972c8 ??_C@_0L@GADKNKH@__newindex?$AA@
+0x009972d4 ??_C@_0M@OKDMMFBL@__metatable?$AA@

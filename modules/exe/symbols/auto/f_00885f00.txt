@@ -1,0 +1,1 @@
+0x00885f00 ?GetFirstValue@Unk_00920300@@QAEHH@Z

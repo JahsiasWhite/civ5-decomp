@@ -1,4 +1,0 @@
-0x00893860 ?SetGlobalVec@@YAXPBUVec3_00893860@@@Z
-0x00c9ec9c ?g_x_00c9ec9c@@3MA
-0x00c9eca0 ?g_y_00c9eca0@@3MA
-0x00c9eca4 ?g_z_00c9eca4@@3MA

@@ -1,1 +1,0 @@
-0x008e49b0 ?SetVec@Host_008e49b0@@QAEXPBUVec3_008e49b0@@@Z

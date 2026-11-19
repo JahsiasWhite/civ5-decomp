@@ -1,3 +1,0 @@
-0x004f8ce0 ?GetItem_004f8ce0@@YAPAXI@Z
-0x02d6fbb4 ?g_arr_02d6fbb4@@3PAPAXA
-0x02d6fbb8 ?g_count_02d6fbb8@@3IA

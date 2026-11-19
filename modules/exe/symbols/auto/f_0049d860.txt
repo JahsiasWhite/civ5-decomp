@@ -1,2 +1,0 @@
-0x0049d860 ?SetFlag_00ccef38@@YAXXZ
-0x00ccef38 ?g_flag_00ccef38@@3_NA

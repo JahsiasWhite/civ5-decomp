@@ -1,0 +1,2 @@
+0x00888bd0 ?SetDopplerFactor_00922fd0@@YAXPAXM@Z
+0x00939cd8 __imp__AIL_set_3D_doppler_factor@8

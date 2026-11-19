@@ -1,0 +1,8 @@
+0x0080a120 ?CalcSizes_008a4080@@YAXHHHHHPAH@Z
+0x00b2fce8 ?g_00c9ed28@@3HA
+0x00b2fcec ?g_00c9ed2c@@3HA
+0x00b2fcf0 ?g_00c9ed30@@3HA
+0x00b2fcf8 ?g_00c9ed38@@3HA
+0x00b2fcfc ?g_00c9ed3c@@3HA
+0x00b2fd00 ?g_00c9ed40@@3HA
+0x00b2fd04 ?g_00c9ed44@@3HA

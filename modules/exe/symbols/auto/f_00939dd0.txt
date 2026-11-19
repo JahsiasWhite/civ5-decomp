@@ -1,3 +1,0 @@
-0x00939dd0 ?DispatchBySign_00939dd0@@YAXHH@Z
-0x0606cf80 ?g_negHandler_0606cf80@@3P6AXHH@ZA
-0x0606cf84 ?g_nonNegHandler_0606cf84@@3P6AXHH@ZA

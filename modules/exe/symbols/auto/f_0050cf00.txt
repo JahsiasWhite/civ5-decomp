@@ -1,0 +1,2 @@
+0x0050cf00 ?WrapCoord@MapGrid_00548980@@QBE?AUCoord_00548980@@HH@Z
+0x00c1656c ?g_wrapMode_00d90fbc@@3HA

@@ -1,0 +1,1 @@
+0x00492440 ?SetAttachment@Holder_006dadf0@@QAEXPAVAttachment_006dadf0@@@Z

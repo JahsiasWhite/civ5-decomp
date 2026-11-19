@@ -1,0 +1,2 @@
+0x00888b90 ?SetDistanceFactor_00922f90@@YAXPAXM@Z
+0x00939d84 __imp__AIL_set_3D_distance_factor@8

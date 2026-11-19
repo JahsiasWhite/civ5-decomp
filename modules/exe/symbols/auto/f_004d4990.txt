@@ -1,0 +1,1 @@
+0x004d4990 ?OnResize@View_00411d60@@QAEXPAUHWND__@@@Z

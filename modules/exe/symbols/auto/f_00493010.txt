@@ -1,0 +1,2 @@
+0x00493010 ??0StringWrapper_006d6f40@@QAE@XZ
+0x009395a4 __imp_??0?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QAE@XZ

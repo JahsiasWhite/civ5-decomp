@@ -1,0 +1,1 @@
+0x00477140 ?RequestStop@Worker_0082a250@@QAEXXZ

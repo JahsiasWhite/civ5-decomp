@@ -1,0 +1,5 @@
+0x0067cd80 ?PushEntry_00543260@@YAHPAUlua_State@@@Z
+0x00889540 _lua_pushinteger
+0x0088954c _lua_tointeger
+0x02cd2d8c ?g_count_02e41ecc@@3IA
+0x02cd2d90 ?g_arr_02e41ed0@@3PAUUnkEntry32_00543260@@A

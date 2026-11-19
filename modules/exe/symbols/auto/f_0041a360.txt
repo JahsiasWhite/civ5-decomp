@@ -1,0 +1,2 @@
+0x0041a360 ?FormatBuffer260_005fe110@@YAXPADPBDZZ
+0x00939610 __imp__vsprintf_s

@@ -1,4 +1,0 @@
-0x007bc440 ??1captured_exception@tbb@@UAE@XZ
-0x00b82380 ??_7exception@stdext@@6B@
-0x00b82580 ??_7captured_exception@tbb@@6B@
-0x00cb1484 ?g_freeHook_00cb1484@@3P6AXPAX@ZA

@@ -1,0 +1,1 @@
+0x00482860 ?HasAny@Host_00834fd0@@QBEHXZ

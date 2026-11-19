@@ -1,0 +1,2 @@
+0x00465cd0 ?Close@Handle_0081ab90@@QAEXXZ
+0x00939248 __imp__CloseHandle@4

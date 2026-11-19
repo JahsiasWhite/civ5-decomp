@@ -1,0 +1,1 @@
+0x0084cda0 ?GetBuffer6C@UnkRecord6C@@QAEPAXXZ

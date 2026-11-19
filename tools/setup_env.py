@@ -274,10 +274,17 @@ def step_game(rep, cfg, arg):
             check_other_modules(rep, cfg, d, target)
             return {"game_dir": d.as_posix()}
         try:
-            got = build_hash(exe)[:16] + "..."
+            full = build_hash(exe)
+            got = full[:16] + "..."
         except (ValueError, struct.error) as e:
-            got = str(e)
-        rep.note(f"{exe}: different build (build hash {got})")
+            full, got = "", str(e)
+        legacy = [b for m in cfg["modules"].values() if m["file"] == target
+                  for b, spec in m.get("legacy", {}).items() if spec.get("build_hash") == full]
+        if legacy:
+            rep.note(f"{exe}: this is the {legacy[0]} build, which the project no longer works on "
+                     "(it moved to the current Steam build; the old one is view-only)")
+        else:
+            rep.note(f"{exe}: different build (build hash {got})")
     if seen:
         rep.bad(target, "found, but not the build this project targets",
                 "the project matches one exact build: " + cfg.get("target_build", "") +

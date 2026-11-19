@@ -1,0 +1,1 @@
+0x006645c0 ?ReadRecord@Reader_007a2620@@QAE_NPAURecord40_007a2620@@@Z

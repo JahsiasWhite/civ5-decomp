@@ -1,0 +1,2 @@
+0x006db6b0 ?PushPair_0051e6a0@@YAXPAUlua_State@@PBUPair_0051e6a0@@@Z
+0x00889558 _lua_pushnumber

@@ -1,3 +1,0 @@
-0x007ecc20 ?GetLog_007ecc20@@YAPAVFILogFile@@XZ
-0x06196a54 _s_pLogFileMgr
-0x00b862c8 ??_C@_0BJ@DCDNCAOD@net_connection_debug?4log?$AA@

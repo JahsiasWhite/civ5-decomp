@@ -1,0 +1,2 @@
+0x0044cf40 ??0UnkFloat3_00803790@@QAE@XZ
+0x00a1bc50 ?g_float_009f72f4@@3MA

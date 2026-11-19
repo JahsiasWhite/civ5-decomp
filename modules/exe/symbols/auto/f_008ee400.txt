@@ -1,1 +1,0 @@
-0x008ee400 ?CopyRecordsBackward_008ee400@@YAPAURecord_008ee400@@PBU1@0PAU1@@Z

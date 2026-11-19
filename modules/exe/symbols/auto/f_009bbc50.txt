@@ -1,3 +1,0 @@
-0x009bbc50 ?GrannyLogTrackMask_009bbc50@@YAXPBD@Z
-0x00cb38b4 ?g_GrannyLog_00cb38b4@@3P6AXPBDH0@ZA
-0x00b76e30 ??_C@_0BJ@IIKBLDKO@?4?4?2granny_track_mask?4cpp?$AA@

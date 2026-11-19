@@ -1,0 +1,2 @@
+0x008893f0 ?OpenStream_009237f0@@YAPAXPAXPBQBDH@Z
+0x00939d7c __imp__AIL_open_stream@12

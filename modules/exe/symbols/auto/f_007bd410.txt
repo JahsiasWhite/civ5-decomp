@@ -1,0 +1,3 @@
+0x007bd410 ?SetFont@FontHolder_00638ed0@@UAEXPBUtagLOGFONTA@@@Z
+0x00939204 __imp__DeleteObject@4
+0x009391bc __imp__CreateFontIndirectA@4

@@ -1,0 +1,2 @@
+0x007fa280 ?SetGlobal_008941f0@@YAXPAX@Z
+0x00b2fc78 ?g_ptr_00c9ecb8@@3PAXA

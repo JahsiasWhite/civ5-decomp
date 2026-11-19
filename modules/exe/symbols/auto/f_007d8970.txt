@@ -1,1 +1,0 @@
-0x007d8970 ?GetFlag@FieldHolder_007d8970@@QBE_NXZ

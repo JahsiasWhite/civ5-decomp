@@ -1,0 +1,2 @@
+0x007beb80 ?IsFlagClear_02dd2f5e@@YA_NXZ
+0x02c63dce ?g_bFlag_02dd2f5e@@3_NA

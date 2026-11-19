@@ -1,0 +1,4 @@
+0x0086acd0 ??0LuaRef_00904f00@@QAE@ABU0@@Z
+0x00889570 _lua_pushvalue
+0x008895b2 _lua_checkstack
+0x008896ea _luaL_ref

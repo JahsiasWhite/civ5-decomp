@@ -1,0 +1,3 @@
+0x004296a0 ??1WinHttpHandle_00b86290@@UAE@XZ
+0x00a17f28 ??_7WinHttpHandle_00b86290@@6B@
+0x009399f8 __imp__WinHttpCloseHandle@4

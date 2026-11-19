@@ -1,0 +1,2 @@
+0x0091f0a0 ?SetGlobal_009bbcc0@@YAXH@Z
+0x060273c4 ?g_val_06196924@@3HA

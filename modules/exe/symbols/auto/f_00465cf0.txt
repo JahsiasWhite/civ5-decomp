@@ -1,0 +1,2 @@
+0x00465cf0 ?Wait@Event_0081abb0@@QAEXXZ
+0x00939258 __imp__WaitForSingleObject@8

@@ -16,6 +16,12 @@
                                     sign a user out of every browser (and kill their CLI token)
   python server/manage.py backup --dir DIR [--keep 14]
                                     consistent online copy of the DB (safe while serving)
+  python server/manage.py switch-build --map modules/exe/legacy/2014/addrmap.csv
+                                    [--queue build/exe/queue.csv] [--backup-dir DIR]
+                                    one-off: move the exe to the 2026 build. Backs up first,
+                                    then the 2014 rows become the view-only exe-2014 module
+                                    and the 2026 queue is imported as exe, matches carrying
+                                    their credit over to their 2026 twins.
 
 The verify workflow (.github/workflows/verify.yml) pushes results on every push to main and
 twice a day. To do it by hand from a machine with the game:
@@ -34,7 +40,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
-from db import DB, MODULES  # noqa: E402
+from db import DB, DEFAULT_MODULE, LEGACY, MODULES, legacy_of  # noqa: E402
 
 
 def db_path():
@@ -47,27 +53,44 @@ def open_db():
     return DB(p)
 
 
+def tool_module(module):
+    """The tools' config.Module for a server module id. A legacy one (exe-2014) is its
+    binary's legacy build: data, boundary fixes and results under modules/exe/legacy/2014/."""
+    sys.path.insert(0, str(ROOT / "tools"))
+    import config
+    mid, build = LEGACY.get(module, (module, None))
+    spec = json.loads(config.SHARED.read_text())["modules"][mid]
+    return config.Module(mid, spec, build)
+
+
 def read_merges(module="exe"):
     """Boundary fixes from modules/<module>/boundary_overrides.txt, resolved against that
     module's data/functions.csv: [{"addr": int, "size": int, "absorbed": [int], "new": bool}]."""
     sys.path.insert(0, str(ROOT / "tools"))
     import config
-    m = config.module(module)
-    rows = config._read_function_rows(config.functions_csv(module))
+    m = tool_module(module)
+    fcsv = m.data / "functions.csv"
+    rows = config._read_function_rows(fcsv if fcsv.exists() else m.build / "functions.csv")
     overrides = config.read_boundary_overrides(m.boundary_overrides)
     return [{"addr": x["entry"], "size": x["size"], "absorbed": x["absorbed"], "new": x["new"]}
             for x in config.boundary_merges(rows, overrides)]
 
 
-def cmd_import(db, args):
-    module = getattr(args, "module", "exe")
+def read_queue(path):
+    """build/<module>/queue.csv -> rows for import_functions."""
     rows = []
-    with open(args.queue, newline="") as fh:
+    with open(path, newline="") as fh:
         for i, r in enumerate(csv.DictReader(fh)):
             rows.append({"addr": int(r["entry"], 16), "size": int(r["size"]), "name": r["name"],
                          "conv": r["conv"], "depth": int(r["depth"]),
                          "cluster": int(r["cluster"], 16), "ready": int(r["pending_callees"] == "0"),
                          "queue_pos": i})
+    return rows
+
+
+def cmd_import(db, args):
+    module = getattr(args, "module", "exe")
+    rows = read_queue(args.queue)
     db.import_functions(rows, module=module)
     print(f"imported {len(rows)} {module} functions")
     resized, removed, _ = db.apply_merges(read_merges(module), module=module)   # import added `new` ones
@@ -156,7 +179,9 @@ def module_payload(module, status, queue, callgraph, qualify=False):
                        for m in read_merges(module)],
             "models": {key(f"0x{a:08x}"): m for a, m in read_models(status).items()}}
     q, cg = Path(queue), Path(callgraph)
-    if cg.exists():
+    if module in LEGACY:
+        pass                                        # view-only: nothing is handed out
+    elif cg.exists():
         part["ready"] = {key(k): v for k, v in ready_from_callgraph(cg, status).items()}
     elif q.exists():
         if q.stat().st_mtime < Path(status).stat().st_mtime:
@@ -168,6 +193,18 @@ def module_payload(module, status, queue, callgraph, qualify=False):
     return part
 
 
+def module_build(module):
+    """The build a push's results are for (the server refuses a mismatch): the exe's
+    build_id from config.json ("2026"), a legacy module's own build ("2014"); none for
+    the DLLs."""
+    if module in LEGACY:
+        return LEGACY[module][1]
+    try:
+        return tool_module(module).build_id or None
+    except (KeyError, OSError, ValueError):
+        return None
+
+
 def cmd_push(_db, args):
     """Send the match results, boundary fixes and which functions are now ready (all
     callees matched) to the live server (POST /api/admin/verify). Readiness comes from
@@ -176,13 +213,11 @@ def cmd_push(_db, args):
     --modules exe,db,loc sends several modules in one push (one verify run on the
     server); each module's status file is --status-pattern with {module} filled in."""
     if getattr(args, "modules", None):
-        sys.path.insert(0, str(ROOT / "tools"))
-        import config
-        payload = {"module": "exe", "statuses": {}, "merges": [], "models": {}}
+        payload = {"module": "exe", "statuses": {}, "merges": [], "models": {}, "build": {}}
         for mid in [m.strip() for m in args.modules.split(",") if m.strip()]:
             if mid not in MODULES:
                 raise SystemExit(f"unknown module {mid!r} (one of: {', '.join(MODULES)})")
-            m = config.module(mid)
+            m = tool_module(mid)
             part = module_payload(mid, args.status_pattern.format(module=mid), m.build / "queue.csv",
                                   m.data / "callgraph.csv", qualify=True)
             payload["statuses"].update(part["statuses"])
@@ -190,9 +225,13 @@ def cmd_push(_db, args):
             payload["models"].update(part["models"])
             if "ready" in part:
                 payload.setdefault("ready", {}).update(part["ready"])
+            if module_build(mid):
+                payload["build"][mid] = module_build(mid)
     else:
         module = getattr(args, "module", "exe")
         payload = {"module": module, **module_payload(module, args.status, args.queue, args.callgraph)}
+        if module_build(module):
+            payload["build"] = {module: module_build(module)}
     sys.path.insert(0, str(ROOT / "tools"))
     from remote import Remote
     r = Remote(args.server, args.token).call("POST", "/api/admin/verify", payload)
@@ -231,6 +270,62 @@ def cmd_backup(_db, args):
     print(f"backup: {dest} ({dest.stat().st_size:,} bytes; pruned {pruned} old)")
 
 
+def read_addrmap(path):
+    """({new addr: old addr}, {new addrs whose code is the same}) for the functions in an
+    address map (modules/exe/legacy/2014/addrmap.csv: kind,addr_2026,addr_2014[,same];
+    kind is func or data, addresses 0x%08x). same=1: identical code, confirmed by a real
+    match; same=0: placed by its callers, the code changed. Without the column every pair
+    counts as the same. Data rows are skipped; a function paired twice is an error."""
+    twins, olds, same = {}, set(), set()
+    with open(path, newline="") as fh:
+        rd = csv.DictReader(fh)
+        need = {"kind", "addr_2026", "addr_2014"}
+        if not need <= set(rd.fieldnames or ()):
+            raise SystemExit(f"{path}: header must be kind,addr_2026,addr_2014")
+        for n, r in enumerate(rd, 2):
+            if r["kind"].strip() != "func":
+                continue
+            try:
+                new, old = int(r["addr_2026"], 16), int(r["addr_2014"], 16)
+            except ValueError:
+                raise SystemExit(f"{path}:{n}: bad address")
+            if new in twins or old in olds:
+                raise SystemExit(f"{path}:{n}: function paired twice (0x{new:08x} / 0x{old:08x})")
+            twins[new] = old
+            olds.add(old)
+            if (r.get("same") or "1").strip() != "0":
+                same.add(new)
+    return twins, same
+
+
+def cmd_switch_build(_db, args):
+    """Move the exe to another build (2026): see DB.switch_build. Backs up the DB first
+    (refuses to go on without the copy), then does the whole move in one transaction."""
+    legacy = legacy_of(DEFAULT_MODULE, args.from_build)
+    if not legacy:
+        raise SystemExit(f"no legacy module for the {args.from_build} exe build")
+    twins, same = read_addrmap(args.map)
+    rows = read_queue(args.queue)
+    if not rows:
+        raise SystemExit(f"{args.queue} has no functions")
+    if db_path().exists():
+        dest, _ = backup_db(db_path(), args.backup_dir, args.keep)
+        print(f"backup: {dest}")
+    db = open_db()
+    try:
+        moved, imported, twinned, credited = db.switch_build(args.build, legacy, rows, twins, same)
+    except ValueError as e:
+        raise SystemExit(f"switch-build: {e}")
+    print(f"switch-build: {moved} exe functions are now {legacy} (view-only); "
+          f"imported {imported} {args.build} exe functions")
+    print(f"switch-build: {twinned} have a {args.from_build} twin ({len(twins) - len(same)} of the map's "
+          f"with changed code), {credited} matches carried over (by_user, model, day); they show as "
+          f"matched once verify confirms them")
+    unknown = len(twins) - twinned
+    if unknown:
+        print(f"warning: {unknown} address map functions aren't in {args.queue}", file=sys.stderr)
+
+
 def cmd_token(db, args):
     uid = db.upsert_user(args.login, args.display)
     db.accept_terms(uid)
@@ -247,8 +342,9 @@ def cmd_revoke(db, args):
 
 def cmd_stats(db, _args):
     s = db.stats()
-    for k in ("tiers", "trend_by_model", "leaderboard"):
-        s.pop(k)
+    for v in (s, *s["views"].values()):
+        for k in ("tiers", "trend_by_model", "leaderboard", "trend", "squad"):
+            v.pop(k, None)
     print(json.dumps(s, indent=2))
 
 
@@ -308,6 +404,16 @@ def main():
     b.add_argument("--dir", required=True)
     b.add_argument("--keep", type=int, default=14)
     b.set_defaults(fn=cmd_backup, no_db=True)
+    sw = sub.add_parser("switch-build", help="one-off: move the exe to the 2026 build (backs up first)")
+    sw.add_argument("--map", required=True, help="address map CSV: kind,addr_2026,addr_2014")
+    sw.add_argument("--queue", default=str(ROOT / "build" / "exe" / "queue.csv"),
+                    help="the new build's queue (default: build/exe/queue.csv)")
+    sw.add_argument("--build", default="2026", help="the exe build to move to (default 2026)")
+    sw.add_argument("--from-build", default="2014", help="the build the exe is on now (default 2014)")
+    sw.add_argument("--backup-dir", default=str(db_path().parent / "backups"),
+                    help="where the backup goes (default: backups/ beside the DB)")
+    sw.add_argument("--keep", type=int, default=14)
+    sw.set_defaults(fn=cmd_switch_build, no_db=True)
     t = sub.add_parser("token")
     t.add_argument("login")
     t.add_argument("--display", default=None)
@@ -340,9 +446,7 @@ def main():
                          help="which binary these functions belong to (default: exe)")
     args = p.parse_args()
     if hasattr(args, "module"):                     # file defaults follow the module
-        sys.path.insert(0, str(ROOT / "tools"))
-        import config
-        m = config.module(args.module)
+        m = tool_module(args.module)
         for key, path in (("status", m.status_csv), ("queue", m.build / "queue.csv"),
                           ("callgraph", m.data / "callgraph.csv")):
             if getattr(args, key, "unset") is None:

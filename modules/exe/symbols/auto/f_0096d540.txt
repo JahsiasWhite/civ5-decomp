@@ -1,2 +1,0 @@
-0x0096d540 ?GetOpenSSLDsaMethod@@YAPAHXZ
-0x00cafe18 ?g_OpenSSLDsaMethod@@3HA

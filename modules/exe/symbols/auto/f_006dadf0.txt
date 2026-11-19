@@ -1,1 +1,3 @@
-0x006dadf0 ?SetAttachment@Holder_006dadf0@@QAEXPAVAttachment_006dadf0@@@Z
+0x006dadf0 ?PushData_006fc930@@YAXPAUlua_State@@PBUUnk_006fc930@@@Z
+0x0088953a _lua_pushboolean
+0x00889540 _lua_pushinteger

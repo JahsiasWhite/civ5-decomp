@@ -1,0 +1,2 @@
+0x00888fe0 ?GetSampleMsPos_009233e0@@YAHPAX@Z
+0x00939d44 __imp__AIL_sample_ms_position@12

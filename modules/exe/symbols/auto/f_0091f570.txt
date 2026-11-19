@@ -1,0 +1,1 @@
+0x0091f570 ?SetObjectFloat_009bc190@@YAXPAUObject_009bc190@@M@Z

@@ -1,1 +1,0 @@
-0x00404990 ?Reset@PairReset_00404990@@QAEXXZ

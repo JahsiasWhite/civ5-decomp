@@ -1,0 +1,1 @@
+0x0084dcc0 ?IsFlag94@ItemTable_008e7ec0@@QBE_NI@Z

@@ -1,0 +1,2 @@
+0x0042e1d0 ?SetBlocking@Socket_007e5630@@QAEH_N@Z
+0x00939a28 __imp__ioctlsocket@12

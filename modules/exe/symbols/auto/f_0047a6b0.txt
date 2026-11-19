@@ -1,0 +1,1 @@
+0x0047a6b0 ?GetFirst@UnkNodeCursor_0082d030@@QAE_NPAV1@@Z

@@ -1,2 +1,0 @@
-0x0065c1e0 ?WriteString@PacketWriter_0065c1e0@@QAE_NPBD@Z
-0x009d68b8 __imp__strcpy_s

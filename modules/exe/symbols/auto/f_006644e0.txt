@@ -1,0 +1,2 @@
+0x006644e0 ?TriangleArea_00789bf0@@YAMPBUVec2_00789bf0@@00@Z
+0x0094b9a0 __real@3f000000

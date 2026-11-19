@@ -1,2 +1,0 @@
-0x008a8480 ?GetCurrentData_008a8480@@YAPADPAUFrames_008a8480@@@Z
-0x02de1ea0 ?g_iGlobalCounter_02de1ea0@@3HA

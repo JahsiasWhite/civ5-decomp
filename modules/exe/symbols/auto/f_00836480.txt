@@ -1,0 +1,1 @@
+0x00836480 ?SetByte@BufferHost_008d03e0@@QAEXDI@Z

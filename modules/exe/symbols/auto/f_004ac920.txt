@@ -1,0 +1,1 @@
+0x004ac920 ?GetCount@VecOwner_00419780@@QBEHXZ

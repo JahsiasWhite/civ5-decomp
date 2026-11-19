@@ -1,2 +1,0 @@
-0x0096cbd0 ?GetOpenSSLEcdsaMethod@@YAPAHXZ
-0x00cafe00 ?g_OpenSSLEcdsaMethod@@3HA

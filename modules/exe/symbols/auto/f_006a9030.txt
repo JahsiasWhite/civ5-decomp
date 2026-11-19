@@ -1,3 +1,0 @@
-0x006a9030 ?RejectFromLua_006a9030@@YAXPAUlua_State@@H@Z
-0x00923a0c _luaL_error
-0x00a56360 ??_C@_0BA@NLMENFEP@Don?8t?5call?5this?$AA@

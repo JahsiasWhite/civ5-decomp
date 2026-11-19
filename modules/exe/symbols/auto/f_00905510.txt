@@ -1,8 +1,0 @@
-0x00905510 ?Set@LuaRef_00905510@@QAEXPAUlua_State@@H@Z
-0x00923970 _lua_pushvalue
-0x009239b2 _lua_checkstack
-0x00923aea _luaL_ref
-0x00923af0 _luaL_unref
-0x009d6720 __imp___wassert
-0x00a9dadc ??_C@_1DA@NEOHOAII@?$AA?4?$AA?4?$AA?2?$AAS?$AAo?$AAu?$AAr?$AAc?$AAe?$AA?2?$AAF?$AAL?$AAu?$AAa?$AAT?$AAy?$AAp?$AAe?$AAs?$AA?4?$AAc?$AAp?$AAp?$AA?$AA@
-0x00a9db0c ??_C@_13PHJMHGG@?$AAL?$AA?$AA@

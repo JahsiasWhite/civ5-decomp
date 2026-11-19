@@ -1,0 +1,2 @@
+0x00478ac0 ??0Unk_00b88c18@@QAE@XZ
+0x00a1a928 ?g_vtable_00b88c18@@3QBQAXB

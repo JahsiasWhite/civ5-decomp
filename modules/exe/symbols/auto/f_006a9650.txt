@@ -1,1 +1,0 @@
-0x006a9650 ?GetSelf@SelfReturner_006a9650@@QAEPAV1@XZ

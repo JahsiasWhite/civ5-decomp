@@ -32,7 +32,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from db import DB, DEFAULT_MODULE, MODULES  # noqa: E402
+from db import DB, DEFAULT_MODULE, EXE_BUILD_BEFORE_SWITCH, LEGACY, MODULES  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 STATIC = HERE / "static"
@@ -122,6 +122,27 @@ def by_module(raw, default, what):
         m, a = parse_target(k, default)
         out.setdefault(m, {})[a] = v
     return out
+
+
+def check_build(db, module, build):
+    """Refuse exe work from a checkout on another build than the server's. `build` is what
+    the client says it targets: tools send it on every function call once the project is
+    on the 2026 exe. Missing is only fine before the switch (older clients, unchanged).
+    A legacy module's build, when given, must be its own. DLLs don't care."""
+    build = None if build is None or build == "" else str(build)[:16]
+    if module in LEGACY:
+        if build is not None and build != LEGACY[module][1]:
+            raise ApiError(409, f"{module} is the {LEGACY[module][1]} build, not {build}")
+        return
+    if module != DEFAULT_MODULE:
+        return
+    cur = db.exe_build()
+    if build is None and cur == EXE_BUILD_BEFORE_SWITCH:
+        return
+    if build != cur:
+        if cur == EXE_BUILD_BEFORE_SWITCH:
+            raise ApiError(409, f"this server is still on the {cur} exe build, not {build}")
+        raise ApiError(409, f"git pull: the project moved to the {cur} build")
 
 
 def as_int(v, name, default=0):
@@ -333,6 +354,10 @@ def make_handler(cfg, db):
                 addr = None
                 if body.get("addr") is not None:
                     module, addr = parse_target(body["addr"], module)
+                if module in LEGACY:
+                    raise ApiError(400, f"{module} is the legacy {LEGACY[module][1]} build: view-only, "
+                                        "nothing in it can be claimed")
+                check_build(db, module, body.get("build"))
                 prefix = "".join(c for c in str(body.get("worker_prefix", "w")) if c.isalnum())[:8] or "w"
                 min_size = as_int(body.get("min_size"), "min_size", 0)
                 max_size = as_int(body.get("max_size"), "max_size", None) or None
@@ -347,10 +372,14 @@ def make_handler(cfg, db):
                                                   for m, a, w in got]})
             if path == "/api/release":
                 module, addr = parse_target(body.get("addr"), module)
+                check_build(db, module, body.get("build"))
                 ok = db.release(u["id"], addr, module=module)
                 return self.send(200 if ok else 404, {"released": ok})
             if path == "/api/report":
                 module, addr = parse_target(body.get("addr"), module)
+                if module in LEGACY:
+                    raise ApiError(400, f"{module} is the legacy {LEGACY[module][1]} build: view-only")
+                check_build(db, module, body.get("build"))
                 try:
                     db.report(u["id"], addr, str(body.get("status", "")),
                               str(body.get("detail", "")), str(body.get("model", "")),
@@ -390,7 +419,9 @@ def make_handler(cfg, db):
             """Maintainer pushes a full local `c5d match` result: {"statuses": {"0x..": "MATCH"}},
             plus optional ready / merges / models. Addresses are in body["module"] (default
             exe) unless qualified ("db:0x10001234"), so one push can cover several modules.
-            Authenticated before the (large) body is read."""
+            `build` names the exe build the results are for: {"exe": "2026", "exe-2014":
+            "2014"}, or a string for body["module"]; a mismatch is refused (409) before
+            anything is applied (see check_build). Authenticated before the (large) body is read."""
             u = self.require_admin()
             body = self.json_body(ADMIN_MAX_BODY)
             default = parse_module(body.get("module"))
@@ -423,6 +454,15 @@ def make_handler(cfg, db):
                 raise ApiError(400, "models must be an object of addr -> model")
             models = {m: {a: str(v) for a, v in d.items()}
                       for m, d in by_module(models or {}, default, "models").items()}
+            builds = body.get("build")
+            if builds is None or isinstance(builds, str):
+                builds = {} if builds in (None, "") else {default: builds}
+            if not isinstance(builds, dict):
+                raise ApiError(400, "build must be a string or an object of module -> build")
+            for m in builds:
+                parse_module(m)
+            for m in set(statuses) | set(ready) | set(merges) | set(models) | set(builds):
+                check_build(db, m, builds.get(m))
             resized = removed = added = closed = credited = ready_changed = 0
             # before verify (sizes count toward bytes) and readiness (covers added functions)
             for m, ms in merges.items():

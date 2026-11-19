@@ -2,8 +2,15 @@
   "modules": {
     "exe": {
       "file": "CivilizationV_DX11.exe",
-      "build_hash": "37f6137c4e94ea252b50abbce60bda734a931c3d6acd3661b6699fcbe46d76e0",
-      "build": "Steam final build, 2014-11-19 (DX11 exe)"
+      "build_id": "2026",
+      "build_hash": "bd631780d178ed43da453a83a00224d15cd5c3dcd1b95cba450845ca6ee00f88",
+      "build": "Steam build, 2026-11-10 (DX11 exe)",
+      "legacy": {
+        "2014": {
+          "build_hash": "37f6137c4e94ea252b50abbce60bda734a931c3d6acd3661b6699fcbe46d76e0",
+          "build": "Steam final build, 2014-11-19 (DX11 exe)"
+        }
+      }
     },
     "db": {
       "file": "CvGameDatabaseWin32Final Release.dll",

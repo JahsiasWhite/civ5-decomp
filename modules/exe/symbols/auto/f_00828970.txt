@@ -1,0 +1,4 @@
+0x00828970 ?GetPoolFree_008c28c0@@YAHXZ
+0x02f4dcc0 ?g_poolLock_030bce00@@3JC
+0x03fcf178 ?g_poolTop_0413e2b8@@3HA
+0x02f4dd00 ?g_poolBase_030bce40@@3HA

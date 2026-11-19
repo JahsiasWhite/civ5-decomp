@@ -1,0 +1,16 @@
+0x007764d0 ?l_GetLuaMemoryUsage@@YAHPAUlua_State@@@Z
+0x0088952e _lua_gettop
+0x0099f880 ??_C@_0L@MHEKMCLI@NumRegions?$AA@
+0x02c62ee4 ?g_uTrackedAllocNumRegions_02dd2098@@3KA
+0x0099f88c ??_C@_0BG@ODBDDMEJ@MaxUserAllocatedBytes?$AA@
+0x02c62ecc ?g_uTrackedAllocPeakBytes@@3KA
+0x0099f8a4 ??_C@_0BK@OEBHGAAI@CurrentUserAllocatedBytes?$AA@
+0x02c62ed0 ?g_uTrackedAllocCurBytes@@3KA
+0x0099f8c0 ??_C@_0BG@IMNHJGJM@CurrentAllocatedBytes?$AA@
+0x02c62ed4 ?g_uTrackedAllocCurrentAllocatedBytes_02dd2088@@3KA
+0x0099f8d8 ??_C@_0BF@CODKECBA@CurrentReservedBytes?$AA@
+0x02c62ed8 ?g_uTrackedAllocCurrentReservedBytes_02dd208c@@3KA
+0x0099f8f0 ??_C@_0BF@LDNMDMAI@CurrentOverheadBytes?$AA@
+0x02c62edc ?g_uTrackedAllocCurrentOverheadBytes_02dd2090@@3KA
+0x0099f908 ??_C@_0BH@LNAHJINO@CurrentUncommitedBytes?$AA@
+0x02c62ee0 ?g_uTrackedAllocCurrentUncommittedBytes_02dd2094@@3KA

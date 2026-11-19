@@ -1,3 +1,0 @@
-0x009bbe90 ?SetGlobals_009bbe90@@YAXPBH@Z
-0x0606fc00 _g_val_0606fc00
-0x0606fc04 _g_val_0606fc04

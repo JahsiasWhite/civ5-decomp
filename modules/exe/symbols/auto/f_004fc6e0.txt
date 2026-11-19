@@ -1,0 +1,2 @@
+0x004fc6e0 ?HasFlag@FlagSet_0056c3d0@@QBE_NH@Z
+0x00a33fb8 ?g_flagIds_00ba2ff8@@3PAHA

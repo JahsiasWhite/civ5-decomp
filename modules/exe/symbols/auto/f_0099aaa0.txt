@@ -1,2 +1,0 @@
-0x0099aaa0 ?FindNode_0099aaa0@@YAPAUTreeNode_0099aaa0@@HH@Z
-0x06070ab4 ?g_treeRoot_06070ab4@@3PAUTreeNode_0099aaa0@@A

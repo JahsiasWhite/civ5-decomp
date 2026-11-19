@@ -1,0 +1,2 @@
+0x007fdd40 ?SetGlobalFromHost_00897cb0@@YAXPBD@Z
+0x02c72cb0 ?g_iGlobal_02de1e20@@3HA

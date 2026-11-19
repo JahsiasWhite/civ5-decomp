@@ -1,0 +1,2 @@
+0x00404c40 ?CalcSize_007be950@@YAHXZ
+0x05f01cb4 ?g_ptr_06071214@@3PADA

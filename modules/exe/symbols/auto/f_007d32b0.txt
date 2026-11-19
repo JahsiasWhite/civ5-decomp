@@ -1,3 +1,0 @@
-0x007d32b0 ?FreeHeapMem_007d32b0@@YAHHPAX@Z
-0x009d6454 __imp__GetProcessHeap@0
-0x009d63f8 __imp__HeapFree@12

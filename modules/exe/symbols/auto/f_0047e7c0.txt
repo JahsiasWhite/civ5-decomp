@@ -1,0 +1,1 @@
+0x0047e7c0 ?GetSpan@Unk_00b89728@@QBEHXZ

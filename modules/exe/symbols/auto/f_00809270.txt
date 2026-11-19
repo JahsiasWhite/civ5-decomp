@@ -1,0 +1,1 @@
+0x00809270 ?GetSpan_008a31e0@@YAHPBUHost_008a31e0@@@Z

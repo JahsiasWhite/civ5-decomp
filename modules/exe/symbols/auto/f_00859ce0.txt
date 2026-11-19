@@ -1,0 +1,2 @@
+0x00859ce0 ?Init@Class_008f4230@@QAEPAV1@XZ
+0x009cb6ec ?g_vtable_00a9b4fc@@3QBQAXB

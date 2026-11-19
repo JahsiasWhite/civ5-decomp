@@ -1,0 +1,1 @@
+0x0087e670 ?RemoveListenerA@Registry_00918820@@QAEXPAX@Z

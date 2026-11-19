@@ -1,0 +1,2 @@
+0x00465d00 ?IsSignaled@Event_0081abc0@@QAEHXZ
+0x00939258 __imp__WaitForSingleObject@8

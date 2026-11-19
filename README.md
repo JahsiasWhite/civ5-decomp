@@ -1,7 +1,7 @@
 # civ5-decomp
 
-A byte-matching decompilation of *Sid Meier's Civilization V* (final Steam build from
-Nov 2014), modelled on the approach used by fnvdecomp. It covers the three binaries whose
+A byte-matching decompilation of *Sid Meier's Civilization V* (the Steam build from
+Nov 2026; the original Nov 2014 build is kept as a view-only legacy build), modelled on the approach used by fnvdecomp. It covers the three binaries whose
 source Firaxis never published, each a **module** with its own folder under `modules/`:
 
 | Module | Binary | In scope |
@@ -57,7 +57,7 @@ closes the claim. A function nobody claimed or reported (committed directly) sho
 | Linker | MSVC 9.0 (Visual C++ 2008) | same | same |
 | `.text` | ~6.1 MB | ~486 KB (~49 KB in scope) | ~557 KB (~55 KB in scope) |
 | Image base | `0x00400000` | `0x10000000` | `0x10000000` |
-| Build date | 2014-11-19 | same build | same build |
+| Build date | 2026-11-10 (legacy: 2014-11-19) | 2014-11-19 (unchanged in 2026) | 2014-11-19 (unchanged in 2026) |
 | DRM wrapper | none | not checked | not checked |
 | Rich header | absent (so the exact compiler build has to be found from the CRT) | | |
 
@@ -195,9 +195,29 @@ instead (`tools/fingerprint.py`):
 ## Configuration
 
 - `config.json` (committed): compiler flags, pinned tool versions, and `modules`: each
-  binary's file name and build hash.
+  binary's file name and build hash, plus any `legacy` builds (the exe's 2014 build).
 - `config.local.json` (git-ignored, written by `c5d setup`): this machine's game, Ghidra and
   MSVC paths, plus the server login, `model` and `agent_cmd`. Its keys override `config.json`.
+
+## Two builds of the exe
+
+In November 2026 Steam shipped a recompiled `CivilizationV_DX11.exe` (same compiler, every
+address moved; the two DLLs didn't change). The project moved to it, since that's the exe
+everyone has. The 2014 build is kept as a **legacy build**: view-only, nobody claims or
+writes code for it, but CI keeps checking every match against it and the site can show it.
+
+- `modules/exe/` is the 2026 build: its sources, symbol files and data are at 2026 addresses.
+- `modules/exe/legacy/2014/` holds the 2014 build's data, boundary fixes and results, its
+  `addrmap.csv` (2026 to 2014, from `tools/buildmap.py`), and the matches that exist only in
+  2014 (`src/`, `symbols/`: functions whose code changed or that the 2026 exe doesn't have).
+- `python tools/c5d.py --build 2014 match` checks the 2014 build (always fingerprint mode). It
+  translates the shared symbol files through the address map, adds the legacy-only ones, and
+  reads and links files in their 2014 order so the 2014 results stay exactly as they were.
+  Only `match` and `status` accept `--build`.
+- On the site the 2014 build is the module `exe-2014`.
+
+Symbol names from before the move still carry their 2014 address (`SetupEventTable_004023c0`);
+no tool reads addresses out of names. New names use 2026 addresses.
 - `modules/<id>/data/functions.csv` (committed): each module's shared function list
   (addresses, sizes, Ghidra names; no code), so everyone uses the same addresses whatever
   Ghidra version they have.
@@ -384,7 +404,7 @@ What the trial found and fixed:
 
 ```
 config.json        shared settings: compiler flags, tool versions, and "modules" (each
-                   binary's file name and build hash: exe, db, loc)
+                   binary's file name and build hash: exe, db, loc; legacy builds)
 config.local.json  this machine's paths, server login, agent_cmd (git-ignored; `c5d setup`)
 CONTRIBUTING.md    contributor setup guide
 PROGRESS.md        generated summary
@@ -403,6 +423,9 @@ tools/workqueue.py call graph, conventions, leaves-first queue
 tools/tasks.py     task bundles + agent loop
 tools/sdk_vtables.py SDK interface names
 tools/setup_env.py `c5d setup`: discovery, exe hash, toolchain checks
+tools/buildmap.py  address map between two builds of a binary (maintainers)
+tools/port_build.py one-off: move a module onto a new build, old one to legacy/
+tools/addrmap.py   reads legacy/<build>/addrmap.csv for `--build` runs
 tools/hybrid.py    `c5d build`: relocate our code into a copy of the exe
 tools/binfmt.py    PE / COFF readers (exports, imports, base relocations)
 tools/ltcg.py      /GL + /LTCG build, placeholders, linked comparison

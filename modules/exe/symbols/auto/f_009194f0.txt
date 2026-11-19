@@ -1,2 +1,0 @@
-0x009194f0 ?IsValidSlot_009194f0@@YAHI@Z
-0x0606bb3c ?g_slotLimit_0606bb3c@@3HA

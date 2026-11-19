@@ -1,0 +1,2 @@
+0x0086b230 ?Release@LuaRef_00905220@@QAEXXZ
+0x008896f0 _luaL_unref

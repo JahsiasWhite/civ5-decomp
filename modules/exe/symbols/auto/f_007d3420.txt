@@ -1,0 +1,1 @@
+0x007d3420 ?GetVal@Host_004593b0@@QBEHI@Z

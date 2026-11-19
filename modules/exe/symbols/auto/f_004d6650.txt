@@ -1,0 +1,1 @@
+0x004d6650 ?IsEmpty@WideText_006d54d0@@QBE_NXZ

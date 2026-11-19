@@ -1,0 +1,1 @@
+0x0047dc70 ?IsNullGuid_008304d0@@YA_NPBU_GUID@@@Z

@@ -1,0 +1,3 @@
+0x0076c020 ?HandleFromLua_004d3ad0@@YAHPAUlua_State@@@Z
+0x0088954c _lua_tointeger
+0x00b49338 ?g_pOwner_00cc8e74@@3PAUGlobalOwner_0079fd50@@A

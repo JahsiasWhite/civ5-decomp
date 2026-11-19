@@ -1,0 +1,1 @@
+0x00567210 ?SeekLast@ChainCursor_006494d0@@QAEAAU1@HPAUChainPool_006494d0@@@Z

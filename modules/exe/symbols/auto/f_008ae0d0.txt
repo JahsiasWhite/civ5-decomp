@@ -1,0 +1,2 @@
+0x008ae0d0 ?LookupTableEntry_0094ace0@@YAHI@Z
+0x009e5a20 ?g_aTable30_00b53f48@@3PAHA

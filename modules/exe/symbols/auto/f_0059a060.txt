@@ -1,2 +1,0 @@
-0x0059a060 ?IsZero_02de0448@@YA_NXZ
-0x02de0448 ?g_value_02de0448@@3HA

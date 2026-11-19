@@ -1,0 +1,3 @@
+0x00889290 ?MSS_GetStreamReverbLevels@@YAXPAXPAM1@Z
+0x00939ddc __imp__AIL_stream_sample_handle@4
+0x00939d68 __imp__AIL_sample_reverb_levels@12

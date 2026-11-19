@@ -1,0 +1,2 @@
+0x00841cf0 ?CalcBucket@HashBucket_004d49a0@@QBEIPBI@Z
+0x00939648 __imp__ldiv

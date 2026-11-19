@@ -1,0 +1,4 @@
+0x00477070 ??1Unk_00b88b8c@@UAE@XZ
+0x00a1a89c ??_7Unk_00b88b8c@@6B@
+0x00939248 __imp__CloseHandle@4
+0x00939304 __imp__DeleteCriticalSection@4

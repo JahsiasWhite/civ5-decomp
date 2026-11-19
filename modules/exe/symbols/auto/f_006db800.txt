@@ -1,0 +1,2 @@
+0x006db800 ?PushIntToLua@@YAXPAUlua_State@@PBH@Z
+0x00889540 _lua_pushinteger
