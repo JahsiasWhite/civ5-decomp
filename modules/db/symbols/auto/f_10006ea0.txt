@@ -1,0 +1,10 @@
+0x10006ea0 ?Execute@Results_10006ea0@Database@@QAE_NXZ
+0x10060940 _sqlite3_step
+0x100028c0 ?LogWarning@Connection_10006ea0@Database@@QBEXPBD@Z
+0x100013b0 ?ErrorMessage@Connection_10006ea0@Database@@QBEPBDXZ
+0x100028e0 ?LogError@Connection_10006ea0@Database@@QBEXPBD@Z
+0x10015190 _sqlite3_sql
+0x10001b20 ?FormatBuf_10001b20@@YAHPADPBDZZ
+0x100028a0 ?LogMessage@Connection_10006ea0@Database@@QBEXPBD@Z
+0x100789dc ??_C@_0CO@OEKOOAHP@A?5row?5was?5returned?5during?5an?5Exe@
+0x100789c4 ??_C@_0BH@OHGJPPOF@While?5executing?5?9?5?8?$CFs?8?$AA@
