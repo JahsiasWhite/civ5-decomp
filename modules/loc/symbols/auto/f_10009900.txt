@@ -1,0 +1,5 @@
+0x10009900 ?SetPlurality@String@Localization@@QAE_NII@Z
+0x100c5b1c ?g_pLogger_100c5b1c@Localization@@3PAVILogger@1@A
+0x100c5148 ?g_CurrentLangIdx_10009900@Localization@@3HA
+0x100c5ba4 ?g_Languages_10009900@Localization@@3PAULanguage_10009900@1@A
+0x1008b3d0 ??_C@_0BH@JMIFNBOF@Plurality?5Starts?5at?51?4?$AA@
