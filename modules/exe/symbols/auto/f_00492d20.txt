@@ -1,0 +1,3 @@
+0x00492d20 ?ClipToWindow_00492d20@Unk_00492d20@@QAEXXZ
+0x00939994 __imp__GetWindowInfo@8
+0x00939998 __imp__ClipCursor@4

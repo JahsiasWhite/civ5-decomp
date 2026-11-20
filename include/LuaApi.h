@@ -56,4 +56,6 @@ const char* lua_typename(lua_State* L, int tp);
 int luaL_optinteger(lua_State* L, int numArg, int def);
 void luaL_where(lua_State* L, int lvl);
 unsigned int lua_objlen(lua_State* L, int idx);
+int luaL_checkinteger(lua_State* L, int numArg);
+const char* lua_pushfstring(lua_State* L, const char* fmt, ...);
 }

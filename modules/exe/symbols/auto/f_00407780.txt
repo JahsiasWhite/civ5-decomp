@@ -1,0 +1,3 @@
+0x00407780 ?GetNumProcsMinus1_00407780@@YAKXZ
+0x05f01cd0 ?g_numProcs_00407780@@3KA
+0x0093941c __imp__GetSystemInfo@4

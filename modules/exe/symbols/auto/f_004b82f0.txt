@@ -1,0 +1,3 @@
+0x004b82f0 ?Shutdown_004b82f0@Unk_004b82f0@@QAE_NXZ
+0x009390f4 __imp_?Release@Results@Database@@QAEXXZ
+0x00939048 __imp_?Close@Connection@Database@@QAEXXZ

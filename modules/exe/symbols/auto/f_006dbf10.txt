@@ -1,0 +1,2 @@
+0x006dbf10 ?PushPair_006dbf10@@YAXPAUlua_State@@PBH@Z
+0x00889540 _lua_pushinteger

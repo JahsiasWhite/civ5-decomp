@@ -44,6 +44,8 @@ public:
     CVGAMEDATABASE_API bool TryReset();
     // src: EXE [0x10006f30]
     CVGAMEDATABASE_API bool TryExecute();
+    // src: EXE
+    CVGAMEDATABASE_API void Release();
     // src: EXE [0x100067d0]
     CVGAMEDATABASE_API bool Bind(int iColumn, const char* szValue, int iLength, bool bStatic);
     // src: EXE [0x10006830]

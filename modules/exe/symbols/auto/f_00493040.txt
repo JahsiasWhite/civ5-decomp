@@ -1,0 +1,3 @@
+0x00493040 ?Set_00493040@StringWrap_00493040@@QAEAAU1@PBD@Z
+0x009395b0 __imp_?assign@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QAEAAV12@PBD@Z
+0x009395ac __imp_?clear@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QAEXXZ

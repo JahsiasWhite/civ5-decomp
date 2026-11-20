@@ -1,0 +1,4 @@
+0x00778930 ?l_CloudSaveName_00778930@@YAHPAUlua_State@@@Z
+0x00889606 _luaL_checkinteger
+0x0088969c _lua_pushfstring
+0x009a06b0 ??_C@_0BG@GOBMCKHP@CloudSave?5?$CFd?4Civ5Save?$AA@

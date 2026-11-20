@@ -1,0 +1,2 @@
+0x007bfd20 ??0PairStr_007bfd20@@QAE@ABU0@@Z
+0x00939594 __imp_??0?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QAE@ABV01@@Z
