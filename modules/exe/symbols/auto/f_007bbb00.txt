@@ -1,0 +1,3 @@
+0x007bbb00 ?RestoreDC_007bbb00@Unk_007bbb00@@QAEXXZ
+0x009391b0 __imp__GdiFlush@0
+0x009391f4 __imp__SelectObject@8

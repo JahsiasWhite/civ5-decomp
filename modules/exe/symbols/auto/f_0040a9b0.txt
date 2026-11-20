@@ -1,0 +1,2 @@
+0x0040a9b0 ?Init_0040a9b0@Unk_0040a9b0@@QAEPAU1@PBDH@Z
+0x00939808 __imp__strncpy_s

@@ -1,0 +1,4 @@
+0x00777ad0 ?l_RefreshIncludeFileList_00777ad0@@YAHPAUlua_State@@@Z
+0x00889582 _lua_getfield
+0x00889648 _lua_call
+0x009a024c ??_C@_0BH@PNHBHJFN@RefreshIncludeFileList?$AA@

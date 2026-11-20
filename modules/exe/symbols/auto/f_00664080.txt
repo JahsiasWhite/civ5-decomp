@@ -1,0 +1,2 @@
+0x00664080 ?MatrixTranslation_00664080@@YAPAXPAXPBUVec3_00664080@@@Z
+0x0080e76c _D3DXMatrixTranslation@16

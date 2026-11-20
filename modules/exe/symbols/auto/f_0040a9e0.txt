@@ -1,0 +1,2 @@
+0x0040a9e0 ?Copy_0040a9e0@Unk_0040a9e0@@QAEPAU1@PBU1@@Z
+0x00939878 __imp__strncpy

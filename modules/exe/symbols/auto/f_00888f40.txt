@@ -1,0 +1,3 @@
+0x00888f40 ?SetStreamVolumePan_00888f40@@YAXPAXMM@Z
+0x00939ddc __imp__AIL_stream_sample_handle@4
+0x00939d40 __imp__AIL_set_sample_volume_pan@12

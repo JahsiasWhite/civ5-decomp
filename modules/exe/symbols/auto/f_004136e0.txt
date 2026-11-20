@@ -1,0 +1,3 @@
+0x004136e0 ?QueryInterface_004136e0@Unk_004136e0@@QAEPAXABVtype_info@@@Z
+0x00b49110 ??_R0?AUInterface_004136e0@@@8
+0x00939724 __imp_??8type_info@@QBE_NABV0@@Z

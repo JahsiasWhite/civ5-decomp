@@ -1,0 +1,2 @@
+0x008890c0 ?SetSample3DVelocityVector_008890c0@@YAXPAXPBUVec3_008890c0@@@Z
+0x00939d58 __imp__AIL_set_sample_3D_velocity_vector@16

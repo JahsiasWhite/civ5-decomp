@@ -1,0 +1,2 @@
+0x007bba00 ?InitDC_007bba00@Unk_007bba00@@QAEJXZ
+0x009391e8 __imp__CreateCompatibleDC@4

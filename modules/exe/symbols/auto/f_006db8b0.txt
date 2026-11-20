@@ -1,0 +1,3 @@
+0x006db8b0 ?PushUInt_006db8b0@@YAXPAUlua_State@@PBI@Z
+0x00889558 _lua_pushnumber
+0x00a1bd30 __real@41f0000000000000

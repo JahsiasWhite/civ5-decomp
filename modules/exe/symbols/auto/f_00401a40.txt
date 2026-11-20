@@ -1,0 +1,3 @@
+0x00401a40 ?FreeTagged_00401a40@@YAXPAX@Z
+0x00939678 __imp__free
+0x00b42424 ?g_freeHook_00cb1484@@3P6AXPAX@ZA

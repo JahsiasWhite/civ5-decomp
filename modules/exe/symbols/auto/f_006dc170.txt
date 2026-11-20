@@ -1,0 +1,3 @@
+0x006dc170 ?ReadIntFloat_006dc170@@YAXPAUlua_State@@PAUIntFloat_006dc170@@@Z
+0x0088954c _lua_tointeger
+0x00889552 _lua_tonumber

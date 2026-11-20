@@ -1,0 +1,3 @@
+0x006db4b0 ?PushFloatInt_006db4b0@@YAXPAUlua_State@@PBUFloatInt_006db4b0@@@Z
+0x00889540 _lua_pushinteger
+0x00889558 _lua_pushnumber
