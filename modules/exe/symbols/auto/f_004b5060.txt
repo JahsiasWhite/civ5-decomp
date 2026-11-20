@@ -1,0 +1,4 @@
+0x004b5060 ?CheckGlobals_004b5060@@YA_NXZ
+0x02ea1430 ?g_flagA_004b5060@@3HA
+0x02cdad9c ?g_valB_004b5060@@3HA
+0x00c16499 ?g_flagC_004b5060@@3_NA

@@ -1,0 +1,4 @@
+0x0076fb50 ?l_SetPair_0076fb50@@YAHPAUlua_State@@@Z
+0x0088954c _lua_tointeger
+0x00b4f544 ?g_valA_0076fb50@@3HA
+0x00b4f548 ?g_valB_0076fb50@@3HA

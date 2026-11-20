@@ -1,0 +1,2 @@
+0x004138e0 ?SetPath_004138e0@Unk_004138e0@@QAEXPB_W@Z
+0x009396b8 __imp__wcsncpy_s

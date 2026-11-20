@@ -1,0 +1,3 @@
+0x00675830 ?l_CallUpvalue_00675830@@YAHPAUlua_State@@@Z
+0x00889588 _lua_touserdata
+0x00889564 _lua_tolstring

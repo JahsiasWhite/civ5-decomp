@@ -1,0 +1,4 @@
+0x00758840 ?l_AppendUpvalue_00758840@@YAHPAUlua_State@@@Z
+0x00889570 _lua_pushvalue
+0x00889636 _lua_objlen
+0x00889522 _lua_rawseti

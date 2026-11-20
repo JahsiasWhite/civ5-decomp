@@ -1,0 +1,2 @@
+0x0089ce80 ?Clear_0089ce80@@YAXPAUUnk_0089ce80@@@Z
+0x00889ce2 _memset
