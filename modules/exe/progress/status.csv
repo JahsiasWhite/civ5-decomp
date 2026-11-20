@@ -43,6 +43,7 @@ address,symbol,status,bytes,source,since
 0x00421da0,?Disconnect@CommunicatorTCPIP@Nexus@@UAEXXZ,MATCH,44,modules/exe/src/auto/f_00421da0.cpp,2026-11-19
 0x004220a0,??0PacketWriter_007d9a10@@QAE@PAUPacketBuffer_007d9a10@@G@Z,MATCH,49,modules/exe/src/auto/f_004220a0.cpp,2026-11-19
 0x004220e0,?Flush@PacketWriter_007d9a50@@QAEXXZ,MATCH,62,modules/exe/src/auto/f_004220e0.cpp,2026-11-19
+0x00422120,??0Unk_00422120@@QAE@XZ,MATCH,29,modules/exe/src/auto/f_00422120.cpp,2026-11-19
 0x00422eb0,?AlwaysFalse_007f35a0@@YA_NXZ,MATCH,3,modules/exe/src/auto/f_00422eb0.cpp,2026-11-19
 0x00422ec0,?SetGlobal_007da6a0@@YAXD@Z,MATCH,10,modules/exe/src/auto/f_00422ec0.cpp,2026-11-19
 0x00422f10,?Init@Class_007da6f0@@QAEXH@Z,MATCH,33,modules/exe/src/auto/f_00422f10.cpp,2026-11-19
@@ -145,6 +146,7 @@ address,symbol,status,bytes,source,since
 0x004696c0,?FillRemaining@RecordArray_00722d80@@QAEXABURecord_00722d80@@@Z,MATCH,51,modules/exe/src/auto/f_004696c0.cpp,2026-11-19
 0x0046a870,?FindMaxNode_0068ca60@@YAPAUTreeNode_0068ca60@@PAU1@@Z,MATCH,28,modules/exe/src/auto/f_0046a870.cpp,2026-11-19
 0x0046a890,?FindMinNode_00607390@@YAPAUTreeNode_00607390@@PAU1@@Z,MATCH,27,modules/exe/src/auto/f_0046a890.cpp,2026-11-19
+0x0046d4d0,?DispatchIfReady_0046d4d0@Unk_0046d4d0@@QAEHXZ,MATCH,28,modules/exe/src/auto/f_0046d4d0.cpp,2026-11-19
 0x0046d4f0,?GetWriteTime@File_00820940@@QBEXPAU_FILETIME@@@Z,MATCH,43,modules/exe/src/auto/f_0046d4f0.cpp,2026-11-19
 0x0046f5d0,?SetVal@Class_00822980@@QAEXD@Z,MATCH,13,modules/exe/src/auto/f_0046f5d0.cpp,2026-11-19
 0x0046f620,?SetVal@Unk_008229d0@@QAEXH@Z,MATCH,10,modules/exe/src/auto/f_0046f620.cpp,2026-11-19
@@ -603,6 +605,7 @@ address,symbol,status,bytes,source,since
 0x006dbd20,?PushIntAsNumberToLua@@YAXPAUlua_State@@PBH@Z,MATCH,26,modules/exe/src/auto/f_006dbd20.cpp,2026-11-19
 0x006dbd70,?ReadData_004fc420@@YAXPAUlua_State@@PAUUnk_004fc420@@@Z,MATCH,76,modules/exe/src/auto/f_006dbd70.cpp,2026-11-19
 0x006dbdc0,?PushData_004ab3c0@@YAXPAUlua_State@@PBUUnk_004ab3c0@@@Z,MATCH,67,modules/exe/src/auto/f_006dbdc0.cpp,2026-11-19
+0x006dbe10,?ReadBool_006dbe10@@YAXPAUlua_State@@PA_N@Z,MATCH,27,modules/exe/src/auto/f_006dbe10.cpp,2026-11-19
 0x006dbe70,?PushEntry_007068c0@@YAXPAUlua_State@@PBUEntry_007068c0@@@Z,MATCH,46,modules/exe/src/auto/f_006dbe70.cpp,2026-11-19
 0x006dbee0,?PushRecord_00720740@@YAXPAUlua_State@@PBURecord_00720740@@@Z,MATCH,47,modules/exe/src/auto/f_006dbee0.cpp,2026-11-19
 0x006dbf40,?GetLuaInt_00599900@@YAXPAUlua_State@@PAH@Z,MATCH,22,modules/exe/src/auto/f_006dbf40.cpp,2026-11-19
@@ -627,6 +630,7 @@ address,symbol,status,bytes,source,since
 0x006dce00,?PushRecord_0043f310@@YAXPAUlua_State@@PBURecord_0043f310@@@Z,MATCH,126,modules/exe/src/auto/f_006dce00.cpp,2026-11-19
 0x006dced0,?Lua_ReadEntry_00438ce0@@YAXPAUlua_State@@PAUEntry_00438ce0@@@Z,MATCH,51,modules/exe/src/auto/f_006dced0.cpp,2026-11-19
 0x006e0b70,?RunProtected_00722e00@@YAHPAX@Z,MATCH,32,modules/exe/src/auto/f_006e0b70.cpp,2026-11-19
+0x006e2810,?RunProtected_006e2810@@YAHXZ,MATCH,28,modules/exe/src/auto/f_006e2810.cpp,2026-11-19
 0x006e2ca0,?Lua_RegisterAutomation_006db0e0@@YAHPAUlua_State@@@Z,MATCH,208,modules/exe/src/auto/f_006e2ca0.cpp,2026-11-19
 0x006e2f60,?InitContentType_004d9490@@YAXPAUlua_State@@@Z,MATCH,162,modules/exe/src/auto/f_006e2f60.cpp,2026-11-19
 0x006e3a60,?RegisterContentManagerLib_0056a3a0@@YAHPAUlua_State@@@Z,MATCH,187,modules/exe/src/auto/f_006e3a60.cpp,2026-11-19

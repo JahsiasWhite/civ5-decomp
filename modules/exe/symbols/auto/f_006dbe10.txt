@@ -1,0 +1,2 @@
+0x006dbe10 ?ReadBool_006dbe10@@YAXPAUlua_State@@PA_N@Z
+0x00889546 _lua_toboolean

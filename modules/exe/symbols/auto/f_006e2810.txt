@@ -1,0 +1,4 @@
+0x006e2810 ?RunProtected_006e2810@@YAHXZ
+0x006e2770 ?ProtectedBody_006e2770@@YAHPAUlua_State@@@Z
+0x02c62ec8 ?g_pLuaHost_02dd207c@@3PAUUnkLuaHost_02dd207c@@A
+0x0088962a _lua_cpcall
