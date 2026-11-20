@@ -1,0 +1,3 @@
+0x006e7300 ?l_UpvalueLen_006e7300@@YAHPAUlua_State@@@Z
+0x00889636 _lua_objlen
+0x00889540 _lua_pushinteger

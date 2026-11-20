@@ -9,6 +9,7 @@ typedef int (*lua_CFunction)(lua_State* L);
 
 #define LUA_REGISTRYINDEX (-10000)
 #define LUA_GLOBALSINDEX (-10002)
+#define lua_upvalueindex(i) (LUA_GLOBALSINDEX - (i))
 #define LUA_NOREF (-2)
 #define LUA_TTABLE 5
 
@@ -52,4 +53,7 @@ void lua_rawseti(lua_State* L, int idx, int n);
 void lua_remove(lua_State* L, int idx);
 int lua_equal(lua_State* L, int idx1, int idx2);
 const char* lua_typename(lua_State* L, int tp);
+int luaL_optinteger(lua_State* L, int numArg, int def);
+void luaL_where(lua_State* L, int lvl);
+unsigned int lua_objlen(lua_State* L, int idx);
 }

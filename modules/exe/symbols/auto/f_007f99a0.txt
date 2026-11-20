@@ -1,0 +1,2 @@
+0x007f99a0 ?GetGlobalPair_007f99a0@@YAXPAH0@Z
+0x02c72cdc ?g_pUnk_007f99a0@@3PAUUnkGlobal_007f99a0@@A

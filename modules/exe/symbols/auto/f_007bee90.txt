@@ -1,0 +1,2 @@
+0x007bee90 ?GetItem_007bee90@@YAPAUItem_007bee90@@I@Z
+0x02c63e80 ?g_items_007bee90@@3PAUItem_007bee90@@A
