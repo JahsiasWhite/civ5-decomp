@@ -1,0 +1,2 @@
+0x007af930 ?FillStrings_007af930@@YAXPAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@0ABV12@@Z
+0x009395b4 __imp_??4?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QAEAAV01@ABV01@@Z

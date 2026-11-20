@@ -1,0 +1,3 @@
+0x008892d0 ?SetStreamReverbLevels_008892d0@@YAXPAXMM@Z
+0x00939ddc __imp__AIL_stream_sample_handle@4
+0x00939d6c __imp__AIL_set_sample_reverb_levels@12

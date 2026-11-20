@@ -1,0 +1,2 @@
+0x00635f20 ?GetPositiveOrDefault_00635f20@UnkObj_00635f20@@QAEMXZ
+0x00a1bc68 ?g_minPositive_00a0b4ec@@3MA

@@ -1,0 +1,3 @@
+0x006c8f80 ?IsEmpty_006c8f80@UnkStrHolder_006c8f80@@QAE_NXZ
+0x00939524 __imp_?empty@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QBE_NXZ
+0x0093959c __imp_?c_str@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QBEPBDXZ

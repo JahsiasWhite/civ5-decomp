@@ -1,0 +1,3 @@
+0x008213a0 ?GetGlobalFloat_008213a0@@YAMXZ
+0x02ea20ec ?g_unkObj_02ea20ec@@3PAXA
+0x0081cb80 ?UnkGetFloat_0081cb80@@YAXPAXPAM@Z

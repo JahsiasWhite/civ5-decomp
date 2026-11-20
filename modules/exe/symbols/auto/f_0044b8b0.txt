@@ -1,0 +1,2 @@
+0x0044b8b0 ?MoveChars_0044b8b0@@YGPADPBD0PAD@Z
+0x00939800 __imp__memmove_s

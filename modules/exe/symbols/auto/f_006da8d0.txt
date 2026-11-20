@@ -1,0 +1,2 @@
+0x006da8d0 ?ReadLuaShortPair_006da8d0@@YAXPAUlua_State@@PAUUnkShortPair_006da8d0@@@Z
+0x0088954c _lua_tointeger

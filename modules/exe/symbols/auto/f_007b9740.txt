@@ -1,0 +1,3 @@
+0x007b9740 ?SetVal_007b9740@UnkObj_007b9740@@QAEXH@Z
+0x0093930c __imp__EnterCriticalSection@4
+0x00939310 __imp__LeaveCriticalSection@4

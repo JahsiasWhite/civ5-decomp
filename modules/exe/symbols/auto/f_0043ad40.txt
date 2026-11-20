@@ -1,0 +1,2 @@
+0x0043ad40 ??0UnkObj_0043ad40@@QAE@XZ
+0x00a193fc ??_7UnkObj_0043ad40@@6B@

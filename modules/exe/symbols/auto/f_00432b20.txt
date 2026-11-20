@@ -1,0 +1,2 @@
+0x00432b20 ?InitWinsock_00432b20@@YA_NXZ
+0x00939a48 __imp__WSAStartup@8

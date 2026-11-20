@@ -1,0 +1,2 @@
+0x00889340 ?GetSampleStageProperty_00889340@@YA_NPAXHH@Z
+0x00939d70 __imp__AIL_sample_stage_property@28

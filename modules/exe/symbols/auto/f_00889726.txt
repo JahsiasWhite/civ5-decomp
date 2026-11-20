@@ -1,0 +1,4 @@
+0x00889726 ?UnloadServiceLibrary_00889726@@YAHXZ
+0x05efd368 ?g_hModule_05efd368@@3PAUHINSTANCE__@@A
+0x06028ac0 ?g_serviceTable_06198000@@3PAUUnkServiceTable@@A
+0x00939380 __imp__FreeLibrary@4
