@@ -1,0 +1,2 @@
+0x007c1630 ?DebugString@NetDiploChat@@QAEXPADI@Z
+0x009be274 ??_C@_0CP@BEDNCNG@NetDiploChat?5?3?5Player?5?$CFd?5diplo?5s@
