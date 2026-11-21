@@ -1,4 +1,4 @@
-0x007bdea0 ?FormatInfo_007bdea0@NetVersionNack_007bdea0@@QAEHPADI@Z
+0x007bdea0 ?Format_007bdea0@NetVersionNack_007bdea0@@QAEXPADI@Z
 0x0093959c __imp_?c_str@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QBEPBDXZ
 0x00939604 __imp__sprintf_s
 0x009bd480 ??_C@_0EJ@INNEFKO@NetVersionNack?5?3?5m_eVersionType?$DN@

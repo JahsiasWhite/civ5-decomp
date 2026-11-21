@@ -1,0 +1,3 @@
+0x00759a30 ?LuaGetFlag1020_00759a30@@YAHPAUlua_State@@@Z
+0x00889588 _lua_touserdata
+0x0088953a _lua_pushboolean

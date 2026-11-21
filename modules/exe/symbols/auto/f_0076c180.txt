@@ -1,0 +1,3 @@
+0x0076c180 ?LuaCallSub24_0076c180@@YAHPAUlua_State@@@Z
+0x00889606 _luaL_checkinteger
+0x00b49338 ?g_pEngineOwner_00cc8e74@@3PAUEngineOwner_0076c180@@A

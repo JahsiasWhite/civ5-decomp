@@ -1,0 +1,4 @@
+0x007762d0 ?ClearLuaUpvalueKey_007762d0@@YAHPAUlua_State@@@Z
+0x00889570 _lua_pushvalue
+0x008895b8 _lua_pushnil
+0x00889690 _lua_settable

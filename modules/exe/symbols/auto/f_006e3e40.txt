@@ -1,0 +1,5 @@
+0x006e3e40 ?LuaGetStatementSQL_006e3e40@@YAHPAUlua_State@@@Z
+0x00889606 _luaL_checkinteger
+0x0088951c _lua_pushstring
+0x00b49338 ?g_pEngineOwner_00cc8e74@@3PAUEngineOwner_006e3e40@@A
+0x009390cc __imp_?StatementSQL@Connection@Database@@QBEPBDH@Z

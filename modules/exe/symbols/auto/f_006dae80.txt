@@ -1,0 +1,3 @@
+0x006dae80 ?CheckLuaWideString_006dae80@@YAXPAUlua_State@@PA_W@Z
+0x008895fa _luaL_checklstring
+0x009393a0 __imp__MultiByteToWideChar@24
