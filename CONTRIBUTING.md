@@ -275,3 +275,13 @@ game files" also restores the originals.
 | `isn't in the Ghidra project yet` | Run `analyze` once for that module: `python tools/c5d.py --module db analyze`. |
 | `this run works on exe` for a `db:` address | Mixing modules in one command isn't possible; run each module's addresses separately. |
 | A DLL function claims or reports as the wrong one | Give the module (`--module db` or `db:0x...`); a bare address means the exe. |
+
+## jakedalt's token maxxing workflow
+
+For AI-assisted batches, keep context small (tokens scale quadratically with turns):
+- **1 batch of 25 per chat** (or run `/compact` between batches).
+- **Skip full duplicate full doc reads** (`README.md`/`CONTRIBUTING.md`) when your workspace rules + `SKILL.md` already cover the workflow.
+- **Claim past blockers** with `--min-size` (e.g. `--min-size 70`) and **pre-filter** claimed functions before dumping disassemblies.
+- **Batch `match --obj` runs** (4–8 files per command, max 1–2 quick retries before releasing) and **quiet `match --fingerprints`** (`Select-String -NotMatch "^\s+MATCH "`).
+- **Shortcut (`jdc <module> <min-size>`):** e.g. `jdc exe 70` means: claim 25 `<module>` functions with `--min-size <min-size>`, follow this token-maxxing workflow (pre-filter before disassembling, batch `match --obj` 4–8 at a time with max 2 retries before releasing), verify LTCG, report matches, release the rest, regenerate status quietly, and output the solved count.
+
