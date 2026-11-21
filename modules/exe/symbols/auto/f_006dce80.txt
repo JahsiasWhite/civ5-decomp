@@ -1,0 +1,4 @@
+0x006dce80 ?ReadLuaIdStr512_006dce80@@YAXPAUlua_State@@PAUUnkStr512_006dce80@@@Z
+0x0088954c _lua_tointeger
+0x00889564 _lua_tolstring
+0x00939878 __imp__strncpy

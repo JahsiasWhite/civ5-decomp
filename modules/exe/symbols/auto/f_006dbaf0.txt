@@ -1,0 +1,2 @@
+0x006dbaf0 ?ReadLuaFlags2_006dbaf0@@YAXPAUlua_State@@PAUUnkFlags_006dbaf0@@@Z
+0x00889546 _lua_toboolean

@@ -1,0 +1,3 @@
+0x006dae30 ?ReadLuaStr128_006dae30@@YAXPAUlua_State@@PAD@Z
+0x00889564 _lua_tolstring
+0x00939878 __imp__strncpy

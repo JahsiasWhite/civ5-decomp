@@ -1,0 +1,4 @@
+0x006dbe30 ?ReadLuaArgs3_006dbe30@@YAXPAUlua_State@@PAUUnkLuaArgs_006dbe30@@@Z
+0x0088954c _lua_tointeger
+0x00889564 _lua_tolstring
+0x00889546 _lua_toboolean

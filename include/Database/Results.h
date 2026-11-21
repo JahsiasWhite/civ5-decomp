@@ -40,6 +40,8 @@ public:
     CVGAMEDATABASE_API void SetColumns(const char* szColumns);
     // src: EXE [0x10006740]
     CVGAMEDATABASE_API bool Reset();
+    // src: EXE
+    CVGAMEDATABASE_API bool Step();
     // src: EXE [0x10006770]
     CVGAMEDATABASE_API bool TryReset();
     // src: EXE [0x10006f30]

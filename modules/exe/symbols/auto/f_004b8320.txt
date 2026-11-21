@@ -1,0 +1,5 @@
+0x004b8320 ?QueryBool_004b8320@UnkQuery_004b8320@@QAE_NPBD@Z
+0x00939054 __imp_?Bind@Results@Database@@QAE_NHPBD_N@Z
+0x00939074 __imp_?Step@Results@Database@@QAE_NXZ
+0x009390f0 __imp_?GetBool@Results@Database@@QAE_NH@Z
+0x0093905c __imp_?Reset@Results@Database@@QAE_NXZ

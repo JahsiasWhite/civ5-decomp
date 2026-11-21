@@ -1,0 +1,1 @@
+0x00570e60 ?Accumulate_00570e60@UnkManager_00570e60@@QAEXPAUUnkOwner_00570e60@@@Z
