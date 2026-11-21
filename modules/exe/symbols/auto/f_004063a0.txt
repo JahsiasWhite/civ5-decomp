@@ -1,0 +1,2 @@
+0x004063a0 ?GetBadAllocMessage_004063a0@@YAPBDXZ
+0x00a14120 ??_C@_0DB@EHGGIPPP@bad?5allocation?5in?5previous?5or?5co@
