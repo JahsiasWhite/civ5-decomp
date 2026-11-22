@@ -1,0 +1,2 @@
+0x006661b0 ?CallWithGuid_006661b0@@YGHPAUObj_006661b0@@@Z
+0x0096efb0 ?g_guid_006661b0@@3UGuid16_006661b0@@B

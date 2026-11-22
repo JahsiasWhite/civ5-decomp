@@ -284,4 +284,5 @@ For AI-assisted batches, keep context small (tokens scale quadratically with tur
 - **Claim past blockers** with `--min-size` (e.g. `--min-size 70`) and **pre-filter** claimed functions before dumping disassemblies.
 - **Batch `match --obj` runs** (4–8 files per command, max 1–2 quick retries before releasing) and **quiet `match --fingerprints`** (`Select-String -NotMatch "^\s+MATCH "`).
 - **Shortcut (`jdc <module> <min-size>`):** e.g. `jdc exe 70` means: claim 25 `<module>` functions with `--min-size <min-size>`, follow this token-maxxing workflow (pre-filter before disassembling, batch `match --obj` 4–8 at a time with max 2 retries before releasing), verify LTCG, report matches, release the rest, regenerate status quietly, and output the solved count.
+- !!!The ground rules and accurate reporting take absolute precedence over token savings!!!
 
