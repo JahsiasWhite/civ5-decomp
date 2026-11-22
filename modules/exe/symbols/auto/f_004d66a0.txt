@@ -1,0 +1,1 @@
+0x004d66a0 ?GetColonChar_004d66a0@@YADXZ

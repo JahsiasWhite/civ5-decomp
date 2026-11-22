@@ -1,0 +1,2 @@
+0x004a4a80 ?GetMapFileExtension_004a4a80@@YAPB_WXZ
+0x00942978 ??_C@_1BC@KGBAGOFN@?$AA?4?$AAC?$AAi?$AAv?$AA5?$AAM?$AAa?$AAp?$AA?$AA@

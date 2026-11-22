@@ -1,0 +1,2 @@
+0x0046ff10 ?GetFlag_0046ff10@@YAEXZ
+0x00b41b2d ?g_flag_00b41b2d@@3EA

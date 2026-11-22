@@ -1,0 +1,1 @@
+0x004d6690 ?GetSemicolonChar_004d6690@@YADXZ
