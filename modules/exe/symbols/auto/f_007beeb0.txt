@@ -1,0 +1,2 @@
+0x007beeb0 ?GetData_007beeb0@@YAPADXZ
+0x00b29ec8 ?g_data_00b29ec8@@3DA
