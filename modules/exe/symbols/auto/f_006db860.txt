@@ -1,0 +1,3 @@
+0x006db860 ?LuaErr_006db860@@YAHPAUlua_State@@H@Z
+0x0088960c _luaL_error
+0x00985f1c ??_C@_0BD@PEHPCGLA@Should?5not?5happen?$AA?$AA@

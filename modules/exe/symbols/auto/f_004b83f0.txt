@@ -1,0 +1,3 @@
+0x004b83f0 ?ClearAdvisorMessagesViewed@Unk_004b83f0@@QBEXXZ
+0x0094ac8c ??_C@_0CC@HDBHBJBE@DELETE?5FROM?5AdvisorMessagesViewe@
+0x00939058 __imp_?Execute@Connection@Database@@QBE_NPBDH@Z
