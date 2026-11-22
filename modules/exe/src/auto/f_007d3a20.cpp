@@ -1,10 +1,10 @@
 // c5d-cflags: -/Ob1 +/Ob0
-#include "Localization/String.h"
 #include <string>
+#include "Localization/String.h"
 
-// src: GUESS (confidence: high) [0x007d3a20]
-Localization::String* PushStringArg_004c58f0(Localization::String* str, const std::string& arg)
+// src: GUESS (confidence: medium) [0x007d3a20]
+Localization::String* PushStringArg_007d3a20(Localization::String* text, const std::string& val)
 {
-    str->PushArgument(arg.c_str());
-    return str;
+    text->PushArgument(val.c_str());
+    return text;
 }

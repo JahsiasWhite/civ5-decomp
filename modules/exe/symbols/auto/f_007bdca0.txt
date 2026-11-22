@@ -1,0 +1,2 @@
+0x007bdca0 ?SetClamped_007bdca0@@YAXH@Z
+0x00b29dac ?g_val_00b29dac@@3HA

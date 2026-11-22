@@ -1,0 +1,2 @@
+0x0085b0c0 ?SetCallback@Class_0085b0c0@@QAEXP6AXXZ@Z
+0x006652a0 ?DefaultFunc_006652a0@@YAXXZ
