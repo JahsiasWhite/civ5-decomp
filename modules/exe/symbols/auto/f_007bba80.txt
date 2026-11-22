@@ -1,0 +1,3 @@
+0x007bba80 ?PaintBlack@Win7bb@@QAEXXZ
+0x009391b8 __imp__GetStockObject@4
+0x00939918 __imp__FillRect@12

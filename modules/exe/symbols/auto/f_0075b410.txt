@@ -1,0 +1,3 @@
+0x0075b410 ?f_0075b410@@YAHPAX@Z
+0x00889546 _lua_toboolean
+0x00b49338 ?g_p75b@@3PAUGlobal75b@@A
