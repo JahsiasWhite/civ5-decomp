@@ -471,6 +471,7 @@ address,symbol,status,bytes,source,since
 0x005c0a50,?AddToBoth@Owner_0042c510@@QAEXM@Z,MATCH,44,modules/exe/src/auto/f_005c0a50.cpp,2026-11-19
 0x005c0a80,?SetBlock@Owner_00415e00@@QAEXHUBlock_00415e00@@@Z,MATCH,26,modules/exe/src/auto/f_005c0a80.cpp,2026-11-19
 0x005c3610,?GetFileName@PathHolder_0053a8f0@@QBEPBDXZ,MATCH,50,modules/exe/src/auto/f_005c3610.cpp,2026-11-19
+0x005c3a90,?fn_005c3a90@@YGHPBD@Z,MATCH,509,modules/exe/src/auto/f_005c3a90.cpp,2026-11-22
 0x005c3c90,?TestBit_005c3c90@UnkBitset256_005c3c90@@QAE_NI@Z,MATCH,45,modules/exe/src/auto/f_005c3c90.cpp,2026-11-20
 0x005c7440,?GetOffset@Class_00527ee0@@QAEPADXZ,MATCH,14,modules/exe/src/auto/f_005c7440.cpp,2026-11-19
 0x005c7450,?GetOffset@Class_0066d1d0@@QAEPADXZ,MATCH,18,modules/exe/src/auto/f_005c7450.cpp,2026-11-19
