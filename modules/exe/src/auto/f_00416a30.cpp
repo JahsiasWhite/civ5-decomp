@@ -1,0 +1,30 @@
+// c5d-cflags: +/Oy-
+// src: GUESS (confidence: high) [0x00416a30]
+struct TreeNode_00416a30 {
+    TreeNode_00416a30* _Left;
+    TreeNode_00416a30* _Parent;
+    TreeNode_00416a30* _Right;
+    unsigned char _Pad[0x6d];
+    bool _Isnil;
+
+    void _Lrotate(TreeNode_00416a30** _Myhead_ptr);
+};
+
+// src: LIB (confidence: high) [0x00416a30]
+void TreeNode_00416a30::_Lrotate(TreeNode_00416a30** _Myhead_ptr) {
+    TreeNode_00416a30* _Pnode = this->_Right;
+    this->_Right = _Pnode->_Left;
+    if (!_Pnode->_Left->_Isnil) {
+        _Pnode->_Left->_Parent = this;
+    }
+    _Pnode->_Parent = this->_Parent;
+    if (this == _Myhead_ptr[1]->_Parent) {
+        _Myhead_ptr[1]->_Parent = _Pnode;
+    } else if (this == this->_Parent->_Left) {
+        this->_Parent->_Left = _Pnode;
+    } else {
+        this->_Parent->_Right = _Pnode;
+    }
+    _Pnode->_Left = this;
+    this->_Parent = _Pnode;
+}

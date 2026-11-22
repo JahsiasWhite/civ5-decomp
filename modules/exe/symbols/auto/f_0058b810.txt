@@ -1,0 +1,2 @@
+# src: LIB (confidence: high) [0x0058b810]
+0x0058b810 ?_Lrotate@Tree_0058b810@@QAEXPAUTreeNode_0058b810@@@Z

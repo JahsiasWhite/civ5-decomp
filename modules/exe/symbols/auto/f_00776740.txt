@@ -1,0 +1,7 @@
+# src: GUESS (confidence: high) [0x00776740]
+0x00776740 ?luaTableCount_00776740@@YAHPAUlua_State@@@Z
+0x00889618 _luaL_checktype
+0x008895b8 _lua_pushnil
+0x0088963c _lua_next
+0x00889576 _lua_settop
+0x00889540 _lua_pushinteger

@@ -1,0 +1,5 @@
+# src: GUESS (confidence: high) [0x00406810]
+0x00406810 ?checkTbbVersion_00406810@@YA_NXZ
+0x00a13f78 ??_C@_0M@EKHIKCEO@TBB_VERSION?$AA@
+0x00939718 __imp__getenv
+0x00a1420c ??_C@_01GBGANLPD@0?$AA@
