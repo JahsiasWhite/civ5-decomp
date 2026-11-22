@@ -1,0 +1,3 @@
+0x004d6600 ?Normalize@PathBuf_004d6600@@QAEXXZ
+0x009398c4 __imp__PathRemoveBlanksW@4
+0x009398c8 __imp__PathCanonicalizeW@8

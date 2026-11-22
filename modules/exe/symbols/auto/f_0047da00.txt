@@ -1,0 +1,3 @@
+0x0047da00 ??0Sentry_0047da00@@QAE@AAUOstream_0047da00@@@Z
+0x00939558 __imp_?_Lock@Streambuf_0047da00@@QAEXXZ
+0x00939550 __imp_?flush@Ostream_0047da00@@QAEAAU1@XZ

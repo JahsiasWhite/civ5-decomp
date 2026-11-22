@@ -1,0 +1,4 @@
+0x00668d60 ?Trace_00668d60@@YAXXZ
+0x00939414 __imp__InterlockedExchangeAdd@8
+0x01893980 ?g_currentHandler_00668d60@@3HA
+0x01894600 ?g_traceRings_00668d60@@3PAUTraceRing_00668d60@@A

@@ -1,0 +1,1 @@
+0x00650c60 ?ResetAndApply@Obj_00650c60@@QAEXHM@Z
