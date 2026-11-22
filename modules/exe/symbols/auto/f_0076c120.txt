@@ -1,0 +1,3 @@
+0x0076c120 ?f_0076c120@@YAHPAUlua_State@@@Z
+0x0088954c _lua_tointeger
+0x00b49338 ?g_global_76c120@@3PAUGlobal76c120@@A

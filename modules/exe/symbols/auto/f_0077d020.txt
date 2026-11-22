@@ -1,0 +1,2 @@
+0x0077d020 ?f_0077d020@@YAXPAPAULogBuf77d020@@PBDZZ
+0x00939610 __imp__vsprintf_s

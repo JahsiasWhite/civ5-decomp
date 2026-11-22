@@ -1,0 +1,5 @@
+0x00927cb0 ?f_00927cb0@@YAXXZ
+0x00939a48 __imp__WSAStartup@8
+0x00939708 __imp__abort
+0x00889d93 _atexit
+0x009363f0 ?f_009363f0@@YAXXZ

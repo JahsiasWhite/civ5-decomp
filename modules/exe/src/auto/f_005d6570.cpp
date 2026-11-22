@@ -1,21 +1,15 @@
 // c5d-cflags: -/arch:SSE2
-// src: GUESS (confidence: low) [0x005d6570]
-struct Guid16_005d6570 {
-    int a, b, c, d;
+// src: GUESS (confidence: high) [0x005d6570]
+struct Guid16_5d6570 {
+    unsigned int a, b, c, d;
 };
 
-// src: GUESS (confidence: low) [0x005d6570]
-extern const Guid16_005d6570 g_guid_005d6570;
-
-// src: GUESS (confidence: low) [0x005d6570]
-struct Obj_005d6570 {
-    struct Vtbl {
-        int (__stdcall *fn0)(Obj_005d6570*, Guid16_005d6570);
-    };
-    Vtbl* vtbl;
+struct Iface5d6570 {
+    virtual int __stdcall m0(Guid16_5d6570 g) = 0;
 };
 
-// src: GUESS (confidence: low) [0x005d6570]
-int __stdcall CallWithGuid_005d6570(Obj_005d6570* p) {
-    return p->vtbl->fn0(p, g_guid_005d6570);
+extern Guid16_5d6570 g_guid_5d6570;
+
+int __stdcall f_005d6570(Iface5d6570* p) {
+    return p->m0(g_guid_5d6570);
 }
