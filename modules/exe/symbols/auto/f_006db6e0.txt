@@ -1,0 +1,3 @@
+0x006db6e0 ?NotificationActivatedFromLua@@YAXPAUlua_State@@H@Z
+0x0088960c _luaL_error
+0x00985e78 ??_C@_0EA@IJMEHICC@FromLua?5called?5on?5NotificationAc@

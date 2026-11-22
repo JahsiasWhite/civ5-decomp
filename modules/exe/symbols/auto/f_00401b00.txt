@@ -1,0 +1,2 @@
+0x00401b00 ?what@Class_00401b00@@QBEPBDXZ
+0x00a13e5c ??_C@_0BC@BDKFLDHL@unknown?5exception?$AA@
