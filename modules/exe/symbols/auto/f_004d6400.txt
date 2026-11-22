@@ -1,0 +1,2 @@
+0x004d6400 ?GetFloatConst_004d6400@@YAMXZ
+0x0095003c __real@42700000
