@@ -1,0 +1,3 @@
+0x0075ad70 ?luaFunc75AD70@@YAHPAUlua_State@@@Z
+0x00889684 _lua_toboolean_opt
+0x00b49338 ?g_obj75AD70@@3PAUObj75AD70@@A

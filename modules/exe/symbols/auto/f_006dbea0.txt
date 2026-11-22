@@ -1,0 +1,3 @@
+0x006dbea0 ?parseArgs6DBEA0@@YAXPAUlua_State@@PAUOut6DBEA0@@@Z
+0x0088954c _lua_tointeger
+0x00889546 _lua_toboolean
