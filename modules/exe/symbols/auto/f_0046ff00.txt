@@ -1,0 +1,2 @@
+0x0046ff00 ?SetFlag_0046ff00@@YAXE@Z
+0x00b41b2d ?g_flag_00b41b2d@@3EA

@@ -1,0 +1,2 @@
+0x00402ed0 ??1Class_00402ed0@@UAE@XZ
+0x00a1403c ??_7Class_00402ed0@@6B@

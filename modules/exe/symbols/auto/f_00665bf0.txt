@@ -1,0 +1,1 @@
+0x00665bf0 ?GetB40@Class_00665bf0@@QBEHXZ
