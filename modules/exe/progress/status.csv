@@ -700,7 +700,6 @@ address,symbol,status,bytes,source,since
 0x006c8790,?GetDefault_005c8000@@YGXPAUValue16_005c8000@@@Z,MATCH,42,modules/exe/src/auto/f_006c8790.cpp,2026-11-19
 0x006c87c0,?MapValue_006c87c0@@YAHI@Z,MATCH,54,modules/exe/src/auto/f_006c87c0.cpp,2026-11-21
 0x006c8ef0,?SetVal@Class_00685870@@QAEXD@Z,MATCH,13,modules/exe/src/auto/f_006c8ef0.cpp,2026-11-19
-0x006c8f80,?IsEmpty_006c8f80@UnkStrHolder_006c8f80@@QAE_NXZ,DIFF,36,modules/exe/src/auto/f_006c8f80.cpp,2026-11-20
 0x006c8fb0,?GetModeSize_005efb40@@YAHH@Z,MATCH,43,modules/exe/src/auto/f_006c8fb0.cpp,2026-11-19
 0x006c91e0,?MakeEmptyString_00526e80@@YG?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ,MATCH,24,modules/exe/src/auto/f_006c91e0.cpp,2026-11-19
 0x006c9200,?MakeEmptyString_0066f4c0@@YG?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ,MATCH,24,modules/exe/src/auto/f_006c9200.cpp,2026-11-19

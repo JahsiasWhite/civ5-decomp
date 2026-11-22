@@ -1,16 +1,14 @@
 // c5d-cflags: -/Ob1 +/Ob0
+// src: GUESS (confidence: low) [0x006c8f80]
 #include <string>
 
-// src: GUESS (confidence: low)
-struct UnkStrHolder_006c8f80
-{
-    std::string m_str;
-
-    bool IsEmpty_006c8f80();
+struct Auto_006c8f80 : std::string {
+    int f_006c8f80(); // src: GUESS (confidence: low) [0x006c8f80]
 };
 
-// src: GUESS (confidence: medium) [0x006c8f80]
-bool UnkStrHolder_006c8f80::IsEmpty_006c8f80()
-{
-    return m_str.empty() || m_str.c_str() == 0;
+int Auto_006c8f80::f_006c8f80() {
+    if (empty() || c_str() == 0) {
+        return 1;
+    }
+    return 0;
 }
