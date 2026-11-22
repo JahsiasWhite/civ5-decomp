@@ -805,6 +805,7 @@ address,symbol,status,bytes,source,since
 0x0073fc80,?SetupCallbackThread_0053ced0@@YAXPAUlua_State@@H@Z,MATCH,158,modules/exe/src/auto/f_0073fc80.cpp,2026-11-19
 0x00742a10,?SetupCallbackThread_0061efb0@@YAXPAUlua_State@@H@Z,MATCH,158,modules/exe/src/auto/f_00742a10.cpp,2026-11-19
 0x00742ab0,?RegisterEventMethods_0077f0b0@@YAXPAUlua_State@@@Z,MATCH,257,modules/exe/src/auto/f_00742ab0.cpp,2026-11-19
+0x00757b60,?Lua_Register_00757b60@@YAHPAUlua_State@@@Z,MATCH,1541,modules/exe/src/auto/f_00757b60.cpp,2026-11-22
 0x00758840,?l_AppendUpvalue_00758840@@YAHPAUlua_State@@@Z,MATCH,47,modules/exe/src/auto/f_00758840.cpp,2026-11-20
 0x00758fb0,?SetupTable_0044a3e0@@YAXPAUlua_State@@@Z,MATCH,82,modules/exe/src/auto/f_00758fb0.cpp,2026-11-19
 0x00759010,?RegisterLuaEvents_006cb4e0@@YAXPAUlua_State@@HHH@Z,MATCH,380,modules/exe/src/auto/f_00759010.cpp,2026-11-19
@@ -826,6 +827,7 @@ address,symbol,status,bytes,source,since
 0x00765690,?RegisterMatchmakingLib_004381f0@@YAHPAUlua_State@@@Z,MATCH,806,modules/exe/src/auto/f_00765690.cpp,2026-11-19
 0x00765ad0,?FindMaxNode_00660c10@@YAPAUTreeNode_00660c10@@PAU1@@Z,MATCH,28,modules/exe/src/auto/f_00765ad0.cpp,2026-11-19
 0x00765fb0,?RegisterMemoryTrackerLib_0058b040@@YAHPAUlua_State@@@Z,MATCH,187,modules/exe/src/auto/f_00765fb0.cpp,2026-11-19
+0x0076a770,?Lua_Register_0076a770@@YAHPAUlua_State@@@Z,MATCH,1726,modules/exe/src/auto/f_0076a770.cpp,2026-11-22
 0x0076b2d0,?Lua_InitMetatable_0068e7d0@@YAXPAUlua_State@@H@Z,MATCH,257,modules/exe/src/auto/f_0076b2d0.cpp,2026-11-19
 0x0076bbc0,?LuaCallSub54_0076bbc0@@YAHPAUlua_State@@@Z,MATCH,56,modules/exe/src/auto/f_0076bbc0.cpp,2026-11-20
 0x0076be50,?LuaCallSub82_0076be50@@YAHPAUlua_State@@@Z,MATCH,56,modules/exe/src/auto/f_0076be50.cpp,2026-11-20
@@ -838,8 +840,10 @@ address,symbol,status,bytes,source,since
 0x0076c180,?LuaCallSub24_0076c180@@YAHPAUlua_State@@@Z,MATCH,53,modules/exe/src/auto/f_0076c180.cpp,2026-11-20
 0x0076c380,?LuaCallSub28_0076c380@@YAHPAUlua_State@@@Z,MATCH,53,modules/exe/src/auto/f_0076c380.cpp,2026-11-20
 0x0076c800,?f_0076c800@@YAHPAUlua_State@@@Z,MATCH,56,modules/exe/src/auto/f_0076c800.cpp,2026-11-21
+0x0076d690,?Lua_Register_0076d690@@YAHPAUlua_State@@@Z,MATCH,2157,modules/exe/src/auto/f_0076d690.cpp,2026-11-22
 0x0076fb50,?l_SetPair_0076fb50@@YAHPAUlua_State@@@Z,MATCH,43,modules/exe/src/auto/f_0076fb50.cpp,2026-11-20
 0x007716f0,?RegisterPathLib_0060f3b0@@YAHPAUlua_State@@@Z,MATCH,320,modules/exe/src/auto/f_007716f0.cpp,2026-11-19
+0x00774d50,?Lua_Register_00774d50@@YAHPAUlua_State@@@Z,MATCH,2855,modules/exe/src/auto/f_00774d50.cpp,2026-11-22
 0x00775ee0,?Lua_RegisterProfiler_006d4010@@YAHPAUlua_State@@@Z,MATCH,182,modules/exe/src/auto/f_00775ee0.cpp,2026-11-19
 0x00776060,?TrackedHeapAlloc@@YAPAXPAX0II@Z,MATCH,201,modules/exe/src/auto/f_00776060.cpp,2026-11-19
 0x007762d0,?ClearLuaUpvalueKey_007762d0@@YAHPAUlua_State@@@Z,MATCH,45,modules/exe/src/auto/f_007762d0.cpp,2026-11-20
