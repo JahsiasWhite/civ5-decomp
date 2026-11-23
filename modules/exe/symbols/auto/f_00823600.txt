@@ -1,0 +1,2 @@
+0x00823600 ?ForwardTableVal@@YAXPAVTargetVtable54@@PAUIndexHolder10@@@Z
+0x03fdd208 ?g_entryTable@@3PAUEntry12@@A

@@ -753,7 +753,7 @@ address,symbol,status,bytes,source,since
 0x006c8790,?GetDefault_005c8000@@YGXPAUValue16_005c8000@@@Z,MATCH,42,modules/exe/src/auto/f_006c8790.cpp,2026-11-19
 0x006c87c0,?MapValue_006c87c0@@YAHI@Z,MATCH,54,modules/exe/src/auto/f_006c87c0.cpp,2026-11-21
 0x006c8ef0,?SetVal@Class_00685870@@QAEXD@Z,MATCH,13,modules/exe/src/auto/f_006c8ef0.cpp,2026-11-19
-0x006c8f80,?f_006c8f80@Auto_006c8f80@@QAEHXZ,DIFF,36,modules/exe/src/auto/f_006c8f80.cpp,2026-11-22
+0x006c8f80,?IsEmptyOrNull@StringNullOrEmptyHelper@@QAEHXZ,DIFF,36,modules/exe/src/auto/f_006c8f80.cpp,2026-11-22
 0x006c8fb0,?GetModeSize_005efb40@@YAHH@Z,MATCH,43,modules/exe/src/auto/f_006c8fb0.cpp,2026-11-19
 0x006c91e0,?MakeEmptyString_00526e80@@YG?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ,MATCH,24,modules/exe/src/auto/f_006c91e0.cpp,2026-11-19
 0x006c9200,?MakeEmptyString_0066f4c0@@YG?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ,MATCH,24,modules/exe/src/auto/f_006c9200.cpp,2026-11-19
@@ -1150,7 +1150,7 @@ address,symbol,status,bytes,source,since
 0x007d3440,?GetData_007d3440@@YAPADXZ,MATCH,6,modules/exe/src/auto/f_007d3440.cpp,2026-11-21
 0x007d3790,?GetVal@Host_00575820@@QAEHXZ,MATCH,24,modules/exe/src/auto/f_007d3790.cpp,2026-11-19
 0x007d37b0,?GetVal@Host_006ca4e0@@QAEHXZ,MATCH,24,modules/exe/src/auto/f_007d37b0.cpp,2026-11-19
-0x007d3a20,?PushStringArg_007d3a20@@YAPAVString@Localization@@PAV12@ABV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z,DIFF,28,modules/exe/src/auto/f_007d3a20.cpp,2026-11-19
+0x007d3a20,?PushLocalizationStringArg@@YAPAVString@Localization@@PAV12@ABV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z,DIFF,28,modules/exe/src/auto/f_007d3a20.cpp,2026-11-19
 0x007da720,?NoOp2Args_008f3650@@YGXHH@Z,MATCH,3,modules/exe/src/auto/f_007da720.cpp,2026-11-19
 0x007da790,??0Wrapper_006c7d20@@QAE@PAX@Z,MATCH,18,modules/exe/src/auto/f_007da790.cpp,2026-11-19
 0x007da7b0,??0Class_006fc790@@QAE@H@Z,MATCH,25,modules/exe/src/auto/f_007da7b0.cpp,2026-11-19
@@ -1174,6 +1174,7 @@ address,symbol,status,bytes,source,since
 0x007f98f0,?SetGlobalVec@@YAXPBUVec3_00893860@@@Z,MATCH,40,modules/exe/src/auto/f_007f98f0.cpp,2026-11-19
 0x007f99a0,?GetGlobalPair_007f99a0@@YAXPAH0@Z,MATCH,33,modules/exe/src/auto/f_007f99a0.cpp,2026-11-20
 0x007f99d0,?GetId_007f99d0@@YAHPAUUnk_007f99d0@@@Z,MATCH,34,modules/exe/src/auto/f_007f99d0.cpp,2026-11-20
+0x007f9a00,?GetInnerPair@@YAXPAUOuter90@@PAH1@Z,MATCH,39,modules/exe/src/auto/f_007f9a00.cpp,2026-11-22
 0x007fa1d0,?GetOffset_00894140@@YAPADPAD@Z,MATCH,11,modules/exe/src/auto/f_007fa1d0.cpp,2026-11-19
 0x007fa1e0,?GetOffset_00894150@@YAPADPAD@Z,MATCH,13,modules/exe/src/auto/f_007fa1e0.cpp,2026-11-19
 0x007fa1f0,?GetOffset_00894160@@YAPADPAD@Z,MATCH,11,modules/exe/src/auto/f_007fa1f0.cpp,2026-11-19
@@ -1296,6 +1297,7 @@ address,symbol,status,bytes,source,since
 0x00822920,?GetBlockVal_008bc860@@YGHH@Z,MATCH,19,modules/exe/src/auto/f_00822920.cpp,2026-11-19
 0x00822c20,?CopyRecord_008bcb60@@YGXHPAUUnkRecord80_0313de88@@@Z,MATCH,31,modules/exe/src/auto/f_00822c20.cpp,2026-11-19
 0x008231b0,?Add@Queue_008bd0f0@@QAEXPAUItem_008bd0f0@@H@Z,MATCH,48,modules/exe/src/auto/f_008231b0.cpp,2026-11-19
+0x00823600,?ForwardTableVal@@YAXPAVTargetVtable54@@PAUIndexHolder10@@@Z,MATCH,39,modules/exe/src/auto/f_00823600.cpp,2026-11-22
 0x00823a40,?SetVal@Class_008bd980@@QAEXD@Z,MATCH,13,modules/exe/src/auto/f_00823a40.cpp,2026-11-19
 0x00827f10,?link@Pool_00827f10@@QAEXHH@Z,MATCH,81,modules/exe/src/auto/f_00827f10.cpp,2026-11-22
 0x00828970,?GetPoolFree_008c28c0@@YAHXZ,MATCH,51,modules/exe/src/auto/f_00828970.cpp,2026-11-19
@@ -1745,6 +1747,7 @@ address,symbol,status,bytes,source,since
 0x008d0910,?GetField18_0096d530@@YAPAXPAUUnk_0096d530@@@Z,MATCH,8,modules/exe/src/auto/f_008d0910.cpp,2026-11-19
 0x008d0920,?GetOpenSSLDsaMethod@@YAPAHXZ,MATCH,6,modules/exe/src/auto/f_008d0920.cpp,2026-11-19
 0x008d4ca0,?GetPtr_009718d0@@YAPAXPBUNode_009718d0@@@Z,MATCH,23,modules/exe/src/auto/f_008d4ca0.cpp,2026-11-19
+0x008d4cc0,?CopyStruct36ById@@YAPAUStruct36@@HPAU1@@Z,MATCH,38,modules/exe/src/auto/f_008d4cc0.cpp,2026-11-22
 0x008d5a40,?GetStr_00972670@@YAPADXZ,MATCH,15,modules/exe/src/auto/f_008d5a40.cpp,2026-11-19
 0x008d5d90,?InitRecord_009729c0@@YAXPAURecord_009729c0@@@Z,MATCH,22,modules/exe/src/auto/f_008d5d90.cpp,2026-11-19
 0x008d6960,?GetOpenSSLEcdhMethod@@YAPAHXZ,MATCH,6,modules/exe/src/auto/f_008d6960.cpp,2026-11-19

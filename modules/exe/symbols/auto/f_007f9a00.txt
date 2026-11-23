@@ -1,0 +1,1 @@
+0x007f9a00 ?GetInnerPair@@YAXPAUOuter90@@PAH1@Z

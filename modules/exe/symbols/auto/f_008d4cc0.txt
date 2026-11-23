@@ -1,0 +1,2 @@
+0x008d4cc0 ?CopyStruct36ById@@YAPAUStruct36@@HPAU1@@Z
+0x008e6e5e _LookupStruct36

@@ -1,14 +1,18 @@
 // c5d-cflags: -/Ob1 +/Ob0
-// src: GUESS (confidence: low) [0x006c8f80]
 #include <string>
 
-struct Auto_006c8f80 : std::string {
-    int f_006c8f80(); // src: GUESS (confidence: low) [0x006c8f80]
+// src: GUESS (confidence: medium) [0x006c8f80]
+class StringNullOrEmptyHelper {
+public:
+    std::string m_str;
+
+    // src: GUESS (confidence: medium) [0x006c8f80]
+    int __thiscall IsEmptyOrNull();
 };
 
-int Auto_006c8f80::f_006c8f80() {
-    if (empty() || c_str() == 0) {
-        return 1;
+int __thiscall StringNullOrEmptyHelper::IsEmptyOrNull() {
+    if (!m_str.empty() && m_str.c_str() != NULL) {
+        return 0;
     }
-    return 0;
+    return 1;
 }
