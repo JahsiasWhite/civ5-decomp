@@ -28,6 +28,7 @@ address,symbol,status,bytes,source,since
 0x100028c0,?LogWarning@Connection@Database@@QBEXPBD@Z,MATCH,24,modules/db/src/auto/f_100028c0.cpp,2026-11-19
 0x100028e0,?LogError@Connection@Database@@QBEXPBD@Z,MATCH,24,modules/db/src/auto/f_100028e0.cpp,2026-11-19
 0x10002900,?CheckCode@ConnectionExt_10002900@@QAE_NH@Z,MATCH,58,modules/db/src/auto/f_10002900.cpp,2026-11-19
+0x10002940,?ValidateFKConstraints@Connection@Database@@QBE_N_N@Z,MATCH,646,modules/db/src/auto/f_10002940.cpp,2026-11-22
 0x10002bd0,?SetBusyTimeout@Connection@Database@@QAE_NH@Z,MATCH,71,modules/db/src/auto/f_10002bd0.cpp,2026-11-19
 0x10002ce0,?FinalizeCommand_10002ce0@@YAXPAUCommand_10002ce0@@@Z,MATCH,74,modules/db/src/auto/f_10002ce0.cpp,2026-11-19
 0x10003330,?CopyDwordBackward_10003330@@YAPAHPBH0PAH@Z,MATCH,34,modules/db/src/auto/f_10003330.cpp,2026-11-19

@@ -1,0 +1,11 @@
+0x10002940 ?ValidateFKConstraints@Connection@Database@@QBE_N_N@Z
+0x10001b20 ?Sprintf512_10001b20@@YAHPADPBDZZ
+0x10001b40 ?Sprintf1024_10001b40@@YAHPADPBDZZ
+0x10078608 ??_C@_0CG@JJCIFMEO@Validating?5Foreign?5Key?5Constrain@
+0x100785d4 ??_C@_0DE@IEFAJNLJ@select?5name?5from?5sqlite_master?5w@
+0x100785b4 ??_C@_0BN@IDEGDEJD@pragma?5foreign_key_list?$CI?$CFs?$CJ?$DL?$AA@
+0x10078568 ??_C@_0EL@BCCJJIFP@select?5?$CC?$CFs?$CC?5from?5?$CFs?5where?5?$CFs?5not@
+0x1007852c ??_C@_0DH@OIHJOAPL@Invalid?5Reference?5on?5?$CFs?4?$CFs?5?9?5?$CC?$CFs@
+0x10078518 ??_C@_0BD@MLOPGDAN@Passed?5Validation?4?$AA@
+0x10078504 ??_C@_0BD@IMBEMJE@Failed?5Validation?4?$AA@
+0x100784d0 ??_C@_0DE@NNIHJGGF@Failure?5to?5check?5references?5for?5@
