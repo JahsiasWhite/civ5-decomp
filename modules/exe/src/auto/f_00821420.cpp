@@ -1,4 +1,4 @@
-// src: GUESS (confidence: high) [0x00821420]
+// src: GUESS (confidence: high)
 struct Entry821420 {
     int a;
     int b;
@@ -6,14 +6,13 @@ struct Entry821420 {
     int d;
 };
 
-// src: GUESS (confidence: high) [0x05c54d40]
-extern Entry821420 g_arr821420[];
+// src: EXE [0x05c54d40]
+extern Entry821420 g_entries821420[];
 
-// src: GUESS (confidence: high) [0x00821420]
-int __stdcall f_00821420(int idx, Entry821420* out) {
-    if (out) {
-        out->a = g_arr821420[idx].a;
-        out->b = g_arr821420[idx].b;
+int __stdcall get_entry_821420(int idx, int* out_pair) {
+    if (out_pair != 0) {
+        out_pair[0] = g_entries821420[idx].a;
+        out_pair[1] = g_entries821420[idx].b;
     }
-    return g_arr821420[idx].c;
+    return g_entries821420[idx].c;
 }
