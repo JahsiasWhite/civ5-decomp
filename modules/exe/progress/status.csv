@@ -346,7 +346,7 @@ address,symbol,status,bytes,source,since
 0x004b3d40,?SyncGlobals_004b3d40@@YAXXZ,MATCH,57,modules/exe/src/auto/f_004b3d40.cpp,2026-11-20
 0x004b46a0,?NotEquals_004b46a0@UnkPair8_004b46a0@@QBE_NABU1@@Z,MATCH,49,modules/exe/src/auto/f_004b46a0.cpp,2026-11-20
 0x004b5060,?CheckGlobals_004b5060@@YA_NXZ,MATCH,42,modules/exe/src/auto/f_004b5060.cpp,2026-11-20
-0x004b5090,?f_004b5090@@YGHPAUIface4b5090@@@Z,DIFF,56,modules/exe/src/auto/f_004b5090.cpp,2026-11-21
+0x004b5090,?fn_004b5090@@YGHPAUI4b5090@@@Z,DIFF,56,modules/exe/src/auto/f_004b5090.cpp,2026-11-21
 0x004b80f0,??0Config_005ae960@@QAE@XZ,MATCH,19,modules/exe/src/auto/f_004b80f0.cpp,2026-11-19
 0x004b82f0,?Shutdown_004b82f0@Unk_004b82f0@@QAE_NXZ,MATCH,36,modules/exe/src/auto/f_004b82f0.cpp,2026-11-20
 0x004b8320,?QueryBool_004b8320@UnkQuery_004b8320@@QAE_NPBD@Z,MATCH,57,modules/exe/src/auto/f_004b8320.cpp,2026-11-20
@@ -1098,7 +1098,7 @@ address,symbol,status,bytes,source,since
 0x007bcc90,?SetField54@FieldOwner_00406270@@QAEXH@Z,MATCH,10,modules/exe/src/auto/f_007bcc90.cpp,2026-11-19
 0x007bd410,?SetFont@FontHolder_00638ed0@@UAEXPBUtagLOGFONTA@@@Z,MATCH,49,modules/exe/src/auto/f_007bd410.cpp,2026-11-19
 0x007bdca0,?SetClamped_007bdca0@@YAXH@Z,MATCH,17,modules/exe/src/auto/f_007bdca0.cpp,2026-11-22
-0x007bdea0,?DebugString@NetVersionNack@@QAEXPADI@Z,DIFF,49,modules/exe/src/auto/f_007bdea0.cpp,2026-11-20
+0x007bdea0,?format@NetVersionNack@@QAEXPADI@Z,DIFF,49,modules/exe/src/auto/f_007bdea0.cpp,2026-11-20
 0x007be180,?FormatNetInit_005e91a0@@YGHPADI@Z,MATCH,27,modules/exe/src/auto/f_007be180.cpp,2026-11-19
 0x007bea50,?Describe@NetCitySyncCheck@@UAEXPADI@Z,MATCH,51,modules/exe/src/auto/f_007bea50.cpp,2026-11-19
 0x007bea90,?Describe@NetUnitSyncCheck@@UAEXPADI@Z,MATCH,51,modules/exe/src/auto/f_007bea90.cpp,2026-11-19
@@ -1113,7 +1113,6 @@ address,symbol,status,bytes,source,since
 0x007bf2d0,?GetFlag_02dd2f5b@@YA_NXZ,MATCH,6,modules/exe/src/auto/f_007bf2d0.cpp,2026-11-19
 0x007bfbb0,?Destroy@Unk_00b859ac@@QAEXXZ,MATCH,7,modules/exe/src/auto/f_007bfbb0.cpp,2026-11-19
 0x007bfd20,??0PairStr_007bfd20@@QAE@ABU0@@Z,MATCH,35,modules/exe/src/auto/f_007bfd20.cpp,2026-11-20
-0x007c1630,?DebugString@NetDiploChat@@QAEXPADI@Z,DIFF,51,modules/exe/src/auto/f_007c1630.cpp,2026-11-21
 0x007c2e20,?FillStringPairs_005a5fd0@@YAXPAUStringPair_005a5fd0@@0ABU1@@Z,MATCH,54,modules/exe/src/auto/f_007c2e20.cpp,2026-11-19
 0x007d1220,?GetFlag_02de0445@@YA_NXZ,MATCH,6,modules/exe/src/auto/f_007d1220.cpp,2026-11-19
 0x007d1250,?GetFlag_02de0446@@YA_NXZ,MATCH,6,modules/exe/src/auto/f_007d1250.cpp,2026-11-19
