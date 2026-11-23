@@ -1,2 +1,2 @@
-0x006661b0 ?f_006661b0@@YGHPAUIface6661b0@@@Z
-0x0096efb0 ?g_guid_6661b0@@3UGuid16_6661b0@@A
+0x006661b0 ?GetInterface_006661b0@@YGPAXPAUObj_006661b0@@@Z
+0x0096efb0 ?g_guid_0096efb0@@3UGuid_006661b0@@B

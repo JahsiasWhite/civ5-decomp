@@ -1,18 +1,21 @@
 // c5d-cflags: -/arch:SSE2
-// src: GUESS (confidence: low) [0x004b5090]
-struct GUID4b5090 {
-    unsigned int Data1;
-    unsigned short Data2;
-    unsigned short Data3;
-    unsigned char Data4[8];
+// src: GUESS (confidence: low)
+struct Guid_004b5090 {
+    unsigned int d0;
+    unsigned int d1;
+    unsigned int d2;
+    unsigned int d3;
 };
 
-extern GUID4b5090 g_guid_4b5090;
-
-struct I4b5090 {
-    virtual int __stdcall Query(GUID4b5090 guid) = 0;
+// src: GUESS (confidence: low)
+struct Obj_004b5090 {
+    virtual void* __stdcall Query(Guid_004b5090 guid) = 0;
 };
 
-int __stdcall fn_004b5090(I4b5090* p) {
-    return p->Query(g_guid_4b5090);
+// src: EXE [0x0094a49c]
+extern const Guid_004b5090 g_guid_0094a49c;
+
+// src: GUESS (confidence: low)
+void* __stdcall GetInterface_004b5090(Obj_004b5090* obj) {
+    return obj->Query(g_guid_0094a49c);
 }

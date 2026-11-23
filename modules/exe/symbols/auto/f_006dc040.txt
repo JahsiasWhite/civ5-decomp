@@ -1,0 +1,2 @@
+0x006dc040 ?fn_006dc040@@YAXPAUlua_State@@PAURect_006dc040@@@Z
+0x0088954c _lua_tointeger_0088954c

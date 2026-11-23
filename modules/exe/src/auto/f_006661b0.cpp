@@ -1,15 +1,21 @@
 // c5d-cflags: -/arch:SSE2
-// src: GUESS (confidence: high) [0x006661b0]
-struct Guid16_6661b0 {
-    unsigned int a, b, c, d;
+// src: GUESS (confidence: low)
+struct Guid_006661b0 {
+    unsigned int d0;
+    unsigned int d1;
+    unsigned int d2;
+    unsigned int d3;
 };
 
-struct Iface6661b0 {
-    virtual int __stdcall m0(Guid16_6661b0 g) = 0;
+// src: GUESS (confidence: low)
+struct Obj_006661b0 {
+    virtual void* __stdcall Query(Guid_006661b0 guid) = 0;
 };
 
-extern Guid16_6661b0 g_guid_6661b0;
+// src: EXE [0x0096efb0]
+extern const Guid_006661b0 g_guid_0096efb0;
 
-int __stdcall f_006661b0(Iface6661b0* p) {
-    return p->m0(g_guid_6661b0);
+// src: GUESS (confidence: low)
+void* __stdcall GetInterface_006661b0(Obj_006661b0* obj) {
+    return obj->Query(g_guid_0096efb0);
 }

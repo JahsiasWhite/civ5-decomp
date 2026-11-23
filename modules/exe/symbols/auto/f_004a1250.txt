@@ -1,0 +1,2 @@
+0x004a1250 ?fn_004a1250@Class_004a1250@@QAE_NH@Z
+0x00939e3c __imp__SteamUserStats
