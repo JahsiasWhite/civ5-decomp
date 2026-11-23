@@ -1,0 +1,3 @@
+# 0x007fee30
+0x007fee30 ?UpdateSceneNodeTransforms_007fee30@@YAXPAUSceneNode_007fee30@@PBM@Z
+0x007fc870 _UpdateSceneChild_007fc870

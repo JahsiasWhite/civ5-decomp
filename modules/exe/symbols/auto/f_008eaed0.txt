@@ -1,0 +1,6 @@
+# 0x008eaed0
+0x008eaed0 ?DeformPWNG3433D_008eaed0@@YAXHPBXPAXPBUGrannyMatrix4x4_008eaed0@@HHH@Z
+0x05f01c68 _g_DeformSum_008eaed0
+0x05f01ca8 _g_DeformWeight_008eaed0
+0x05f01cac _g_DeformTransform_008eaed0
+0x00a1bc98 __real@3b808081

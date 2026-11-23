@@ -1113,6 +1113,7 @@ address,symbol,status,bytes,source,since
 0x007bf2d0,?GetFlag_02dd2f5b@@YA_NXZ,MATCH,6,modules/exe/src/auto/f_007bf2d0.cpp,2026-11-19
 0x007bfbb0,?Destroy@Unk_00b859ac@@QAEXXZ,MATCH,7,modules/exe/src/auto/f_007bfbb0.cpp,2026-11-19
 0x007bfd20,??0PairStr_007bfd20@@QAE@ABU0@@Z,MATCH,35,modules/exe/src/auto/f_007bfd20.cpp,2026-11-20
+0x007c1630,?format@NetDiploChat@@QAEXPADI@Z,DIFF,51,modules/exe/src/auto/f_007c1630.cpp,2026-11-22
 0x007c2e20,?FillStringPairs_005a5fd0@@YAXPAUStringPair_005a5fd0@@0ABU1@@Z,MATCH,54,modules/exe/src/auto/f_007c2e20.cpp,2026-11-19
 0x007d1220,?GetFlag_02de0445@@YA_NXZ,MATCH,6,modules/exe/src/auto/f_007d1220.cpp,2026-11-19
 0x007d1250,?GetFlag_02de0446@@YA_NXZ,MATCH,6,modules/exe/src/auto/f_007d1250.cpp,2026-11-19
@@ -1238,6 +1239,7 @@ address,symbol,status,bytes,source,since
 0x007fe090,?GetByteField_00898000@@YAHPBD@Z,MATCH,19,modules/exe/src/auto/f_007fe090.cpp,2026-11-19
 0x007fe0b0,?ReturnArg_00898020@@YAHH@Z,MATCH,8,modules/exe/src/auto/f_007fe0b0.cpp,2026-11-19
 0x007fe0c0,?GetSpan_00898030@@YAHPBUHost_00898030@@@Z,MATCH,23,modules/exe/src/auto/f_007fe0c0.cpp,2026-11-19
+0x007fee30,?UpdateSceneNodeTransforms_007fee30@@YAXPAUSceneNode_007fee30@@PBM@Z,MATCH,4849,modules/exe/src/auto/f_007fee30.cpp,2026-11-22
 0x00800130,?ReturnArg_0089a0a0@@YAHH@Z,MATCH,8,modules/exe/src/auto/f_00800130.cpp,2026-11-19
 0x008008f0,?Unpack_0089a860@@YAXPAH0PAPAH@Z,MATCH,26,modules/exe/src/auto/f_008008f0.cpp,2026-11-19
 0x00800910,?SyncState_0089a880@@YAXPAUUnkStateOwner_0089a880@@@Z,MATCH,29,modules/exe/src/auto/f_00800910.cpp,2026-11-19
@@ -1765,6 +1767,8 @@ address,symbol,status,bytes,source,since
 0x008e3700,?Lookup_00980350@@YAPAXI@Z,MATCH,42,modules/exe/src/auto/f_008e3700.cpp,2026-11-19
 0x008e4090,?GetGlobal_00cb063c@@YAPAHXZ,MATCH,6,modules/exe/src/auto/f_008e4090.cpp,2026-11-19
 0x008e4fa0,?GetGlobal_00cb0a58@@YAPAHXZ,MATCH,6,modules/exe/src/auto/f_008e4fa0.cpp,2026-11-19
+0x008e9d20,?DeformPWNGB34333D_008e9d20@@YAXHPBXPAXPBUGrannyMatrix4x4_008e9d20@@HHH@Z,UNVERIFIED,2249,modules/exe/src/auto/f_008e9d20.cpp,2026-11-22
+0x008eaed0,?DeformPWNG3433D_008eaed0@@YAXHPBXPAXPBUGrannyMatrix4x4_008eaed0@@HHH@Z,UNVERIFIED,2091,modules/exe/src/auto/f_008eaed0.cpp,2026-11-22
 0x008fabc0,?SetByte@Host_00997800@@QAA_NID@Z,MATCH,21,modules/exe/src/auto/f_008fabc0.cpp,2026-11-19
 0x008fb8e0,?Swap@Class_00998520@@QAEIXZ,MATCH,36,modules/exe/src/auto/f_008fb8e0.cpp,2026-11-19
 0x008fde60,?FindNode_0099aaa0@@YAPAUTreeNode_0099aaa0@@HH@Z,MATCH,54,modules/exe/src/auto/f_008fde60.cpp,2026-11-19
