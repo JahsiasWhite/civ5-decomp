@@ -440,6 +440,7 @@ address,symbol,status,bytes,source,since
 0x00511470,?Blend_007b3f80@@YAIII@Z,MATCH,39,modules/exe/src/auto/f_00511470.cpp,2026-11-19
 0x00515480,?f_00515480@@YAXPBURleRun@@GPAG@Z,MATCH,59,modules/exe/src/auto/f_00515480.cpp,2026-11-22
 0x0051b0b0,?Toggle@Class_0071caf0@@QAEXXZ,MATCH,17,modules/exe/src/auto/f_0051b0b0.cpp,2026-11-19
+0x0051b290,?IntersectSegments2D@@YA_NPBUSeg2D@@0PAUSegVec2@@M@Z,MATCH,517,modules/exe/src/auto/f_0051b290.cpp,2026-11-22
 0x0051c7c0,?LinkNode_0067c0f0@PoolHost_0067c0f0@@QAEXHH@Z,MATCH,93,modules/exe/src/auto/f_0051c7c0.cpp,2026-11-19
 0x0051c820,?LinkNode_0071e550@PoolHost_0071e550@@QAEXII@Z,MATCH,97,modules/exe/src/auto/f_0051c820.cpp,2026-11-19
 0x005267e0,?SwapVec2f@@YAXPAUVec2f@@0@Z,MATCH,61,modules/exe/src/auto/f_005267e0.cpp,2026-11-19
@@ -1094,6 +1095,7 @@ address,symbol,status,bytes,source,since
 0x007bc060,?GetValue@FieldHolder_005e59b0@@QBEHXZ,MATCH,4,modules/exe/src/auto/f_007bc060.cpp,2026-11-19
 0x007bc070,?ClearField68@FieldOwner_00761040@@QAEXXZ,MATCH,8,modules/exe/src/auto/f_007bc070.cpp,2026-11-19
 0x007bc080,?HasField68@FieldOwner_006843a0@@QBE_NXZ,MATCH,9,modules/exe/src/auto/f_007bc080.cpp,2026-11-19
+0x007bc2b0,?UpdateFlags@FlaggedControl@@QAEXI@Z,MATCH,559,modules/exe/src/auto/f_007bc2b0.cpp,2026-11-22
 0x007bc570,?Start@TickTimer@@QAEXH@Z,MATCH,30,modules/exe/src/auto/f_007bc570.cpp,2026-11-19
 0x007bcc70,?SetVal@Class_004a1260@@QAEXH@Z,MATCH,13,modules/exe/src/auto/f_007bcc70.cpp,2026-11-19
 0x007bcc80,?SetField50@FieldOwner_006fa270@@QAEXH@Z,MATCH,10,modules/exe/src/auto/f_007bcc80.cpp,2026-11-19
@@ -1310,6 +1312,7 @@ address,symbol,status,bytes,source,since
 0x0082eb90,?SetTwoGlobals_008c8b10@@YAXHH@Z,MATCH,20,modules/exe/src/auto/f_0082eb90.cpp,2026-11-19
 0x00832e00,?PushEntry@CmdQueue_008ccd80@@QAEXHHF@Z,MATCH,128,modules/exe/src/auto/f_00832e00.cpp,2026-11-19
 0x00832fa0,?Add@Builder_008ccf20@@QAEXHH@Z,MATCH,50,modules/exe/src/auto/f_00832fa0.cpp,2026-11-19
+0x00833030,?BeginBatch@DrawBatchQueue@@QAEIPAX00000000II00UBatchVec4@@M_N2I@Z,MATCH,544,modules/exe/src/auto/f_00833030.cpp,2026-11-22
 0x008334a0,?SetElementValue@ArrayHost_008cd420@@QAEXH@Z,MATCH,19,modules/exe/src/auto/f_008334a0.cpp,2026-11-19
 0x00833510,?Reset@ResetState8cd490@@QAEXXZ,MATCH,30,modules/exe/src/auto/f_00833510.cpp,2026-11-19
 0x00833570,?Reset@Host_008cd4f0@@QAEXXZ,MATCH,27,modules/exe/src/auto/f_00833570.cpp,2026-11-19

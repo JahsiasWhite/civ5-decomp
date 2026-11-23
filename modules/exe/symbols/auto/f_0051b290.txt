@@ -1,0 +1,1 @@
+0x0051b290 ?IntersectSegments2D@@YA_NPBUSeg2D@@0PAUSegVec2@@M@Z

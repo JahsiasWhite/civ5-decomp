@@ -1,0 +1,1 @@
+0x00833030 ?BeginBatch@DrawBatchQueue@@QAEIPAX00000000II00UBatchVec4@@M_N2I@Z
