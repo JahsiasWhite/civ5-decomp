@@ -1,0 +1,5 @@
+0x00889534 _lua_createtable
+0x0088951c _lua_pushstring
+0x00889522 _lua_rawseti
+0x00a2dcac ?g_svOverlayNames_00a2dcac@@3QBQBDB
+0x005d5760 ?LuaGetSVOverlays_005d5760@@YAHPAUlua_State@@@Z

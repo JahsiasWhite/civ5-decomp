@@ -1,0 +1,2 @@
+# No external symbols
+0x00476980 ?IsDelimiterOrQuote@Lexer_00476980@@QAE_NXZ

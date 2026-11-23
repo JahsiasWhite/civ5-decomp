@@ -1,0 +1,2 @@
+# No external symbols
+0x0083e0a0 ?GetRef@Holder_0083e0a0@@QAE_NPAPAVRefObj_0083e0a0@@H@Z

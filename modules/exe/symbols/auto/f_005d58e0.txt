@@ -1,0 +1,5 @@
+0x00889534 _lua_createtable
+0x0088951c _lua_pushstring
+0x00889522 _lua_rawseti
+0x00a2dcf4 ?g_svIconModeNames_00a2dcf4@@3QBQBDB
+0x005d58e0 ?LuaGetSVIconModes_005d58e0@@YAHPAUlua_State@@@Z

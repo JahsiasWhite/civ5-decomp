@@ -1,0 +1,2 @@
+# No external symbols
+0x005fa790 ?FindEntry@Table_005fa790@@QAEPAUEntry_005fa790@@I@Z

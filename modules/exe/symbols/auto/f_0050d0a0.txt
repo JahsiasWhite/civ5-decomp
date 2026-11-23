@@ -1,0 +1,2 @@
+# No external symbols
+0x0050d0a0 ?Apply@Transform_0050d0a0@@QAE?AUVec2_0050d0a0@@ABU2@@Z

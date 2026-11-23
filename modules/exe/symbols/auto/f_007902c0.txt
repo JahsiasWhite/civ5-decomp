@@ -1,0 +1,2 @@
+# No external symbols
+0x007902c0 ?Erase@Vec8_007902c0@@QAE?AUIter8_007902c0@@U2@0@Z
