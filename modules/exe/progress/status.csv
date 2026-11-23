@@ -308,6 +308,7 @@ address,symbol,status,bytes,source,since
 0x00492410,??0PackedCellPair_00673070@@QAE@XZ,MATCH,41,modules/exe/src/auto/f_00492410.cpp,2026-11-19
 0x00492440,?SetAttachment@Holder_006dadf0@@QAEXPAVAttachment_006dadf0@@@Z,MATCH,53,modules/exe/src/auto/f_00492440.cpp,2026-11-19
 0x004926f0,?SetPtrIfNonNull@Class_00615810@@QAEXPAX@Z,MATCH,17,modules/exe/src/auto/f_004926f0.cpp,2026-11-19
+0x00492710,?f_00492710@Obj_00492710@@QAEXXZ,MATCH,207,modules/exe/src/auto/f_00492710.cpp,2026-11-22
 0x004928e0,?GetMember@MemberGetter_0069a6f0@@QBEHXZ,MATCH,7,modules/exe/src/auto/f_004928e0.cpp,2026-11-19
 0x00492d00,?GetMember@MemberGetter_00433a70@@QBEHXZ,MATCH,7,modules/exe/src/auto/f_00492d00.cpp,2026-11-19
 0x00492d20,?ClipToWindow_00492d20@Unk_00492d20@@QAEXXZ,MATCH,35,modules/exe/src/auto/f_00492d20.cpp,2026-11-20
@@ -583,6 +584,7 @@ address,symbol,status,bytes,source,since
 0x00627250,?IsValueZero_005fb630@@YAHXZ,MATCH,29,modules/exe/src/auto/f_00627250.cpp,2026-11-19
 0x0062c700,?Clear@Grid_005a96c0@@QAEXXZ,MATCH,58,modules/exe/src/auto/f_0062c700.cpp,2026-11-19
 0x006358e0,??0Record_005c84b0@@QAE@ABUBaseData_005c84b0@@@Z,MATCH,45,modules/exe/src/auto/f_006358e0.cpp,2026-11-19
+0x00635910,??0Obj_00635910@@QAE@XZ,MATCH,204,modules/exe/src/auto/f_00635910.cpp,2026-11-22
 0x006359e0,?GetPos@Class_004b8750@@QAE?AUVec3_004b8750@@XZ,MATCH,33,modules/exe/src/auto/f_006359e0.cpp,2026-11-19
 0x00635d60,?IsSetAndFlagClear@Record_006d9a50@@QBEHXZ,MATCH,26,modules/exe/src/auto/f_00635d60.cpp,2026-11-19
 0x00635d80,?IsSetAndFlagSet@Record_006e1cd0@@QBEHXZ,MATCH,26,modules/exe/src/auto/f_00635d80.cpp,2026-11-19
@@ -1266,6 +1268,7 @@ address,symbol,status,bytes,source,since
 0x00809610,?SetGlobal_008a3580@@YAXH@Z,MATCH,13,modules/exe/src/auto/f_00809610.cpp,2026-11-19
 0x00809620,?GetGlobal_008a3590@@YAHXZ,MATCH,10,modules/exe/src/auto/f_00809620.cpp,2026-11-19
 0x00809630,?AllocBlock_008a35a0@@YAPAXIHHPAI@Z,MATCH,650,modules/exe/src/auto/f_00809630.cpp,2026-11-19
+0x00809960,?f_00809960@@YAXXZ,MATCH,200,modules/exe/src/auto/f_00809960.cpp,2026-11-22
 0x0080a120,?CalcSizes_008a4080@@YAXHHHHHPAH@Z,MATCH,1007,modules/exe/src/auto/f_0080a120.cpp,2026-11-19
 0x0080a9a0,?PushValue_008a4900@@YAHPAUObject_008a4900@@@Z,MATCH,55,modules/exe/src/auto/f_0080a9a0.cpp,2026-11-19
 0x0080b250,?SetGlobal_008a51b0@@YAXH@Z,MATCH,13,modules/exe/src/auto/f_0080b250.cpp,2026-11-19
@@ -1455,6 +1458,7 @@ address,symbol,status,bytes,source,since
 0x00860780,??0Class_00860780@@QAE@XZ,MATCH,9,modules/exe/src/auto/f_00860780.cpp,2026-11-22
 0x00860790,?Destroy@Unk_00a9b758@@QAEXXZ,MATCH,7,modules/exe/src/auto/f_00860790.cpp,2026-11-19
 0x00860a00,?GetFileName_008fb000@@YAPBDPBD@Z,MATCH,52,modules/exe/src/auto/f_00860a00.cpp,2026-11-19
+0x00860e20,?f_00860e20@@YAXPAUItem16@@00@Z,MATCH,206,modules/exe/src/auto/f_00860e20.cpp,2026-11-22
 0x008613c0,?Erase@Values_008e5fd0@@QAE?AV?$_Vector_iterator@UValue_008e5fd0@@V?$allocator@UValue_008e5fd0@@@std@@@std@@V23@0@Z,MATCH,55,modules/exe/src/auto/f_008613c0.cpp,2026-11-19
 0x00862dc0,?GetField30@UnkRecord30@@QBEHXZ,MATCH,4,modules/exe/src/auto/f_00862dc0.cpp,2026-11-19
 0x008634a0,?SetPair@Host_008fd990@@QAEXHH@Z,MATCH,23,modules/exe/src/auto/f_008634a0.cpp,2026-11-19

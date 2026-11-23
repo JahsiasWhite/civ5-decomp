@@ -1,0 +1,73 @@
+// src: GUESS (confidence: low)
+struct Obj_00492710 {
+    unsigned char pad0[0xb8];
+    int f_b8;
+    int f_bc;
+    int f_c0;
+    int f_c4;
+    int f_c8;
+    int f_cc;
+    int pad_d0;
+    int f_d4;
+    int f_d8;
+    int f_dc;
+    int f_e0;
+    int f_e4;
+    unsigned char pad1[0x5f8];
+    int f_6e0;
+    int f_6e4;
+    unsigned char pad2[8];
+    int f_6f0;
+    int f_6f4;
+    int f_6f8;
+    int f_6fc;
+    int f_700;
+    int f_704;
+    unsigned char pad3[0x22c];
+    int f_934;
+    int f_938;
+    int f_93c;
+    unsigned char pad4[0xa64];
+    int f_13a4;
+    int f_13a8;
+    float f_13ac;
+    unsigned char f_13b0;
+    unsigned char f_13b1;
+    unsigned char f_13b2;
+    unsigned char pad5[0xd];
+    int f_13c0;
+
+    void __thiscall f_00492710();
+};
+
+void __thiscall Obj_00492710::f_00492710() {
+    f_6e0 = 0;
+    f_6e4 = 0;
+    f_6f0 = 0;
+    f_bc = 0;
+    f_c0 = 0;
+    f_b8 = 0;
+    f_cc = 0;
+    f_c8 = 0;
+    f_c4 = 0;
+    f_6f4 = 0;
+    f_d4 = 0;
+    f_d8 = 0;
+    f_dc = 0;
+    f_e0 = 0;
+    f_e4 = 0;
+    f_6f8 = 0;
+    f_6fc = 0x500;
+    f_700 = 0x3c0;
+    f_704 = 0x3c;
+    f_934 = 0;
+    f_938 = 0;
+    f_93c = 0;
+    f_13ac = 11.0f;
+    f_13a4 = 1;
+    f_13a8 = 0x1f4;
+    f_13b2 = 0;
+    f_13b0 = 0;
+    f_13b1 = 0;
+    f_13c0 = 0;
+}
