@@ -356,6 +356,7 @@ address,symbol,status,bytes,source,since
 0x004b82f0,?Shutdown_004b82f0@Unk_004b82f0@@QAE_NXZ,MATCH,36,modules/exe/src/auto/f_004b82f0.cpp,2026-11-20
 0x004b8320,?QueryBool_004b8320@UnkQuery_004b8320@@QAE_NPBD@Z,MATCH,57,modules/exe/src/auto/f_004b8320.cpp,2026-11-20
 0x004b83f0,?ClearAdvisorMessagesViewed@Unk_004b83f0@@QBEXXZ,MATCH,14,modules/exe/src/auto/f_004b83f0.cpp,2026-11-22
+0x004b9d30,??0Der_004b9d30@@QAE@XZ,MATCH,584,modules/exe/src/auto/f_004b9d30.cpp,2026-11-24
 0x004ba530,?AllocTrace_00845d00@@YAPAXXZ,MATCH,83,modules/exe/src/auto/f_004ba530.cpp,2026-11-19
 0x004baef0,?Trace_004baef0@@YAXXZ,MATCH,80,modules/exe/src/auto/f_004baef0.cpp,2026-11-22
 0x004baf40,?Trace_004baf40@@YAXXZ,MATCH,80,modules/exe/src/auto/f_004baf40.cpp,2026-11-22
@@ -1268,7 +1269,9 @@ address,symbol,status,bytes,source,since
 0x00804c50,?ClearField_0089ebc0@@YAXPAUTargetObj_0089ebc0@@@Z,MATCH,18,modules/exe/src/auto/f_00804c50.cpp,2026-11-19
 0x00805790,?Relocate_0089f700@@YAXPAUObject_0089f700@@@Z,MATCH,50,modules/exe/src/auto/f_00805790.cpp,2026-11-19
 0x008057d0,?Relocate_0089f740@@YAXPAUObject_0089f740@@@Z,MATCH,50,modules/exe/src/auto/f_008057d0.cpp,2026-11-19
+0x00807a90,?EmitBoxPoint_00807a90@@YAXPAUEmitter_00807a90@@PAM1@Z,MATCH,578,modules/exe/src/auto/f_00807a90.cpp,2026-11-24
 0x00807eb0,?EmitConeSurface_008a1e20@@YAXPAUEmitter_008a1e20@@PAM1@Z,MATCH,602,modules/exe/src/auto/f_00807eb0.cpp,2026-11-19
+0x008082b0,?EmitBoxPoint_008082b0@@YAXPAUEmitter_008082b0@@PAM1@Z,MATCH,578,modules/exe/src/auto/f_008082b0.cpp,2026-11-24
 0x00808500,?EmitSpherePoint_008a2470@@YAXPAUEmitter_008a2470@@PAM1@Z,MATCH,533,modules/exe/src/auto/f_00808500.cpp,2026-11-19
 0x00808720,?EmitConeVolume_008a2690@@YAXPAUEmitter_008a2690@@PAM1@Z,MATCH,683,modules/exe/src/auto/f_00808720.cpp,2026-11-19
 0x00808ef0,?EmitSphereArcPoint_008a2e60@@YAXPAUEmitter_008a2e60@@PAM1@Z,MATCH,583,modules/exe/src/auto/f_00808ef0.cpp,2026-11-19
