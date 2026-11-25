@@ -108,6 +108,7 @@ address,symbol,status,bytes,source,since
 0x10008660,?Reset@ArenaPool_10008660@@QAEXXZ,MATCH,68,modules/db/src/auto/f_10008660.cpp,2026-11-19
 0x10008a00,?CompareBytes_10008a00@@YA_NPBEI0I_N@Z,MATCH,100,modules/db/src/auto/f_10008a00.cpp,2026-11-19
 0x10008b20,?Alloc@ArenaPool_10008b20@@QAEPAXI@Z,MATCH,130,modules/db/src/auto/f_10008b20.cpp,2026-11-19
+0x10008c60,?EncodeUtf8_10008c60@@YA_NAAPADI@Z,MATCH,198,modules/db/src/auto/f_10008c60.cpp,2026-11-24
 0x10008e20,??0Unk_10078b48@@QAE@XZ,MATCH,16,modules/db/src/auto/f_10008e20.cpp,2026-11-19
 0x100097c0,?FindChild@XmlNode_100097c0@@QAEPAU1@PBEI_N@Z,MATCH,119,modules/db/src/auto/f_100097c0.cpp,2026-11-19
 0x10009840,?FindAttr@XmlAttr_10009840@@QAEPAU1@PBEI_N@Z,MATCH,119,modules/db/src/auto/f_10009840.cpp,2026-11-19
