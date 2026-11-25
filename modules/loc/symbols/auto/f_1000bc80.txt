@@ -1,0 +1,2 @@
+0x1000bc80 ?tidy_entry60_vec@@YGXPAURawVec60@@@Z
+0x1008910c __imp_??1?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QAE@XZ

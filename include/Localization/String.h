@@ -27,12 +27,16 @@ public:
     CVLOCALIZATION_API bool SetLanguage(Language* pkLanguage);
     // src: EXE [0x10008f60]
     CVLOCALIZATION_API unsigned int GetNumForms() const;
+    // src: EXE [0x10008f80]
+    CVLOCALIZATION_API unsigned int GetFormByPlurality(int iPlurality, int iOccurrence) const;
     // src: EXE [0x100095b0]
     CVLOCALIZATION_API bool SetGender(Gender eGender);
     // src: EXE [0x100095e0]
     CVLOCALIZATION_API bool SetGender(unsigned int uiForm, Gender eGender);
     // src: EXE [0x10009630]
     CVLOCALIZATION_API Gender GetGender(unsigned int uiForm) const;
+    // src: EXE [0x100099a0]
+    CVLOCALIZATION_API unsigned int GetPlurality(unsigned int uiForm) const;
 
     // src: EXE [0x10009c40]
     CVLOCALIZATION_API bool PushArgument(const char* text);
@@ -52,7 +56,9 @@ public:
 private:
     // src: GUESS (confidence: low)
     struct Form88 {
-        char m_pad00[0x30];            // +0x00
+        char m_pad00[0x2c];            // +0x00
+        // src: GUESS (confidence: medium)
+        unsigned int m_uiPlurality;    // +0x2c
         // src: GUESS (confidence: medium)
         Gender m_eGender;              // +0x30
         char m_pad34[0x20];            // +0x34
