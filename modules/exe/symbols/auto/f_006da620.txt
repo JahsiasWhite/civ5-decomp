@@ -1,0 +1,4 @@
+0x006da620 ?ReadLuaMat4x4@@YAXPAUlua_State@@HPAM@Z
+0x008895ac _lua_rawgeti
+0x00889552 _lua_tonumber
+0x00889576 _lua_settop

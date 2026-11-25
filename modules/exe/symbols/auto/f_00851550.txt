@@ -1,0 +1,1 @@
+0x00851550 ?ContainsPtr@OuterVecHolder@@QBE_NPAX@Z

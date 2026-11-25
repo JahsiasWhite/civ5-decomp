@@ -1,0 +1,5 @@
+0x0067d180 ?UpdateFlag@Obj67@@QAEXXZ
+0x00b49338 ?g_pGlobalCtx67@@3PAUGlobalCtx67@@A
+0x008210f6 _AcquireSlot67@4
+0x008210f0 _SetSlotFlag67@8
+0x008210ea _CommitSlot67@8

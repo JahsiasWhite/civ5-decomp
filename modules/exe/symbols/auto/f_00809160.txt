@@ -1,0 +1,1 @@
+0x00809160 ?AdvanceStreamBuf@@YAHPAPAUStreamBuf@@@Z
