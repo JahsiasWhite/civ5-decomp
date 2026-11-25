@@ -12,6 +12,8 @@ public:
     CVLOCALIZATION_API const char* GetType() const;
     CVLOCALIZATION_API IPluralityRule* GetPluralityRule() const;
     CVLOCALIZATION_API const ParameterTransforms& GetParameterTransforms() const;
+    // src: EXE [0x10001fc0]
+    CVLOCALIZATION_API unsigned int GetPluralForm(int iNumber) const;
     // src: EXE
     CVLOCALIZATION_API bool Compare(const char* szStr1, unsigned int uiLen1, const char* szStr2, unsigned int uiLen2, int& riResult) const;
 
@@ -19,7 +21,7 @@ private:
     char m_szType[0x24];               // +0x04
     IPluralityRule* m_pkPluralityRule; // +0x28
     int m_unknown2c;                   // +0x2c
-    char m_transforms[1];              // +0x30 the ParameterTransforms object (not modelled yet)
+    char m_transforms[0x1a8];          // +0x30 the ParameterTransforms object (not modelled yet)
 };
 
 // src: EXE

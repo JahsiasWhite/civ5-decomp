@@ -1,0 +1,1 @@
+0x10008ed0 ?GetBaseString@String@Localization@@QBEPBDAAI@Z

@@ -3,9 +3,12 @@
 // and signatures come from the DLL's export table.
 #pragma once
 #include "LocalizationAPI.h"
+#include "SharedString.h"
 #include <vector>
 
 namespace Localization {
+
+class Language;
 
 // src: EXE
 enum Gender {
@@ -14,6 +17,14 @@ enum Gender {
 
 class String {
 public:
+    // src: EXE [0x10008da0]
+    CVLOCALIZATION_API bool IsEmpty() const;
+    // src: EXE [0x10008ed0]
+    CVLOCALIZATION_API const char* GetBaseString(unsigned int& ruiLength) const;
+    // src: EXE [0x10008ef0]
+    CVLOCALIZATION_API Language* GetLanguage() const;
+    // src: EXE [0x10008f00]
+    CVLOCALIZATION_API bool SetLanguage(Language* pkLanguage);
     // src: EXE [0x10008f60]
     CVLOCALIZATION_API unsigned int GetNumForms() const;
     // src: EXE [0x100095b0]
@@ -49,9 +60,15 @@ private:
         bool m_b55;                    // +0x55
         char m_pad56[0x02];            // +0x56
     };
-    char m_pad00[0x3c];                // +0x00
+    // src: GUESS (confidence: medium)
+    void* m_vptr;                      // +0x00
+    // src: GUESS (confidence: high)
+    SharedString m_kBaseString;        // +0x04
+    char m_pad18[0x24];                // +0x18
     // src: GUESS (confidence: medium)
     std::vector<Form88> m_forms;       // +0x3c (_Myfirst at +0x40, _Mylast at +0x44)
+    // src: GUESS (confidence: high)
+    Language* m_pkLanguage;            // +0x4c
 };
 
 }  // namespace Localization

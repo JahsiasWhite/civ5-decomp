@@ -7,7 +7,10 @@
 namespace Localization {
 
 class CVLOCALIZATION_API SharedString {
+    friend class String;
 public:
+    // src: EXE [0x10007000]
+    SharedString();
     // user-written in the DLL (they copy the shared buffer pointer); declared here so
     // the exported class doesn't get compiler-generated ones
     SharedString(const SharedString& copy);
@@ -15,6 +18,10 @@ public:
     // src: EXE [0x10001000]
     ~SharedString();
 
+    // src: EXE [0x10007130]
+    const char* GetBuffer(unsigned int& ruiBufferLength) const;
+    // src: EXE [0x10007140]
+    const char* GetString(unsigned int& ruiLength) const;
     unsigned int GetBufferLength() const;
     unsigned int GetOffset() const;
     unsigned int GetLength() const;

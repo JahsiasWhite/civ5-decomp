@@ -1,0 +1,1 @@
+0x1000b110 ?GetCurrentLanguageIndex@StringDictionary@Localization@@QBEIXZ

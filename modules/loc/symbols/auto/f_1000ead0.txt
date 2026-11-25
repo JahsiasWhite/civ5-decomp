@@ -1,0 +1,3 @@
+0x1000ead0 ?GetCurrentLanguage@Localization@@YAABVLanguage@1@XZ
+0x100c5148 ?g_iCurrentLanguage_100c5148@Localization@@3HA
+0x100c5ba4 ?g_pkLanguages_100c5ba4@Localization@@3PAVLanguage@1@A

@@ -1,0 +1,1 @@
+0x1000b7b0 ?GetPluralityRule@Language@StringDictionary@Localization@@QBEPAVPluralityRule@3@XZ

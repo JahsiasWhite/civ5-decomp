@@ -1,0 +1,1 @@
+0x10007130 ?GetBuffer@SharedString@Localization@@QBEPBDAAI@Z

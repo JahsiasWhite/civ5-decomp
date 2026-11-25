@@ -1,0 +1,1 @@
+0x10008ef0 ?GetLanguage@String@Localization@@QBEPAVLanguage@2@XZ

@@ -1,0 +1,1 @@
+0x10007000 ??0SharedString@Localization@@QAE@XZ

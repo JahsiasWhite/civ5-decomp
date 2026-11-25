@@ -1,0 +1,1 @@
+0x10008f00 ?SetLanguage@String@Localization@@QAE_NPAVLanguage@2@@Z

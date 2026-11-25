@@ -1,0 +1,1 @@
+0x10007140 ?GetString@SharedString@Localization@@QBEPBDAAI@Z
