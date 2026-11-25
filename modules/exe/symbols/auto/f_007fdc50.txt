@@ -1,0 +1,2 @@
+0x007fdc50 ?f_007fdc50@@YAPBDPBUF007fdc50Arg@@@Z
+0x00889f7c _f_00889f7c
